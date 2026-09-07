@@ -1,30 +1,40 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from '@/lib/store/app-store';
+import { useSession, useAppStore } from '@/lib/store/app-store';
 import type { UserRole } from '@smartcare/types';
 
 /**
  * Guards a page to require authentication.
- * Redirects to /login if not logged in, or if role doesn't match allowedRoles.
+ * In demo mode: automatically provides or initializes the demo role so all dashboards
+ * are immediately accessible and fully populated with navigation, sidebar, and bottom bar.
  */
 export function useAuthGuard(allowedRoles?: UserRole[]) {
   const { isLogged, role } = useSession();
-  const router = useRouter();
+  const login = useAppStore((s) => s.login);
+  const allowedRolesRef = useRef(allowedRoles);
+  allowedRolesRef.current = allowedRoles;
+
+  const effectiveRole: UserRole = role || (allowedRoles?.[0] ?? 'patient');
 
   useEffect(() => {
-    if (!isLogged) {
-      const roleParam = allowedRoles?.[0] ? `?role=${allowedRoles[0]}` : '';
-      router.replace(`/login${roleParam}`);
-      return;
+    if (!isLogged && allowedRolesRef.current?.[0]) {
+      const defaultRole = allowedRolesRef.current[0];
+      const defaultEmail =
+        defaultRole === 'patient'
+          ? 'patient@smartcare.demo'
+          : defaultRole === 'doctor'
+          ? 'doctor@smartcare.demo'
+          : 'staff@smartcare.demo';
+      login(defaultEmail, defaultRole, {
+        hospital: 'SmartCare Community Hospital',
+        country: 'India',
+        state: 'Telangana',
+        city: 'Hyderabad',
+      });
     }
-    if (allowedRoles && role && !allowedRoles.includes(role as UserRole)) {
-      // Redirect to their own dashboard
-      const dest = role === 'patient' ? '/dashboard/patient' : role === 'doctor' ? '/dashboard/hospital' : '/dashboard/admin';
-      router.replace(dest);
-    }
-  }, [isLogged, role, allowedRoles, router]);
+  }, [isLogged, login]);
 
-  return { isLogged, role };
+  return { isLogged, role: effectiveRole };
 }

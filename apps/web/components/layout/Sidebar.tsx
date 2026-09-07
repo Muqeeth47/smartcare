@@ -3,76 +3,200 @@
 import { useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { X, HeartPulse, Home, CalendarPlus, ClipboardList, Heart, LayoutDashboard, Users, BarChart3, HelpCircle } from 'lucide-react';
+import {
+  X,
+  PanelLeftClose,
+  HeartPulse,
+  LayoutDashboard,
+  CalendarPlus,
+  FileText,
+  ClipboardCheck,
+  UserRound,
+  HeartHandshake,
+  CircleHelp,
+  LogOut,
+  ListOrdered,
+  BarChart3,
+  DoorOpen,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSession, useAppStore } from '@/lib/store/app-store';
 
+interface SidebarItem {
+  label: string;
+  href: string;
+  icon: React.ElementType;
+}
+
+const SIDEBAR_ITEMS: Record<string, { main: SidebarItem[]; secondary: SidebarItem[] }> = {
+  patient: {
+    main: [
+      { label: 'Overview', href: '/dashboard/patient', icon: LayoutDashboard },
+      { label: 'Book appointment', href: '/dashboard/patient/apply/1', icon: CalendarPlus },
+      { label: 'Medical History', href: '/dashboard/patient/history', icon: FileText },
+      { label: 'Previous visits', href: '/dashboard/patient/visits', icon: ClipboardCheck },
+      { label: 'Profile', href: '/dashboard/patient?tab=profile', icon: UserRound },
+    ],
+    secondary: [
+      { label: 'Donations', href: '/dashboard/patient/donations', icon: HeartHandshake },
+      { label: 'Help', href: '/about', icon: CircleHelp },
+    ],
+  },
+  doctor: {
+    main: [
+      { label: 'Overview', href: '/dashboard/hospital', icon: LayoutDashboard },
+      { label: 'Queue', href: '/dashboard/queue', icon: ListOrdered },
+      { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+    ],
+    secondary: [
+      { label: 'Donations', href: '/dashboard/hospital/donations', icon: HeartHandshake },
+      { label: 'Help', href: '/about', icon: CircleHelp },
+    ],
+  },
+  staff: {
+    main: [
+      { label: 'Operations', href: '/dashboard/admin', icon: LayoutDashboard },
+      { label: 'Rooms', href: '/dashboard/admin?tab=rooms', icon: DoorOpen },
+      { label: 'Queue', href: '/dashboard/queue', icon: ListOrdered },
+      { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+    ],
+    secondary: [
+      { label: 'Donations', href: '/dashboard/admin/donations', icon: HeartHandshake },
+      { label: 'Help', href: '/about', icon: CircleHelp },
+    ],
+  },
+};
+
+function getRoleFromPath(pathname: string, sessionRole?: string): string {
+  if (sessionRole) return sessionRole;
+  if (pathname.startsWith('/dashboard/patient')) return 'patient';
+  if (pathname.startsWith('/dashboard/hospital')) return 'doctor';
+  if (pathname.startsWith('/dashboard/admin')) return 'staff';
+  return 'patient';
+}
+
+function checkActive(itemHref: string, pathname: string): boolean {
+  if (itemHref.includes('?tab=')) {
+    return false;
+  }
+  if (itemHref === '/dashboard/patient' || itemHref === '/dashboard/hospital' || itemHref === '/dashboard/admin') {
+    return pathname === itemHref;
+  }
+  return pathname.startsWith(itemHref);
+}
+
+/**
+ * Desktop Left Sidebar (`.workspace-tabs.desktop-sidebar`)
+ * Rendered sticky on the left column in `.provider-shell`.
+ */
+export function DesktopSidebar({ onToggleCollapse }: { onToggleCollapse?: () => void }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { role: sessionRole } = useSession();
+  const logout = useAppStore((s) => s.logout);
+
+  const role = getRoleFromPath(pathname, sessionRole);
+  const items = SIDEBAR_ITEMS[role] || SIDEBAR_ITEMS.patient;
+
+  const handleLogout = () => {
+    logout();
+    router.push('/');
+  };
+
+  return (
+    <nav className="workspace-tabs desktop-sidebar" aria-label="Workspace navigation">
+      <div className="flex items-center justify-between px-1.5 pb-2 mb-1 border-b border-[var(--line)]">
+        <span className="text-[10px] font-extrabold tracking-wider uppercase text-[var(--muted)]">Navigation</span>
+        {onToggleCollapse && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            title="Collapse sidebar"
+            aria-label="Collapse sidebar"
+            className="flex items-center justify-center w-6 h-6 rounded text-[var(--muted)] hover:text-[var(--teal)] hover:bg-[var(--mint)] transition-colors cursor-pointer"
+          >
+            <PanelLeftClose size={14} />
+          </button>
+        )}
+      </div>
+      {items.main.map((item) => {
+        const Icon = item.icon;
+        const active = checkActive(item.href, pathname);
+        return (
+          <Link
+            key={item.label}
+            href={item.href}
+            className={active ? 'active' : ''}
+            aria-current={active ? 'page' : undefined}
+          >
+            <Icon size={16} />
+            <span>{item.label}</span>
+          </Link>
+        );
+      })}
+
+      <div className="nav-divider" />
+
+      {items.secondary.map((item) => {
+        const Icon = item.icon;
+        const active = checkActive(item.href, pathname);
+        return (
+          <Link
+            key={item.label}
+            href={item.href}
+            className={active ? 'active' : ''}
+            aria-current={active ? 'page' : undefined}
+          >
+            <Icon size={16} />
+            <span>{item.label}</span>
+          </Link>
+        );
+      })}
+
+      <button type="button" onClick={handleLogout} className="signout-btn" aria-label="Sign out">
+        <LogOut size={16} />
+        <span>Sign out</span>
+      </button>
+    </nav>
+  );
+}
+
+/**
+ * Mobile Drawer (`.workspace-tabs.mobile-drawer`)
+ * Slides out on mobile viewports when the Topbar menu is clicked.
+ */
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const SIDEBAR_CONFIG = {
-  patient: [
-    { label: 'Overview', href: '/dashboard/patient', icon: Home },
-    { label: 'Book appointment', href: '/dashboard/patient/apply/1', icon: CalendarPlus },
-    { label: 'My visits', href: '/dashboard/patient/visits', icon: ClipboardList },
-    { label: 'Donations', href: '/dashboard/patient/donations', icon: Heart },
-    { label: 'Help', href: '/about', icon: HelpCircle },
-  ],
-  doctor: [
-    { label: 'Hospital overview', href: '/dashboard/hospital', icon: LayoutDashboard },
-    { label: 'Queue', href: '/dashboard/queue', icon: Users },
-    { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-    { label: 'Donations', href: '/dashboard/hospital/donations', icon: Heart },
-    { label: 'Help', href: '/about', icon: HelpCircle },
-  ],
-  staff: [
-    { label: 'Operations', href: '/dashboard/admin', icon: LayoutDashboard },
-    { label: 'Queue', href: '/dashboard/queue', icon: Users },
-    { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-    { label: 'Donations', href: '/dashboard/admin/donations', icon: Heart },
-    { label: 'Help', href: '/about', icon: HelpCircle },
-  ],
-};
-
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const { role, email, hospital } = useSession();
-  const { logout } = useAppStore((s) => ({ logout: s.logout }));
-  const router = useRouter();
   const pathname = usePathname();
-  const firstLinkRef = useRef<HTMLAnchorElement>(null);
+  const router = useRouter();
+  const { role: sessionRole } = useSession();
+  const logout = useAppStore((s) => s.logout);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
 
-  const items = role ? SIDEBAR_CONFIG[role as keyof typeof SIDEBAR_CONFIG] || [] : [];
+  const role = getRoleFromPath(pathname, sessionRole);
+  const items = SIDEBAR_ITEMS[role] || SIDEBAR_ITEMS.patient;
 
-  // Focus trap on open
+  // Escape key handler
   useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
     if (isOpen) {
-      firstLinkRef.current?.focus();
+      document.addEventListener('keydown', handler);
+      closeBtnRef.current?.focus();
     }
-  }, [isOpen]);
-
-  // Close on Escape
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [onClose]);
+  }, [isOpen, onClose]);
 
   const handleLogout = () => {
     onClose();
     logout();
     router.push('/');
   };
-
-  const isActive = (href: string) => {
-    if (['/dashboard/patient', '/dashboard/hospital', '/dashboard/admin'].includes(href)) {
-      return pathname === href;
-    }
-    return pathname.startsWith(href);
-  };
-
-  if (!isOpen && !role) return null;
 
   return (
     <>
@@ -81,90 +205,78 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div
           onClick={onClose}
           aria-hidden="true"
-          className={cn(
-            'fixed inset-0 z-[399] bg-black/55 backdrop-blur-sm',
-            'transition-opacity duration-200',
-            isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          )}
+          className="workspace-drawer-backdrop fixed inset-0 z-[399] bg-black/40 backdrop-blur-xs transition-opacity"
         />
       )}
 
-      {/* Drawer */}
+      {/* Mobile Drawer */}
       <aside
-        aria-label="Navigation drawer"
-        aria-hidden={!isOpen}
+        aria-label="Mobile workspace navigation"
         className={cn(
-          'fixed top-0 left-0 z-[400]',
-          'w-[270px] h-[calc(100dvh-64px)]',
-          'bg-[var(--surface)] border-r border-[var(--line)]',
-          'flex flex-col transition-transform duration-250 ease-smooth',
-          isOpen ? 'translate-x-0' : '-translate-x-full'
+          'workspace-tabs mobile-drawer',
+          isOpen && 'drawer-open'
         )}
       >
-        {/* Drawer Header */}
-        <div className="flex items-center justify-between px-4 h-14 border-b border-[var(--line)] shrink-0">
-          <Link href="/" className="flex items-center gap-2 no-underline" onClick={onClose} ref={firstLinkRef}>
-            <span className="w-8 h-8 bg-[var(--mint)] rounded-lg flex items-center justify-center text-[var(--teal)]">
-              <HeartPulse size={16} />
+        <div className="mobile-drawer-header">
+          <Link href="/" className="brand-lockup flex items-center gap-2 no-underline" onClick={onClose}>
+            <span
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-white"
+              style={{ background: 'var(--teal-dark)' }}
+            >
+              <HeartPulse size={17} />
             </span>
-            <span>
-              <span className="text-[0.9rem] font-extrabold text-[var(--text)] leading-none block">SmartCare</span>
-              <span className="text-[0.6rem] text-[var(--text-muted)] leading-none block mt-0.5">
-                {role === 'patient' ? 'Patient portal' : role === 'doctor' ? 'Hospital portal' : 'Admin portal'}
-              </span>
-            </span>
+            <span className="font-extrabold text-[var(--text)] text-sm">SmartCare</span>
           </Link>
           <button
+            ref={closeBtnRef}
             onClick={onClose}
             aria-label="Close navigation"
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] transition-colors"
+            className="mobile-drawer-close"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
-        {/* Nav items */}
-        <nav className="flex-1 overflow-y-auto py-3 px-3">
-          {items.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onClose}
-                aria-current={active ? 'page' : undefined}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] text-sm font-medium no-underline mb-0.5',
-                  'transition-colors',
-                  active
-                    ? 'bg-[var(--mint)] text-[var(--teal)] font-semibold'
-                    : 'text-[var(--text-muted)] hover:bg-[var(--surface-raised)] hover:text-[var(--text)]'
-                )}
-              >
-                <Icon size={17} strokeWidth={active ? 2.2 : 1.8} />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+        {items.main.map((item) => {
+          const Icon = item.icon;
+          const active = checkActive(item.href, pathname);
+          return (
+            <Link
+              key={item.label}
+              href={item.href}
+              onClick={onClose}
+              className={active ? 'active' : ''}
+              aria-current={active ? 'page' : undefined}
+            >
+              <Icon size={16} />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
 
-        {/* Footer: user info + logout */}
-        <div className="border-t border-[var(--line)] p-3 shrink-0">
-          <div className="px-3 py-2 mb-2">
-            <p className="text-xs font-semibold text-[var(--text)] truncate">{email}</p>
-            {hospital && <p className="text-xs text-[var(--text-muted)] truncate mt-0.5">{hospital}</p>}
-          </div>
-          <button
-            onClick={handleLogout}
-            className={cn(
-              'w-full flex items-center gap-2 px-3 py-2.5 rounded-[var(--radius)] text-sm font-medium',
-              'text-[var(--text-muted)] hover:bg-[var(--red-bg)] hover:text-[var(--red)] transition-colors'
-            )}
-          >
-            Sign out
-          </button>
-        </div>
+        <div className="nav-divider" />
+
+        {items.secondary.map((item) => {
+          const Icon = item.icon;
+          const active = checkActive(item.href, pathname);
+          return (
+            <Link
+              key={item.label}
+              href={item.href}
+              onClick={onClose}
+              className={active ? 'active' : ''}
+              aria-current={active ? 'page' : undefined}
+            >
+              <Icon size={16} />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+
+        <button type="button" onClick={handleLogout} className="signout-btn" aria-label="Sign out">
+          <LogOut size={16} />
+          <span>Sign out</span>
+        </button>
       </aside>
     </>
   );

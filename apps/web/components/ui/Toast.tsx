@@ -1,14 +1,15 @@
 'use client';
 
 import { useAppStore } from '@/lib/store/app-store';
+import { useShallow } from 'zustand/react/shallow';
 import { cn } from '@/lib/utils';
 import { CheckCircle, XCircle, Info } from 'lucide-react';
 
 export function Toast() {
-  const { toastMessage, toastType } = useAppStore((s) => ({
+  const { toastMessage, toastType } = useAppStore(useShallow((s) => ({
     toastMessage: s.toastMessage,
     toastType: s.toastType,
-  }));
+  })));
 
   if (!toastMessage) return null;
 

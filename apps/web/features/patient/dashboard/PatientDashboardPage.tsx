@@ -1,20 +1,30 @@
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useSession, usePatient, useAppStore, sortQueue, queueStatus } from '@/lib/store/app-store';
 import { PatientShell } from '@/components/layout/Shell';
-import { useRouter } from 'next/navigation';
-import { CalendarPlus, ClipboardList, Heart, QrCode, ChevronRight, Clock, Building2, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
-import { cn, timeAgo, estimatedWait, generatePassportId } from '@/lib/utils';
-import Link from 'next/link';
-
-function getStatusIcon(status: string) {
-  const s = status.toLowerCase();
-  if (s === 'completed') return <CheckCircle2 size={14} className="text-[var(--green)]" />;
-  if (s === 'called' || s === 'in consultation') return <AlertCircle size={14} className="text-[var(--yellow)]" />;
-  if (s === 'waiting') return <Clock size={14} className="text-[var(--text-muted)]" />;
-  return <Loader2 size={14} className="animate-spin text-[var(--teal)]" />;
-}
+import { DemoDB } from '@/lib/db/demo-db';
+import { cn, estimatedWait } from '@/lib/utils';
+import {
+  CalendarClock,
+  CalendarPlus,
+  CalendarCog,
+  ClipboardCheck,
+  ClipboardX,
+  FileText,
+  FileQuestion,
+  ArrowRight,
+  ArrowUpRight,
+  QrCode,
+  ShieldCheck,
+  X,
+  Printer,
+  HeartPulse,
+} from 'lucide-react';
+import type { Prescription } from '@smartcare/types';
 
 export function PatientDashboardPage() {
   const { role } = useAuthGuard(['patient']);
@@ -23,139 +33,473 @@ export function PatientDashboardPage() {
   const queue = useAppStore((s) => s.queue);
   const router = useRouter();
 
+  // Selected visit for Prescription modal
+  const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
+  const [prescription, setPrescription] = useState<Prescription | null>(null);
+
   if (!role) return null;
 
-  const displayName = patientData.name || email.split('@')[0].replace(/[._-]/g, ' ') || 'Patient';
-  const passportId = generatePassportId(email);
+  const patientName = patientData.name || (email === 'patient@smartcare.demo' ? 'Asha Rao' : email.split('@')[0].replace(/[._-]/g, ' '));
+  const latestVisit = patientVisits[0];
 
-  // Find active queue item for this patient
-  const activeQueueItem = queue.find((item) =>
-    String(item.patientEmail || '').toLowerCase() === email.toLowerCase() &&
-    !['completed', 'cancelled', 'withdrawn', 'no-show'].includes(queueStatus(item))
+  // Active visit (not finished)
+  const activeVisit = patientVisits.find((v) =>
+    !['completed', 'cancelled', 'withdrawn', 'no-show'].includes(String(v.status || '').toLowerCase())
   );
 
-  const queuePosition = activeQueueItem
-    ? sortQueue(queue).filter((i) => !['completed', 'cancelled', 'withdrawn', 'no-show'].includes(queueStatus(i))).findIndex((i) => i.id === activeQueueItem.id)
+  const activeQueue = sortQueue(queue);
+  const liveQueueEntry = activeVisit
+    ? activeQueue.find((entry) => String(entry.id) === String(activeVisit.id))
+    : null;
+  const liveQueueIndex = liveQueueEntry
+    ? activeQueue.findIndex((entry) => String(entry.id) === String(liveQueueEntry.id))
     : -1;
+  const patientsAhead = liveQueueIndex >= 0 ? liveQueueIndex : null;
+  const liveStatus = String(liveQueueEntry?.status || activeVisit?.status || 'booked').toLowerCase();
 
-  const recentVisits = patientVisits.slice(0, 3);
+  const queuePosition = !liveQueueEntry
+    ? 'Sync pending'
+    : liveStatus === 'waiting'
+    ? `#${liveQueueIndex + 1}`
+    : liveStatus === 'called'
+    ? 'Called'
+    : liveStatus === 'in_progress'
+    ? 'In room'
+    : 'Updated';
+
+  const queueEstimate = !liveQueueEntry
+    ? 'Check again shortly'
+    : liveStatus === 'waiting'
+    ? `About ${Math.max(5, (patientsAhead || 0) * 12 + 10)} min`
+    : liveStatus === 'called'
+    ? 'Proceed now'
+    : liveStatus === 'in_progress'
+    ? 'Visit underway'
+    : 'Status updated';
+
+  const visitStatusLabel = (val: string) => {
+    const s = String(val || 'booked').toLowerCase();
+    const map: Record<string, string> = {
+      booked: 'Booked',
+      waiting: 'Waiting for the centre',
+      called: 'Please proceed to reception',
+      in_progress: 'In consultation',
+      completed: 'Completed',
+      cancelled: 'Cancelled',
+      withdrawn: 'Withdrawn from queue',
+    };
+    return map[s] || 'Booked';
+  };
+
+  const handleOpenPrescription = (visitId: string) => {
+    const rx = DemoDB.getPrescription(visitId);
+    setPrescription(rx);
+    setSelectedVisitId(visitId);
+  };
 
   return (
     <PatientShell subtitle="Patient portal" backHref="/" backLabel="Back to home">
-      <div className="max-w-2xl mx-auto py-6 space-y-5">
-        {/* Welcome header */}
-        <div className="flex items-start justify-between gap-3">
+      <div className="max-w-4xl mx-auto py-6 space-y-6">
+        {/* Header matching original provider-header */}
+        <header className="provider-header flex items-end justify-between gap-4 border-b-2 border-[#0a3b69] pb-3 mb-5">
           <div>
-            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide font-semibold mb-1">Patient portal</p>
-            <h1 className="text-2xl font-extrabold">{displayName}</h1>
-            <p className="text-sm text-[var(--text-muted)] mt-1">{email}</p>
-          </div>
-          <button
-            onClick={() => router.push('/dashboard/patient/history')}
-            title="Medical Passport"
-            className="flex flex-col items-center gap-1 px-3 py-2 rounded-[var(--radius)] bg-[var(--mint)] border border-[var(--teal)]/20 text-[var(--teal)] hover:bg-[var(--teal)]/10 transition-colors"
-          >
-            <QrCode size={20} />
-            <span className="text-[0.6rem] font-bold">Passport</span>
-          </button>
-        </div>
-
-        {/* Active queue status */}
-        {activeQueueItem && (
-          <div className="bg-[var(--mint)] border border-[var(--teal)]/25 rounded-[var(--radius-card)] p-4">
-            <div className="eyebrow mb-2">
+            <div className="eyebrow eyebrow-dark mb-1">
               <span className="eyebrow-dot" />
-              Active appointment
+              Patient dashboard
             </div>
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div>
-                <p className="font-semibold text-[var(--text)]">{activeQueueItem.hospital}</p>
-                <p className="text-sm text-[var(--text-muted)]">{activeQueueItem.symptoms}</p>
-              </div>
-              <div className="text-right">
-                <p className={cn('text-xs font-bold uppercase tracking-wide', queueStatus(activeQueueItem) === 'in_progress' ? 'text-[var(--green)]' : queueStatus(activeQueueItem) === 'called' ? 'text-[var(--yellow)]' : 'text-[var(--teal)]')}>
-                  {activeQueueItem.status.replace('_', ' ')}
-                </p>
-                {queuePosition >= 0 && queueStatus(activeQueueItem) === 'waiting' && (
-                  <p className="text-xs text-[var(--text-muted)]">~{estimatedWait(queuePosition)}</p>
-                )}
-              </div>
-            </div>
-            <p className="text-xs text-[var(--text-muted)] mt-2">Ticket: {activeQueueItem.id}</p>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0a3b69]">
+              Good to see you, {patientName}.
+            </h1>
+            <p className="text-sm text-[var(--text-muted)] mt-1">
+              Keep your care plans, previous visits, and prescription records in one place.
+            </p>
           </div>
-        )}
+          <div className="text-right text-xs text-[var(--text-muted)] hidden sm:block">
+            {patientVisits.length} saved records
+            <br />
+            <strong className="text-[var(--text)]">Private demo history</strong>
+          </div>
+        </header>
 
-        {/* Quick actions */}
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { label: 'Book appointment', icon: CalendarPlus, href: '/dashboard/patient/apply/1', primary: true },
-            { label: 'My visits', icon: ClipboardList, href: '/dashboard/patient/visits', primary: false },
-            { label: 'Medical history', icon: QrCode, href: '/dashboard/patient/history', primary: false },
-            { label: 'Donations', icon: Heart, href: '/dashboard/patient/donations', primary: false },
-          ].map((action) => (
-            <Link
-              key={action.href}
-              href={action.href}
-              className={cn(
-                'flex items-center gap-3 p-4 rounded-[var(--radius-card)] no-underline transition-all',
-                'border font-medium text-sm',
-                action.primary
-                  ? 'bg-[var(--teal)] text-white border-transparent hover:bg-[var(--teal-dark)]'
-                  : 'bg-[var(--surface)] border-[var(--line)] text-[var(--text)] hover:bg-[var(--surface-raised)] hover:border-[var(--teal)]/20'
-              )}
-            >
-              <action.icon size={18} strokeWidth={1.8} className={action.primary ? 'text-white/90' : 'text-[var(--teal)]'} />
-              {action.label}
-            </Link>
-          ))}
+        {/* Next step banner matching patient-next-action */}
+        <section
+          className="patient-next-action flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl border border-[#b8d6f1] bg-[#eaf4fd]"
+          aria-label="Next patient action"
+        >
+          <div>
+            <span className="eyebrow eyebrow-dark mb-1">
+              <span className="eyebrow-dot" />
+              Next step
+            </span>
+            <h2 className="text-xl font-bold text-[#0a3b69]">Need care today?</h2>
+            <p className="text-sm text-[var(--text-muted)] mt-0.5">
+              Search nearby centres, compare queues, and reserve a visit when it suits you.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/patient/apply/1"
+            className="btn-primary flex items-center gap-2 h-10 px-5 rounded-xl text-sm font-bold text-white shadow-sm shrink-0 no-underline transition-all hover:brightness-105"
+            style={{ background: 'var(--teal)' }}
+          >
+            Book an appointment <ArrowRight size={16} />
+          </Link>
+        </section>
+
+        {/* 4 Summary Stats matching provider-stats patient-stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3" aria-label="Patient summary">
+          <div className="p-4 rounded-xl border border-[#cbd5e1] bg-[#f8fafc]">
+            <span className="text-xs text-[var(--text-muted)] block mb-1">Previous visits</span>
+            <strong className="text-xl font-extrabold text-[#0a3b69] block">{patientVisits.length}</strong>
+            <small className="text-[0.7rem] text-[var(--text-dim)]">Stored on this device</small>
+          </div>
+          <div className="p-4 rounded-xl border border-[#cbd5e1] bg-[#f8fafc]">
+            <span className="text-xs text-[var(--text-muted)] block mb-1">Last visit</span>
+            <strong className="text-xl font-extrabold text-[#0a3b69] block truncate">
+              {latestVisit ? latestVisit.date.replace(' 2026', '') : '—'}
+            </strong>
+            <small className="text-[0.7rem] text-[var(--text-dim)] truncate block">
+              {latestVisit ? latestVisit.hospital : 'No history yet'}
+            </small>
+          </div>
+          <div className="p-4 rounded-xl border border-[#cbd5e1] bg-[#f8fafc]">
+            <span className="text-xs text-[var(--text-muted)] block mb-1">Care preference</span>
+            <strong className="text-xl font-extrabold text-[#0a3b69] block">
+              {patientData.doctorPref || 'General'}
+            </strong>
+            <small className="text-[0.7rem] text-[var(--text-dim)]">Can change during booking</small>
+          </div>
+          <div className="p-4 rounded-xl border border-[#cbd5e1] bg-[#f8fafc]">
+            <span className="text-xs text-[var(--text-muted)] block mb-1">Location</span>
+            <strong className="text-xl font-extrabold text-[#0a3b69] block">
+              {patientData.city || 'Hyderabad'}
+            </strong>
+            <small className="text-[0.7rem] text-[var(--text-dim)]">Used only for care search</small>
+          </div>
         </div>
 
-        {/* Recent visits */}
-        {recentVisits.length > 0 && (
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-bold">Recent visits</h2>
-              <Link href="/dashboard/patient/visits" className="text-xs text-[var(--teal)] hover:underline no-underline">
-                See all →
-              </Link>
-            </div>
-            <div className="flex flex-col gap-2">
-              {recentVisits.map((visit) => (
-                <div
-                  key={visit.id}
-                  className="flex items-start justify-between gap-3 p-4 bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius-card)]"
-                >
-                  <div className="flex items-start gap-3 min-w-0">
-                    <span className="w-8 h-8 bg-[var(--surface-sunken)] rounded-lg flex items-center justify-center shrink-0">
-                      <Building2 size={14} className="text-[var(--text-muted)]" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold truncate">{visit.hospital}</p>
-                      <p className="text-xs text-[var(--text-muted)] truncate">{visit.reason}</p>
-                      <p className="text-xs text-[var(--text-dim)] mt-0.5">{visit.date}</p>
-                    </div>
+        {/* Next appointment card matching patient-appointment-card */}
+        {activeVisit ? (
+          <section
+            className="p-5 rounded-2xl border border-[#8bbbe2] bg-white shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-5"
+            aria-label="Next appointment and live queue status"
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-[#e5f1fc] text-[#0f5ca8] flex items-center justify-center shrink-0">
+                <CalendarClock size={24} />
+              </div>
+              <div>
+                <span className="eyebrow eyebrow-dark mb-1">
+                  <span className="eyebrow-dot" />
+                  Next appointment
+                </span>
+                <h2 className="text-lg font-bold text-[#0a3b69]">{activeVisit.hospital || 'SmartCare centre'}</h2>
+                <p className="text-sm text-[var(--text-muted)] mt-0.5">
+                  {activeVisit.department || 'General medicine'} · {activeVisit.doctorName || 'Next available clinician'}
+                </p>
+                <p className="text-xs text-[var(--text-dim)] mt-1">
+                  {activeVisit.consultationType || 'In-person consultation'} | {activeVisit.appointmentDate || activeVisit.date || 'Today'} at {activeVisit.appointmentSlot || 'Next available'} · Ref:{' '}
+                  <strong className="text-[#0a3b69]">{activeVisit.id || 'SC-DEMO'}</strong>
+                </p>
+
+                {/* Telemetry */}
+                <div className="grid grid-cols-3 gap-2 mt-3" aria-live="polite">
+                  <div className="p-2 border border-[#c5ddf1] bg-[#f4f9fd] rounded-lg">
+                    <small className="text-[0.6rem] uppercase tracking-wider font-extrabold text-[var(--text-muted)] block">Live position</small>
+                    <strong className="text-sm font-bold text-[#0a3b69]">{queuePosition}</strong>
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {getStatusIcon(visit.status)}
-                    <span className="text-xs text-[var(--text-muted)]">{visit.status}</span>
+                  <div className="p-2 border border-[#c5ddf1] bg-[#f4f9fd] rounded-lg">
+                    <small className="text-[0.6rem] uppercase tracking-wider font-extrabold text-[var(--text-muted)] block">Patients ahead</small>
+                    <strong className="text-sm font-bold text-[#0a3b69]">{patientsAhead === null ? '—' : patientsAhead}</strong>
+                  </div>
+                  <div className="p-2 border border-[#c5ddf1] bg-[#f4f9fd] rounded-lg">
+                    <small className="text-[0.6rem] uppercase tracking-wider font-extrabold text-[var(--text-muted)] block">Estimated window</small>
+                    <strong className="text-sm font-bold text-[#0a3b69]">{queueEstimate}</strong>
                   </div>
                 </div>
-              ))}
+              </div>
             </div>
-          </div>
+
+            <div className="flex flex-col items-start md:items-end gap-2 shrink-0 w-full md:w-auto pt-3 md:pt-0 border-t md:border-t-0 border-[var(--line)]">
+              <strong className="text-xs uppercase tracking-wider text-[#0a3b69] font-extrabold">
+                {visitStatusLabel(liveStatus)}
+              </strong>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => handleOpenPrescription(activeVisit.id)}
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-[var(--line)] bg-white text-xs font-semibold text-[var(--text)] hover:bg-[var(--mint)] transition-colors"
+                >
+                  <FileText size={14} /> Clinical slip
+                </button>
+                <Link
+                  href="/dashboard/patient/apply/1"
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-[var(--line)] bg-white text-xs font-semibold text-[var(--text)] hover:bg-[var(--mint)] transition-colors no-underline"
+                >
+                  <CalendarCog size={14} /> Manage
+                </Link>
+              </div>
+            </div>
+          </section>
+        ) : (
+          <section
+            className="p-5 rounded-2xl border border-[var(--line)] bg-[#e5f1fc] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+            aria-label="Next appointment"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-white text-[#0f5ca8] flex items-center justify-center shrink-0">
+                <CalendarPlus size={24} />
+              </div>
+              <div>
+                <span className="eyebrow eyebrow-dark mb-1">
+                  <span className="eyebrow-dot" />
+                  No upcoming appointment
+                </span>
+                <h2 className="text-base font-bold text-[#0a3b69]">Keep your care plan moving.</h2>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5">Choose a nearby centre and reserve a visit when you are ready.</p>
+              </div>
+            </div>
+            <Link
+              href="/dashboard/patient/apply/1"
+              className="flex items-center gap-1.5 text-xs font-bold text-[#0f5ca8] hover:underline no-underline shrink-0"
+            >
+              Book a visit <ArrowRight size={14} />
+            </Link>
+          </section>
         )}
 
-        {/* Passport ID card */}
-        <div className="flex items-center justify-between p-4 bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius-card)]">
-          <div>
-            <p className="text-xs text-[var(--text-muted)] font-medium mb-0.5">Medical passport ID</p>
-            <p className="font-mono text-sm font-bold text-[var(--teal)]">{passportId}</p>
+        {/* Previous visits & clinical records */}
+        <section className="bg-white border border-[var(--line)] rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center justify-between pb-4 border-b border-[var(--line)] mb-4">
+            <div>
+              <h2 className="text-base font-bold text-[#0a3b69]">Previous visits &amp; clinical records</h2>
+              <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                Review clinician-authored demo notes stored for each visit on this device.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/patient/apply/1"
+              className="text-xs font-bold text-[#0f5ca8] hover:underline no-underline flex items-center gap-1"
+            >
+              Book again <ArrowUpRight size={13} />
+            </Link>
           </div>
-          <Link href="/dashboard/patient/history" className="no-underline">
-            <ChevronRight size={18} className="text-[var(--text-muted)]" />
+
+          {patientVisits.length === 0 ? (
+            <div className="text-center py-10 text-[var(--text-muted)] flex flex-col items-center gap-2">
+              <ClipboardX size={32} />
+              <p className="text-sm">No visits saved yet.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-[var(--line)]">
+              {patientVisits.map((visit) => {
+                const hasRx = Boolean(DemoDB.getPrescription(visit.id));
+                return (
+                  <div key={visit.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-[#e5f1fc] text-[#0f5ca8] flex items-center justify-center shrink-0 mt-0.5">
+                        <ClipboardCheck size={18} />
+                      </div>
+                      <div>
+                        <strong className="text-sm text-[#0a3b69] font-bold block">{visit.hospital || 'SmartCare centre'}</strong>
+                        <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                          {visit.reason || 'General consultation'} · Ref: {visit.reference || visit.id || 'SC-DEMO'}
+                        </p>
+                        <small className="text-[0.7rem] text-[var(--text-dim)]">
+                          {visit.date || 'Recent date'} · Status:{' '}
+                          <span className="text-[#0f5ca8] font-bold uppercase tracking-wider">{visitStatusLabel(visit.status)}</span>
+                        </small>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenPrescription(visit.id)}
+                        className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-[var(--line)] bg-[#f8fafc] text-xs font-semibold text-[var(--text)] hover:bg-[var(--mint)] transition-colors"
+                      >
+                        {hasRx ? <FileText size={13} className="text-[#0f5ca8]" /> : <FileQuestion size={13} className="text-[var(--text-muted)]" />}
+                        <span>{hasRx ? 'View demo record' : 'No record yet'}</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* Medical Passport quick banner */}
+        <section className="p-5 rounded-2xl border border-[var(--line)] bg-[#f8fafc] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-xl bg-[#e5f1fc] text-[#0f5ca8] flex items-center justify-center shrink-0">
+              <QrCode size={22} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-[#0a3b69]">Patient Medical Passport</h3>
+                <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full bg-[#e5f1fc] text-[#0f5ca8] border border-[#0f5ca8]/20">
+                  <ShieldCheck size={11} className="inline mr-0.5" /> Verified
+                </span>
+              </div>
+              <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                Portable clinical history, allergies, and emergency protocols accessible anywhere.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/dashboard/patient/history"
+            className="flex items-center gap-1.5 h-9 px-4 rounded-xl border border-[#0f5ca8]/30 bg-white text-xs font-bold text-[#0f5ca8] hover:bg-[#e5f1fc] transition-colors no-underline shrink-0"
+          >
+            Open Passport <ArrowRight size={14} />
           </Link>
-        </div>
+        </section>
       </div>
+
+      {/* ── Prescription / Clinical Slip Modal ── */}
+      {selectedVisitId && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setSelectedVisitId(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div className="flex items-center justify-between p-5 border-b border-[var(--line)]">
+              <div className="flex items-center gap-2.5">
+                <span className="w-8 h-8 rounded-lg bg-[#0a3b69] text-white flex items-center justify-center">
+                  <HeartPulse size={18} />
+                </span>
+                <div>
+                  <h3 className="text-base font-bold text-[#0a3b69]">Clinical note &amp; demo e-prescription</h3>
+                  <p className="text-xs text-[var(--text-muted)]">Saved only in this browser for the SmartCare prototype.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedVisitId(null)}
+                className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] transition-colors"
+                aria-label="Close prescription"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal body */}
+            <div className="p-6 space-y-5">
+              {prescription ? (
+                <div className="prescription-paper border border-[var(--line)] rounded-xl p-5 bg-white">
+                  <div className="rx-header flex justify-between items-start border-b-2 border-[#0f5ca8] pb-3 mb-4">
+                    <div className="rx-brand">
+                      <h2 className="text-lg font-bold text-[#0a3b69]">SmartCare Health Network</h2>
+                      <p className="text-xs text-[var(--text-muted)]">Verified digital outpatient summary</p>
+                    </div>
+                    <div className="rx-meta text-right text-xs text-[var(--text-muted)]">
+                      <div>Issued: <strong className="text-[var(--text)]">{prescription.issuedAt || 'Recent'}</strong></div>
+                      <div>Clinician: <strong className="text-[#0a3b69]">{prescription.providerName || 'Care provider'}</strong></div>
+                    </div>
+                  </div>
+
+                  <div className="rx-patient-info grid grid-cols-3 gap-3 p-3 bg-[#f4f8fc] rounded-lg mb-4 text-xs">
+                    <div>
+                      <span className="text-[var(--text-muted)] block">Patient</span>
+                      <strong className="text-[var(--text)]">{patientName}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[var(--text-muted)] block">Visit ID</span>
+                      <strong className="text-[var(--text)]">{selectedVisitId}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[var(--text-muted)] block">Centre</span>
+                      <strong className="text-[var(--text)]">{activeVisit?.hospital || 'SmartCare Community Hospital'}</strong>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#0f5ca8] mb-1.5 border-b border-[#e0ecf7] pb-1">
+                      Clinical Assessment
+                    </h4>
+                    <p className="text-sm text-[var(--text)] leading-relaxed bg-[#fbfdff] p-3 rounded-lg border border-[#e0ecf7]">
+                      {prescription.assessment || 'General consultation completed. Vitals stable.'}
+                    </p>
+                  </div>
+
+                  {prescription.medicines && prescription.medicines.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#0f5ca8] mb-1.5 border-b border-[#e0ecf7] pb-1">
+                        Prescribed Medication
+                      </h4>
+                      <table className="w-full text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-[#f0f6fc] text-left text-[#0a3b69]">
+                            <th className="p-2 border-b border-[var(--line)] font-bold">Medicine</th>
+                            <th className="p-2 border-b border-[var(--line)] font-bold">Strength</th>
+                            <th className="p-2 border-b border-[var(--line)] font-bold">Dosage</th>
+                            <th className="p-2 border-b border-[var(--line)] font-bold">Duration</th>
+                            <th className="p-2 border-b border-[var(--line)] font-bold">Instructions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {prescription.medicines.map((m, idx) => (
+                            <tr key={idx} className="border-b border-[var(--line)]">
+                              <td className="p-2 font-bold text-[#0a3b69]">{m.name}</td>
+                              <td className="p-2 text-[var(--text-muted)]">{m.strength || '—'}</td>
+                              <td className="p-2 text-[var(--text)]">{m.dosage || '—'}</td>
+                              <td className="p-2 text-[var(--text-muted)]">{m.duration || '—'}</td>
+                              <td className="p-2 text-[var(--text)]">{m.instructions || '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {prescription.labSummary && (
+                    <div>
+                      <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#0f5ca8] mb-1.5 border-b border-[#e0ecf7] pb-1">
+                        Lab &amp; Follow-Up Notes
+                      </h4>
+                      <p className="text-xs text-[var(--text-muted)] bg-[#fbfdff] p-3 rounded-lg border border-[#e0ecf7]">
+                        {prescription.labSummary}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-[var(--text-muted)]">
+                  <FileQuestion size={36} className="mx-auto mb-2 text-[var(--text-dim)]" />
+                  <p className="text-sm font-semibold">No prescription recorded for this visit yet.</p>
+                  <p className="text-xs text-[var(--text-dim)] mt-1">Prescription notes are added by the consulting doctor during or after your appointment.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal actions */}
+            <div className="flex items-center justify-between p-4 border-t border-[var(--line)] bg-[var(--surface-sunken)]">
+              <button
+                type="button"
+                onClick={() => setSelectedVisitId(null)}
+                className="px-4 py-2 rounded-lg border border-[var(--line)] text-xs font-semibold hover:bg-white transition-colors"
+              >
+                Close
+              </button>
+              {prescription && (
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="btn-primary flex items-center gap-1.5 h-8 px-4 rounded-lg text-xs font-bold text-white shadow-sm"
+                  style={{ background: 'var(--teal)' }}
+                >
+                  <Printer size={14} /> Print slip
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </PatientShell>
   );
 }

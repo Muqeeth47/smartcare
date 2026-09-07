@@ -367,6 +367,10 @@ export const DemoDB = {
     return newItem;
   },
 
+  addPatientPost: (item: Omit<PatientDonationPost, 'id' | 'date' | 'status'>): PatientDonationPost => {
+    return DemoDB.addPatientDonation(item);
+  },
+
   // Medical History
   getMedicalHistory: (ownerEmail: string): PatientMedicalHistory => {
     const normalized = ownerEmail.trim().toLowerCase();

@@ -1,6 +1,8 @@
 'use client';
 
+import { useMemo } from 'react';
 import { create } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type {
   UserRole,
@@ -353,27 +355,37 @@ export const useAppStore = create<AppState & AppActions>()(
 
 // ─── Convenience hooks ────────────────────────────────────────────────────────
 
-export const useSession = () => useAppStore((s) => ({
-  isLogged: s.isLogged,
-  email: s.loggedEmail,
-  role: s.loggedRole as UserRole | '',
-  hospital: s.loggedHospital,
-  country: s.loggedCountry,
-  state: s.loggedState,
-  city: s.loggedCity,
-}));
+export const useSession = () =>
+  useAppStore(
+    useShallow((s) => ({
+      isLogged: s.isLogged,
+      email: s.loggedEmail,
+      role: s.loggedRole as UserRole | '',
+      hospital: s.loggedHospital,
+      country: s.loggedCountry,
+      state: s.loggedState,
+      city: s.loggedCity,
+    }))
+  );
 
-export const useQueue = () => useAppStore((s) => ({
-  queue: s.queue,
-  metrics: getQueueMetrics(s.queue),
-  sorted: sortQueue(s.queue),
-  nextPatient: sortQueue(s.queue).find((item) => ['in_progress', 'called', 'waiting'].includes(queueStatus(item))) || null,
-}));
+export const useQueue = () => {
+  const queue = useAppStore((s) => s.queue);
+  const metrics = useMemo(() => getQueueMetrics(queue), [queue]);
+  const sorted = useMemo(() => sortQueue(queue), [queue]);
+  const nextPatient = useMemo(
+    () => sorted.find((item) => ['in_progress', 'called', 'waiting'].includes(queueStatus(item))) || null,
+    [sorted]
+  );
+  return { queue, metrics, sorted, nextPatient };
+};
 
-export const usePatient = () => useAppStore((s) => ({
-  step: s.step,
-  patientData: s.patientData,
-  patientVisits: s.patientVisits,
-  userCoords: s.userCoords,
-  tempHospitals: s.tempHospitals,
-}));
+export const usePatient = () =>
+  useAppStore(
+    useShallow((s) => ({
+      step: s.step,
+      patientData: s.patientData,
+      patientVisits: s.patientVisits,
+      userCoords: s.userCoords,
+      tempHospitals: s.tempHospitals,
+    }))
+  );

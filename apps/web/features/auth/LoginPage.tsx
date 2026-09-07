@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowRight, Eye, EyeOff, LogIn, UserPlus, UserRound, Hospital, Building2, ListChecks, ShieldCheck, Clock3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/lib/store/app-store';
+import { useShallow } from 'zustand/react/shallow';
 import { DemoDB } from '@/lib/db/demo-db';
 import type { UserRole } from '@smartcare/types';
 
@@ -26,12 +27,12 @@ const ROLE_LABELS: Record<UserRole, string> = {
 export function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, auth, setAuthTarget, showToast } = useAppStore((s) => ({
+  const { login, auth, setAuthTarget, showToast } = useAppStore(useShallow((s) => ({
     login: s.login,
     auth: s.auth,
     setAuthTarget: s.setAuthTarget,
     showToast: s.showToast,
-  }));
+  })));
 
   const [role, setRole] = useState<UserRole>((searchParams.get('role') as UserRole) || auth.targetRole || 'patient');
   const [mode, setMode] = useState<AuthMode>((searchParams.get('mode') as AuthMode) || 'signin');

@@ -18,10 +18,12 @@ const queryClient = new QueryClient({
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
-  const { setQueue } = useAppStore();
 
   useEffect(() => {
     setMounted(true);
+
+    // Use the store action directly to avoid it being a dependency that changes
+    const setQueue = useAppStore.getState().setQueue;
 
     // Initialize queue from demo DB and listen for updates
     DemoDB.fetchQueue().then(setQueue);
@@ -30,7 +32,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     return () => {
       unsub();
     };
-  }, [setQueue]);
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

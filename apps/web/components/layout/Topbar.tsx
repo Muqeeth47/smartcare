@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { HeartPulse, Menu, Globe, ChevronDown, Sun, Moon } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { HeartPulse, Globe, ChevronDown, Sun, Moon } from 'lucide-react';
 import { useAppStore } from '@/lib/store/app-store';
+import { useShallow } from 'zustand/react/shallow';
 
 const LANGUAGES = [
   { code: 'en', label: 'English (EN)' },
@@ -20,15 +19,25 @@ const LANGUAGES = [
 interface TopbarProps {
   variant?: 'landing' | 'workspace' | 'patient';
   onMenuClick?: () => void;
+  isSidebarCollapsed?: boolean;
   backHref?: string;
   backLabel?: string;
   title?: string;
   subtitle?: string;
 }
 
-export function Topbar({ variant = 'landing', onMenuClick, backHref, backLabel, title, subtitle }: TopbarProps) {
-  const router = useRouter();
-  const { theme, setTheme, showToast } = useAppStore((s) => ({ theme: s.theme, setTheme: s.setTheme, showToast: s.showToast }));
+export function Topbar({
+  variant = 'landing',
+  onMenuClick,
+  isSidebarCollapsed = false,
+  backHref,
+  backLabel,
+  title,
+  subtitle,
+}: TopbarProps) {
+  const { theme, setTheme, showToast } = useAppStore(
+    useShallow((s) => ({ theme: s.theme, setTheme: s.setTheme, showToast: s.showToast }))
+  );
   const [lang, setLang] = useState('en');
 
   useEffect(() => {
@@ -64,53 +73,50 @@ export function Topbar({ variant = 'landing', onMenuClick, backHref, backLabel, 
   const ThemeIcon = theme === 'dark' ? Moon : Sun;
   const themeLabel = theme === 'dark' ? 'Dark' : 'Light';
 
+  // ── Topbar controls shared across variants ─────────────────────────────────
   const Controls = (
-    <div className="flex items-center gap-2">
-      {/* Workspace menu trigger (mobile) */}
-      {variant === 'workspace' && onMenuClick && (
+    <div className="topbar-control-group flex items-center gap-2">
+      {/* Workspace & Patient navigation toggle (collapses on desktop, opens drawer on mobile) */}
+      {(variant === 'workspace' || variant === 'patient') && onMenuClick && (
         <button
+          type="button"
+          id="sidebar-toggle-btn"
           onClick={onMenuClick}
-          aria-label="Open navigation"
-          className={cn(
-            'flex items-center justify-center w-9 h-9 rounded-[var(--radius)] lg:hidden',
-            'bg-[var(--surface-raised)] border border-[var(--line)]',
-            'hover:bg-[var(--surface-tint)] transition-colors'
-          )}
+          aria-label={isSidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
+          aria-expanded={!isSidebarCollapsed}
+          title={isSidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
+          className="topbar-control-btn mobile-menu-btn flex items-center justify-center w-9 h-9 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-[var(--teal)] hover:bg-[var(--mint)] transition-colors cursor-pointer"
         >
-          <Menu size={18} />
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
         </button>
       )}
 
       {/* Language selector */}
-      <div className="relative flex items-center bg-[var(--surface-raised)] border border-[var(--line)] rounded-[var(--radius)] h-9 px-2 gap-1.5 hover:bg-[var(--surface-tint)] transition-colors">
-        <Globe size={14} className="text-[var(--text-muted)] shrink-0 pointer-events-none" />
+      <div className="lang-dropdown-wrapper relative flex items-center gap-1 h-9 px-2.5 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--mint)] transition-colors">
+        <Globe size={14} className="lang-globe-icon text-[var(--text-muted)] shrink-0 pointer-events-none" />
         <select
+          id="global-lang-select"
           value={lang}
           onChange={handleLangChange}
           aria-label="Select language"
-          className={cn(
-            'appearance-none bg-transparent text-[var(--text)] text-xs font-semibold',
-            'border-none outline-none cursor-pointer max-w-[3.5rem] truncate',
-            'pr-3'
-          )}
+          className="lang-select-native appearance-none bg-transparent text-[var(--text)] text-xs font-semibold border-none outline-none cursor-pointer pr-4 max-w-[5rem]"
         >
           {LANGUAGES.map((l) => (
             <option key={l.code} value={l.code}>{l.label}</option>
           ))}
         </select>
-        <ChevronDown size={11} className="text-[var(--text-muted)] shrink-0 pointer-events-none absolute right-1.5" />
+        <ChevronDown size={11} className="lang-dropdown-icon text-[var(--text-muted)] shrink-0 pointer-events-none absolute right-1.5" />
       </div>
 
       {/* Theme toggle */}
       <button
+        id="theme-toggle-btn"
         onClick={handleThemeToggle}
-        title={`Theme: ${themeLabel} (click to toggle)`}
         aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-        className={cn(
-          'flex items-center gap-1.5 h-9 px-2.5 rounded-[var(--radius)] text-xs font-semibold',
-          'bg-[var(--surface-raised)] border border-[var(--line)]',
-          'hover:bg-[var(--surface-tint)] transition-colors'
-        )}
+        title={`Theme: ${themeLabel} (Click to toggle)`}
+        className="topbar-control-btn flex items-center gap-1.5 h-9 px-2.5 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-xs font-bold hover:bg-[var(--mint)] transition-colors"
       >
         <ThemeIcon size={14} />
         <span className="hidden sm:inline">{themeLabel}</span>
@@ -118,28 +124,25 @@ export function Topbar({ variant = 'landing', onMenuClick, backHref, backLabel, 
     </div>
   );
 
-  // ── Workspace topbar (authenticated views) ────────────────────────────────
-  if (variant === 'workspace') {
+  // ── Workspace / Patient topbar ─────────────────────────────────────────────
+  if (variant === 'workspace' || variant === 'patient') {
     return (
       <header
         data-topbar
-        className={cn(
-          'flex items-center justify-between gap-3 h-14',
-          'px-safe-left pr-safe-right',
-          'bg-[var(--surface)] border-b border-[var(--line)]',
-          'sticky top-0 z-[100]'
-        )}
-        style={{ paddingLeft: 'max(1.15rem, calc(0.85rem + env(safe-area-inset-left, 0px)))', paddingRight: 'max(1.15rem, calc(0.85rem + env(safe-area-inset-right, 0px)))' }}
+        className="flex items-center justify-between gap-3 h-14 bg-[var(--surface)] border-b border-[var(--line)] sticky top-0 z-[100]"
+        style={{
+          paddingLeft: 'max(1.15rem, calc(0.85rem + env(safe-area-inset-left, 0px)))',
+          paddingRight: 'max(1.15rem, calc(0.85rem + env(safe-area-inset-right, 0px)))',
+        }}
       >
-        {/* Brand + title */}
         <div className="flex items-center gap-3 min-w-0">
-          <Link href="/" className="flex items-center gap-2 no-underline shrink-0">
-            <span className="w-8 h-8 bg-[var(--mint)] rounded-lg flex items-center justify-center text-[var(--teal)]">
-              <HeartPulse size={17} />
+          <Link href="/" className="brand-lockup flex items-center gap-2.5 no-underline shrink-0">
+            <span className="brand-mark w-10 h-10 rounded-[0.9rem] flex items-center justify-center text-white" style={{ background: 'var(--teal-dark)', boxShadow: '0 8px 18px rgba(18,61,53,.20)' }}>
+              <HeartPulse size={19} />
             </span>
             <span className="hidden sm:flex flex-col">
-              <span className="text-[0.9rem] font-800 text-[var(--text)] leading-none">SmartCare</span>
-              {subtitle && <span className="text-[0.65rem] text-[var(--text-muted)] leading-none mt-0.5">{subtitle}</span>}
+              <span className="brand-name text-[0.9rem] font-extrabold text-[var(--text)] leading-none">SmartCare</span>
+              {subtitle && <span className="brand-caption text-[0.6rem] text-[var(--text-muted)] leading-none mt-0.5">{subtitle}</span>}
             </span>
           </Link>
           {title && <span className="text-[0.8rem] text-[var(--text-muted)] truncate hidden md:block">/ {title}</span>}
@@ -147,7 +150,7 @@ export function Topbar({ variant = 'landing', onMenuClick, backHref, backLabel, 
 
         <div className="flex items-center gap-2">
           {backHref && (
-            <Link href={backHref} className={cn('text-xs text-[var(--text-muted)] hover:text-[var(--teal)] transition-colors hidden sm:flex items-center gap-1')}>
+            <Link href={backHref} className="text-xs text-[var(--text-muted)] hover:text-[var(--teal)] transition-colors hidden sm:flex items-center gap-1">
               {backLabel || 'Back to home'}
             </Link>
           )}
@@ -157,88 +160,56 @@ export function Topbar({ variant = 'landing', onMenuClick, backHref, backLabel, 
     );
   }
 
-  // ── Patient portal topbar ─────────────────────────────────────────────────
-  if (variant === 'patient') {
-    return (
-      <header
-        data-topbar
-        className={cn(
-          'flex items-center justify-between gap-3 h-14',
-          'sticky top-0 z-[100]',
-          'bg-[var(--surface)] border-b border-[var(--line)]'
-        )}
-        style={{ paddingLeft: 'max(1.15rem, calc(0.85rem + env(safe-area-inset-left, 0px)))', paddingRight: 'max(1.15rem, calc(0.85rem + env(safe-area-inset-right, 0px)))' }}
-      >
-        <Link href="/" className="flex items-center gap-2 no-underline">
-          <span className="w-8 h-8 bg-[var(--mint)] rounded-lg flex items-center justify-center text-[var(--teal)]">
-            <HeartPulse size={17} />
-          </span>
-          <span className="flex flex-col">
-            <span className="text-[0.9rem] font-bold text-[var(--text)] leading-none">SmartCare</span>
-            {subtitle && <span className="text-[0.65rem] text-[var(--text-muted)] leading-none mt-0.5">{subtitle}</span>}
-          </span>
-        </Link>
-        <div className="flex items-center gap-2">
-          {backHref && (
-            <Link href={backHref} className="text-xs text-[var(--text-muted)] hover:text-[var(--teal)] transition-colors hidden sm:block">
-              {backLabel || 'Back to home'}
-            </Link>
-          )}
-          {Controls}
-        </div>
-      </header>
-    );
-  }
-
-  // ── Landing topbar ────────────────────────────────────────────────────────
+  // ── Landing topbar — exact match to old shell-nav ──────────────────────────
+  // Old: white bg, brand-lockup left, nav-links centre, nav-actions right
   return (
     <header
-      data-topbar
-      className={cn(
-        'flex items-center justify-between h-16',
-        'sticky top-0 z-[100]',
-        'bg-[var(--surface)]/95 backdrop-blur-md border-b border-[var(--line)]'
-      )}
-      style={{ paddingLeft: 'max(1.15rem, calc(0.85rem + env(safe-area-inset-left, 0px)))', paddingRight: 'max(1.15rem, calc(0.85rem + env(safe-area-inset-right, 0px)))' }}
+      data-section="site-header"
+      className="shell-nav sticky top-0 z-[100] bg-[var(--surface)] border-b border-[var(--line)]"
     >
-      <Link href="/" aria-label="SmartCare home" className="flex items-center gap-2 no-underline">
-        <span className="w-9 h-9 bg-[var(--mint)] rounded-xl flex items-center justify-center text-[var(--teal)]">
-          <HeartPulse size={19} />
-        </span>
-        <span className="flex flex-col">
-          <span className="text-[0.95rem] font-extrabold text-[var(--text)] leading-none">SmartCare</span>
-          <span className="text-[0.6rem] text-[var(--text-muted)] leading-none mt-0.5">Care access, simplified</span>
-        </span>
-      </Link>
+      <div className="max-w-[1240px] mx-auto px-5 sm:px-6 h-[70px] flex items-center justify-between gap-4">
 
-      {/* Desktop nav links */}
-      <nav aria-label="Primary navigation" className="hidden md:flex items-center gap-6">
-        <a href="#how-it-works" className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">How it works</a>
-        <a href="#for-providers" className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">For hospitals</a>
-        <Link href="/donate" className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Donation</Link>
-        <a href="#trust" className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Why SmartCare</a>
-      </nav>
+        {/* Brand lockup */}
+        <Link href="/" aria-label="SmartCare home" className="brand-lockup flex items-center gap-3 no-underline shrink-0">
+          <span
+            className="brand-mark w-[2.7rem] h-[2.7rem] rounded-[0.9rem] flex items-center justify-center text-white shrink-0"
+            style={{ background: 'var(--teal-dark)', boxShadow: '0 8px 18px rgba(18,61,53,.20)' }}
+          >
+            <HeartPulse size={21} />
+          </span>
+          <span className="flex flex-col">
+            <span className="brand-name text-[0.95rem] font-extrabold text-[var(--text)] leading-none">SmartCare</span>
+            <span className="brand-caption text-[0.6rem] text-[var(--text-muted)] leading-none mt-0.5 uppercase tracking-widest">Care access, simplified</span>
+          </span>
+        </Link>
 
-      <div className="flex items-center gap-2">
-        {Controls}
-        <button
-          onClick={() => router.push('/login')}
-          className={cn(
-            'h-9 px-3 rounded-[var(--radius)] text-sm font-bold',
-            'border border-[var(--line)] hover:bg-[var(--surface-sunken)] transition-colors'
-          )}
-        >
-          Sign in
-        </button>
-        <button
-          onClick={() => router.push('/login?mode=signup')}
-          className={cn(
-            'h-9 px-3 rounded-[var(--radius)] text-sm font-bold',
-            'bg-[var(--teal)] text-white hover:bg-[var(--teal-dark)] transition-colors'
-          )}
-        >
-          Sign up
-        </button>
+        {/* Nav links — hidden on mobile */}
+        <nav className="nav-links hidden md:flex items-center gap-6" aria-label="Primary navigation">
+          <a href="#how-it-works" className="text-[0.88rem] font-bold text-[var(--text-muted)] hover:text-[var(--teal)] transition-colors no-underline">How it works</a>
+          <a href="#for-providers"  className="text-[0.88rem] font-bold text-[var(--text-muted)] hover:text-[var(--teal)] transition-colors no-underline">For hospitals</a>
+          <Link href="/donate"      className="text-[0.88rem] font-bold text-[var(--text-muted)] hover:text-[var(--teal)] transition-colors no-underline">Donation</Link>
+          <a href="#trust"          className="text-[0.88rem] font-bold text-[var(--text-muted)] hover:text-[var(--teal)] transition-colors no-underline">Why SmartCare</a>
+        </nav>
+
+        {/* Actions: lang + theme + sign in + sign up */}
+        <div className="nav-actions flex items-center gap-2">
+          {Controls}
+          <Link
+            id="nav-login"
+            href="/login"
+            className="btn-ghost flex items-center justify-center h-[2.75rem] px-3 rounded-[0.65rem] text-[0.84rem] font-extrabold text-[var(--text-muted)] hover:bg-[var(--mint)] transition-colors border border-transparent no-underline"
+          >
+            Sign in
+          </Link>
+          <Link
+            id="nav-signup"
+            href="/login?mode=signup"
+            className="btn-primary flex items-center justify-center h-[2.75rem] px-4 rounded-[0.65rem] text-[0.84rem] font-extrabold text-white transition-all no-underline"
+            style={{ background: 'var(--teal)', boxShadow: '0 4px 12px rgba(15,92,168,.28)' }}
+          >
+            Sign up
+          </Link>
+        </div>
       </div>
     </header>
   );

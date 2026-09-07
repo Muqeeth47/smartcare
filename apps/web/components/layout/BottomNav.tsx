@@ -2,45 +2,58 @@
 
 import { useAppStore, useSession } from '@/lib/store/app-store';
 import { useRouter, usePathname } from 'next/navigation';
-import { Home, CalendarPlus, ClipboardList, Heart, LogOut, LayoutDashboard, Users, BarChart3 } from 'lucide-react';
+import {
+  LayoutDashboard,
+  CalendarPlus,
+  FileText,
+  ClipboardList,
+  LogOut,
+  ListOrdered,
+  BarChart3,
+  HeartHandshake,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// ─── Role Nav Config ──────────────────────────────────────────────────────────
+// ─── Role Nav Config (matching old project MOBILE_NAV exactly) ───────────────
 
 const NAV_CONFIG = {
   patient: [
-    { label: 'Overview', href: '/dashboard/patient', icon: Home },
-    { label: 'Book', href: '/dashboard/patient/apply/1', icon: CalendarPlus },
-    { label: 'Visits', href: '/dashboard/patient/visits', icon: ClipboardList },
-    { label: 'Donate', href: '/dashboard/patient/donations', icon: Heart },
+    { label: 'Overview', href: '/dashboard/patient',         icon: LayoutDashboard },
+    { label: 'Book',     href: '/dashboard/patient/apply/1', icon: CalendarPlus    },
+    { label: 'History',  href: '/dashboard/patient/history', icon: FileText        },
+    { label: 'Visits',   href: '/dashboard/patient/visits',  icon: ClipboardList   },
   ],
   doctor: [
-    { label: 'Overview', href: '/dashboard/hospital', icon: LayoutDashboard },
-    { label: 'Queue', href: '/dashboard/queue', icon: Users },
-    { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-    { label: 'Donate', href: '/dashboard/hospital/donations', icon: Heart },
+    { label: 'Overview',   href: '/dashboard/hospital',           icon: LayoutDashboard },
+    { label: 'Queue',      href: '/dashboard/queue',               icon: ListOrdered     },
+    { label: 'Analytics',  href: '/dashboard/analytics',           icon: BarChart3       },
+    { label: 'Donations',  href: '/dashboard/hospital/donations',  icon: HeartHandshake  },
   ],
   staff: [
-    { label: 'Operations', href: '/dashboard/admin', icon: LayoutDashboard },
-    { label: 'Queue', href: '/dashboard/queue', icon: Users },
-    { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-    { label: 'Donate', href: '/dashboard/admin/donations', icon: Heart },
+    { label: 'Operations', href: '/dashboard/admin',               icon: LayoutDashboard },
+    { label: 'Queue',      href: '/dashboard/queue',               icon: ListOrdered     },
+    { label: 'Analytics',  href: '/dashboard/analytics',           icon: BarChart3       },
+    { label: 'Donations',  href: '/dashboard/admin/donations',     icon: HeartHandshake  },
   ],
 };
 
 export function BottomNav() {
   const { isLogged, role } = useSession();
   const logout = useAppStore((s) => s.logout);
-  const router = useRouter();
+  const router  = useRouter();
   const pathname = usePathname();
 
-  // Only render when logged in
   if (!isLogged || !role || !(role in NAV_CONFIG)) return null;
 
   const navItems = NAV_CONFIG[role as keyof typeof NAV_CONFIG];
 
   const isActive = (href: string) => {
-    if (href === '/dashboard/patient' || href === '/dashboard/hospital' || href === '/dashboard/admin') {
+    // Exact match for root dashboard pages; prefix match elsewhere
+    if (
+      href === '/dashboard/patient' ||
+      href === '/dashboard/hospital' ||
+      href === '/dashboard/admin'
+    ) {
       return pathname === href;
     }
     return pathname.startsWith(href);
@@ -54,17 +67,16 @@ export function BottomNav() {
   return (
     <nav
       data-bottom-nav
-      aria-label="Primary navigation"
+      aria-label="Mobile navigation"
       className={cn(
         'fixed bottom-0 left-0 right-0 z-[350] lg:hidden',
         'flex items-stretch h-16',
-        'bg-[var(--surface)] border-t border-[var(--line)]',
-        'safe-bottom'
+        'bg-[var(--surface)] border-t border-[var(--line)]'
       )}
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       {navItems.map((item) => {
-        const Icon = item.icon;
+        const Icon   = item.icon;
         const active = isActive(item.href);
         return (
           <button
@@ -73,11 +85,11 @@ export function BottomNav() {
             aria-label={item.label}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'relative flex flex-col items-center justify-center gap-1 flex-1',
-              'text-[0.65rem] font-semibold tracking-wide transition-colors',
+              'mobile-nav-btn relative flex flex-col items-center justify-center gap-1 flex-1',
+              'text-[0.62rem] font-semibold tracking-wide transition-colors',
               'min-h-[44px] px-1',
               active
-                ? 'text-[var(--teal)]'
+                ? 'active text-[var(--teal)]'
                 : 'text-[var(--text-muted)] hover:text-[var(--text)]'
             )}
           >
@@ -95,8 +107,8 @@ export function BottomNav() {
         onClick={handleLogout}
         aria-label="Sign out"
         className={cn(
-          'flex flex-col items-center justify-center gap-1 flex-1',
-          'text-[0.65rem] font-semibold tracking-wide min-h-[44px] px-1',
+          'mobile-nav-btn flex flex-col items-center justify-center gap-1 flex-1',
+          'text-[0.62rem] font-semibold tracking-wide min-h-[44px] px-1',
           'text-[var(--text-muted)] hover:text-[var(--red)] transition-colors'
         )}
       >

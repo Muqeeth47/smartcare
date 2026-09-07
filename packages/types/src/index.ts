@@ -68,7 +68,10 @@ export interface AppointmentBooking {
   country: string;
   state: string;
   city: string;
+  lastBookingId?: string;
 }
+
+export type DonationPost = PatientDonationPost;
 
 export interface AppointmentSlot {
   value: string;
@@ -204,7 +207,7 @@ export interface HospitalDonationPost {
   units?: number;
   hospital: string;
   city: string;
-  urgency?: 'Routine' | 'Urgent' | 'Planned';
+  urgency?: 'Routine' | 'Urgent' | 'Planned' | 'Emergency';
   notes?: string;
   date: string;
 }
@@ -218,7 +221,9 @@ export interface PatientDonationPost {
   city: string;
   urgency?: string;
   status: string;
-  date: string;
+  date?: string;
+  author?: string;
+  created_at?: string;
 }
 
 export interface DonationsData {

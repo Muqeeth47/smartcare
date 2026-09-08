@@ -170,35 +170,35 @@ export function LoginPage() {
 
       {/* Main auth panel */}
       <main
-        className="flex-1 flex items-center justify-center p-5 py-10"
+        className="flex-1 flex items-center justify-center p-3 sm:p-5 py-6 sm:py-10"
         data-section="portal-login"
         aria-labelledby="auth-title"
       >
         <div className="w-full max-w-md">
           {/* Mode tabs */}
-          <div className="flex gap-2 p-1 bg-[var(--surface)] border border-[var(--line)] rounded-full mb-6">
+          <div className="flex gap-1.5 p-1 bg-[var(--surface)] border border-[var(--line)] rounded-full mb-5">
             {(['signin', 'signup'] as const).map((m) => (
               <button
                 key={m}
                 onClick={() => { setMode(m); setMessage(''); }}
                 aria-selected={mode === m}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-2 h-10 rounded-full text-sm font-bold transition-colors',
+                  'flex-1 flex items-center justify-center gap-2 min-h-[42px] rounded-full text-xs sm:text-sm font-bold transition-all active:scale-95',
                   mode === m
-                    ? 'bg-[var(--teal)] text-white'
+                    ? 'bg-[var(--teal)] text-white shadow-xs'
                     : 'text-[var(--text-muted)] hover:bg-[var(--surface-sunken)]'
                 )}
               >
-                {m === 'signin' ? <><LogIn size={14} /> Sign In</> : <><UserPlus size={14} /> Sign Up</>}
+                {m === 'signin' ? <><LogIn size={15} /> Sign In</> : <><UserPlus size={15} /> Sign Up</>}
               </button>
             ))}
           </div>
 
           {/* Role tabs */}
-          <div className="flex gap-2 mb-6" role="tablist" aria-label="Choose portal">
+          <div className="flex gap-1.5 sm:gap-2 mb-6" role="tablist" aria-label="Choose portal">
             {(['patient', 'doctor', 'staff'] as const).map((r) => {
               const Icon = r === 'patient' ? UserRound : r === 'doctor' ? Hospital : Building2;
-              const labels = { patient: 'Patient', doctor: 'Hospital', staff: 'Hospital Ops' };
+              const labels = { patient: 'Patient', doctor: 'Hospital', staff: 'Staff' };
               return (
                 <button
                   key={r}
@@ -206,14 +206,14 @@ export function LoginPage() {
                   aria-selected={role === r}
                   onClick={() => handleRoleChange(r)}
                   className={cn(
-                    'flex-1 flex items-center justify-center gap-1.5 h-9 rounded-[var(--radius)] text-xs font-semibold transition-colors border',
+                    'flex-1 flex items-center justify-center gap-1 sm:gap-1.5 min-h-[42px] px-2 rounded-xl text-xs font-semibold transition-all border active:scale-95',
                     role === r
-                      ? 'bg-[var(--mint)] border-[var(--teal)]/30 text-[var(--teal)]'
+                      ? 'bg-[var(--mint)] border-[var(--teal)]/40 text-[var(--teal)] font-bold shadow-xs'
                       : 'bg-[var(--surface)] border-[var(--line)] text-[var(--text-muted)] hover:bg-[var(--surface-sunken)]'
                   )}
                 >
-                  <Icon size={13} />
-                  {labels[r]}
+                  <Icon size={14} className="shrink-0" />
+                  <span className="truncate">{labels[r]}</span>
                 </button>
               );
             })}
@@ -381,7 +381,7 @@ export function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex items-center justify-center gap-2 h-11 rounded-[var(--radius)] bg-[var(--teal)] text-white font-bold text-sm hover:bg-[var(--teal-dark)] transition-colors disabled:opacity-60"
+                className="flex items-center justify-center gap-2 min-h-[48px] h-12 rounded-xl bg-[var(--teal)] text-white font-bold text-sm hover:bg-[var(--teal-dark)] active:scale-[0.98] transition-all disabled:opacity-60 shadow-sm"
               >
                 {loading ? 'Signing in…' : (isPatient ? 'Continue to patient portal' : `Sign in to ${role === 'doctor' ? 'hospital' : 'admin'} portal`)}
                 {!loading && <ArrowRight size={15} />}
@@ -543,7 +543,7 @@ export function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex items-center justify-center gap-2 h-11 rounded-[var(--radius)] bg-[var(--teal)] text-white font-bold text-sm hover:bg-[var(--teal-dark)] disabled:opacity-60 transition-colors"
+                className="flex items-center justify-center gap-2 min-h-[48px] h-12 rounded-xl bg-[var(--teal)] text-white font-bold text-sm hover:bg-[var(--teal-dark)] active:scale-[0.98] disabled:opacity-60 transition-all shadow-sm"
               >
                 {loading ? 'Creating account…' : (isPatient ? 'Create patient account' : 'Create hospital account')}
                 {!loading && <ArrowRight size={15} />}
@@ -584,9 +584,9 @@ export function LoginPage() {
                     type="button"
                     disabled={loading}
                     onClick={() => handleDemoLogin(r)}
-                    className="flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-semibold border border-[var(--line)] bg-[var(--surface)] text-[var(--text-muted)] hover:bg-[var(--mint)] hover:text-[var(--teal)] hover:border-[var(--teal)]/30 transition-colors disabled:opacity-60"
+                    className="flex items-center gap-1.5 min-h-[38px] px-3.5 rounded-full text-xs font-semibold border border-[var(--line)] bg-[var(--surface)] text-[var(--text-muted)] hover:bg-[var(--mint)] hover:text-[var(--teal)] hover:border-[var(--teal)]/30 active:scale-95 transition-all disabled:opacity-60"
                   >
-                    <Icon size={12} /> {labels[r]}
+                    <Icon size={13} /> {labels[r]}
                   </button>
                 );
               })}

@@ -143,9 +143,9 @@ export function AnalyticsDashboardPage() {
 
         {/* Toolbar with range tabs and export actions */}
         <div className="analytics-toolbar print-hide flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2 bg-[#f8fafc] border border-[var(--line)] rounded-2xl">
-          <div className="flex items-center gap-1.5 p-1 bg-white border border-[var(--line)] rounded-xl" role="tablist">
+          <div className="flex items-center gap-1.5 p-1 bg-white border border-[var(--line)] rounded-xl w-full sm:w-auto" role="tablist">
             {(['today', 'week', 'month'] as const).map((r) => {
-              const labels = { today: 'Current queue', week: '7-day sample', month: 'Monthly sample' };
+              const labels = { today: 'Current', week: '7-day', month: 'Monthly' };
               const icons = { today: Clock, week: CalendarDays, month: CalendarRange };
               const Icon = icons[r];
               return (
@@ -156,9 +156,9 @@ export function AnalyticsDashboardPage() {
                   aria-selected={selectedRange === r}
                   onClick={() => setSelectedRange(r)}
                   className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors',
+                    'flex-1 sm:flex-none flex items-center justify-center gap-1.5 min-h-[38px] px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95',
                     selectedRange === r
-                      ? 'bg-[#0a3b69] text-white'
+                      ? 'bg-[#0a3b69] text-white shadow-xs'
                       : 'text-[var(--text-muted)] hover:bg-[#f0f7fc] hover:text-[#0a3b69]'
                   )}
                 >
@@ -169,26 +169,26 @@ export function AnalyticsDashboardPage() {
             })}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto">
             <button
               type="button"
               onClick={handleExportCsv}
-              className="btn-secondary flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-bold text-[#0a3b69] border border-[#cbd5e1] bg-white hover:bg-[#f0f7fc] transition-colors"
+              className="btn-secondary flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 rounded-xl text-xs font-bold text-[#0a3b69] border border-[#cbd5e1] bg-white hover:bg-[#f0f7fc] active:scale-95 transition-all"
             >
-              <Download size={14} /> Export CSV / Excel
+              <Download size={14} /> <span>Export CSV</span>
             </button>
             <button
               type="button"
               onClick={handlePrintReport}
-              className="btn-secondary flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-bold text-[#0a3b69] border border-[#cbd5e1] bg-white hover:bg-[#f0f7fc] transition-colors"
+              className="btn-secondary flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 rounded-xl text-xs font-bold text-[#0a3b69] border border-[#cbd5e1] bg-white hover:bg-[#f0f7fc] active:scale-95 transition-all"
             >
-              <Printer size={14} /> Print Summary
+              <Printer size={14} /> <span>Print</span>
             </button>
           </div>
         </div>
 
         {/* Summary stats matching provider-stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
           <div className="p-4 rounded-xl border border-[#cbd5e1] bg-[#f8fafc] flex flex-col justify-between">
             <span className="text-xs text-[var(--text-muted)] font-medium">
               {sampleData.sample ? 'Sample patient volume' : 'Active visits'}

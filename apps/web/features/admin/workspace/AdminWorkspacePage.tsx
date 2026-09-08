@@ -314,12 +314,11 @@ export function AdminWorkspacePage() {
                 />
                 <span className="text-[11px] text-[var(--muted)]">Use clinical summary text only in this demo.</span>
               </div>
-
-              <div className="sm:col-span-2 flex items-center gap-3 pt-2">
+              <div className="sm:col-span-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-2">
                 <button
                   type="submit"
                   disabled={submittingWalkin}
-                  className="btn-primary flex items-center gap-2 h-10 px-5 rounded-xl text-xs font-bold text-white shadow-sm"
+                  className="btn-primary flex items-center justify-center gap-2 min-h-[44px] px-5 rounded-xl text-xs font-bold text-white shadow-sm active:scale-95 transition-all"
                 >
                   <ListPlus size={16} />
                   <span>{submittingWalkin ? 'Adding to queue...' : 'Add to live queue'}</span>
@@ -327,7 +326,7 @@ export function AdminWorkspacePage() {
                 <button
                   type="button"
                   onClick={() => setShowWalkin(false)}
-                  className="btn-secondary h-10 px-4 rounded-xl text-xs font-bold border border-[var(--line)]"
+                  className="btn-secondary min-h-[44px] px-4 rounded-xl text-xs font-bold border border-[var(--line)] active:scale-95 transition-all"
                 >
                   Cancel
                 </button>
@@ -337,23 +336,23 @@ export function AdminWorkspacePage() {
         )}
 
         {/* 4 Provider Stats */}
-        <div className="provider-stats grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="provider-stat p-4 rounded-xl border border-[#cbd5e1] bg-[#f8fafc]">
+        <div className="provider-stats grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+          <div className="provider-stat p-3.5 sm:p-4 rounded-xl border border-[#cbd5e1] bg-[#f8fafc]">
             <span className="text-xs text-[var(--muted)]">Patients waiting</span>
             <strong className="block text-2xl font-extrabold text-[#0a3b69] mt-1">{metrics.waiting}</strong>
             <small className="text-[11px] text-[var(--text-dim)]">Current active queue</small>
           </div>
-          <div className="provider-stat p-4 rounded-xl border border-[#cbd5e1] bg-[#f8fafc]">
+          <div className="provider-stat p-3.5 sm:p-4 rounded-xl border border-[#cbd5e1] bg-[#f8fafc]">
             <span className="text-xs text-[var(--muted)]">Average wait</span>
             <strong className="block text-2xl font-extrabold text-[#0a3b69] mt-1">{metrics.averageWait}m</strong>
             <small className="text-[11px] text-[var(--text-dim)]">Based on arrival time</small>
           </div>
-          <div className="provider-stat p-4 rounded-xl border border-[#cbd5e1] bg-[#f8fafc]">
+          <div className="provider-stat p-3.5 sm:p-4 rounded-xl border border-[#cbd5e1] bg-[#f8fafc]">
             <span className="text-xs text-[var(--muted)]">Priority cases</span>
             <strong className="block text-2xl font-extrabold text-[#0a3b69] mt-1">{metrics.priority}</strong>
             <small className="text-[11px] text-[var(--text-dim)]">Needs attention first</small>
           </div>
-          <div className="provider-stat p-4 rounded-xl border border-[#cbd5e1] bg-[#f8fafc]">
+          <div className="provider-stat p-3.5 sm:p-4 rounded-xl border border-[#cbd5e1] bg-[#f8fafc]">
             <span className="text-xs text-[var(--muted)]">Projected revenue</span>
             <strong className="block text-2xl font-extrabold text-[#0a3b69] mt-1">₹{metrics.revenue}</strong>
             <small className="text-[11px] text-[var(--text-dim)]">Current queue estimate</small>
@@ -363,18 +362,15 @@ export function AdminWorkspacePage() {
         {/* 2-Column Provider Grid: Rooms & Today at a Glance */}
         <div className="provider-grid grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* Room Status Card (7 cols) */}
-          <section className="lg:col-span-7 provider-card p-5 rounded-2xl border border-[var(--line)] bg-white shadow-sm space-y-4">
+          <section className="lg:col-span-7 provider-card p-4 sm:p-5 rounded-2xl border border-[var(--line)] bg-white shadow-sm space-y-4">
             <div className="provider-card-heading flex items-center justify-between gap-3 border-b border-[var(--line)] pb-3">
               <div>
                 <h2 className="text-base font-extrabold text-[#0a3b69]">Room status</h2>
                 <p className="text-xs text-[var(--text-muted)]">Click a room to keep the next handoff visible to the front desk.</p>
               </div>
-              <span className="status-eyebrow flex items-center gap-1.5 text-xs font-bold text-[#0f5ca8]">
-                <span className="w-2 h-2 rounded-full bg-[#0f5ca8] animate-pulse" /> Live
-              </span>
             </div>
 
-            <div className="room-grid grid grid-cols-2 gap-3">
+            <div className="room-grid grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
               {rooms.map((room, index) => {
                 const isAvailable = room.status === 'Available';
                 return (
@@ -383,7 +379,7 @@ export function AdminWorkspacePage() {
                     type="button"
                     onClick={() => toggleRoom(index)}
                     aria-pressed={!isAvailable}
-                    className={`room-item flex items-center justify-between gap-3 p-3.5 rounded-xl border text-left transition-all ${
+                    className={`room-item flex items-center justify-between gap-3 p-3.5 rounded-xl border text-left active:scale-[0.98] transition-all min-h-[56px] ${
                       isAvailable
                         ? 'bg-white border-[var(--line)] hover:border-[#8bbbe2]'
                         : 'bg-[#f3f9ff] border-[#8bbbe2] shadow-sm'

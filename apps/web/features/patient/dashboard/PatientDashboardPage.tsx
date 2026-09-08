@@ -231,7 +231,7 @@ export function PatientDashboardPage() {
             </div>
 
             {/* Actions: Reschedule Free of Charge or Claim ₹125 Refund */}
-            <div className="flex items-center gap-2 flex-wrap shrink-0">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
               <button
                 type="button"
                 onClick={() => {
@@ -508,30 +508,30 @@ export function PatientDashboardPage() {
       {/* ── Prescription / Clinical Slip Modal ── */}
       {selectedVisitId && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs transition-opacity"
           role="dialog"
           aria-modal="true"
           onClick={() => setSelectedVisitId(null)}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] sm:max-h-[90vh] overflow-y-auto flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal header */}
-            <div className="flex items-center justify-between p-5 border-b border-[var(--line)]">
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[var(--line)] shrink-0">
               <div className="flex items-center gap-2.5">
-                <span className="w-8 h-8 rounded-lg bg-[#0a3b69] text-white flex items-center justify-center">
-                  <HeartPulse size={18} />
+                <span className="w-9 h-9 rounded-xl bg-[#0a3b69] text-white flex items-center justify-center shrink-0">
+                  <HeartPulse size={19} />
                 </span>
                 <div>
-                  <h3 className="text-base font-bold text-[#0a3b69]">Clinical note &amp; demo e-prescription</h3>
-                  <p className="text-xs text-[var(--text-muted)]">Saved only in this browser for the SmartCare prototype.</p>
+                  <h3 className="text-sm sm:text-base font-bold text-[#0a3b69]">Clinical note &amp; e-prescription</h3>
+                  <p className="text-[11px] sm:text-xs text-[var(--text-muted)]">Saved locally for the SmartCare prototype.</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedVisitId(null)}
-                className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] transition-colors"
+                className="flex items-center justify-center min-w-[44px] min-h-[44px] rounded-xl text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] active:scale-95 transition-all"
                 aria-label="Close prescription"
               >
                 <X size={18} />
@@ -628,11 +628,11 @@ export function PatientDashboardPage() {
             </div>
 
             {/* Modal actions */}
-            <div className="flex items-center justify-between p-4 border-t border-[var(--line)] bg-[var(--surface-sunken)]">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 p-4 border-t border-[var(--line)] bg-[var(--surface-sunken)] shrink-0">
               <button
                 type="button"
                 onClick={() => setSelectedVisitId(null)}
-                className="px-4 py-2 rounded-lg border border-[var(--line)] text-xs font-semibold hover:bg-white transition-colors"
+                className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-xl border border-[var(--line)] text-xs font-semibold hover:bg-white active:scale-95 transition-all"
               >
                 Close
               </button>
@@ -640,10 +640,10 @@ export function PatientDashboardPage() {
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="btn-primary flex items-center gap-1.5 h-8 px-4 rounded-lg text-xs font-bold text-white shadow-sm"
+                  className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-xl text-xs font-bold text-white shadow-sm active:scale-95 transition-all"
                   style={{ background: 'var(--teal)' }}
                 >
-                  <Printer size={14} /> Print slip
+                  <Printer size={15} /> Print slip
                 </button>
               )}
             </div>
@@ -654,14 +654,14 @@ export function PatientDashboardPage() {
       {/* ── Appointment Manager Modal ── */}
       {managingVisit && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs"
           role="dialog"
           aria-modal="true"
         >
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto animate-in fade-in">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div>
-                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
                   <CalendarCog className="w-5 h-5 text-teal-600" />
                   Manage Appointment
                 </h3>
@@ -673,9 +673,9 @@ export function PatientDashboardPage() {
               <button
                 type="button"
                 onClick={() => setManagingVisit(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"
+                className="flex items-center justify-center min-w-[44px] min-h-[44px] text-slate-400 hover:text-slate-600 active:scale-95 transition-all rounded-xl"
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
@@ -821,11 +821,11 @@ export function PatientDashboardPage() {
       {/* ── Refund Receipt Modal ── */}
       {refundReceipt && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs"
           role="dialog"
           aria-modal="true"
         >
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto animate-in fade-in">
             <div className="text-center pb-4 border-b border-slate-100 mb-4">
               <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto mb-2 font-bold">
                 <CheckCircle2 size={26} />

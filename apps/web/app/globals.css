@@ -148,9 +148,42 @@ a:hover { text-decoration: underline; }
 .triage-green  { color: var(--green);  background: var(--green-bg);  }
 .triage-unassessed { color: var(--text-muted); background: var(--surface-sunken); }
 
+/* ─── Mobile Foundation & Touch Optimizations ────────────────────────────── */
+html, body {
+  overflow-x: clip;
+  max-width: 100vw;
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* ─── Font Scale Controls ─────────────────────────────────────────────────── */
 html {
   transition: font-size 0.2s ease;
+}
+
+/* Prevent iOS Safari 16px auto-zoom on form inputs */
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="search"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Micro-press compression feel on touch */
+@media (pointer: coarse) {
+  button:active:not(:disabled),
+  .btn:active:not(:disabled),
+  a.mobile-nav-btn:active {
+    transform: scale(0.96);
+    transition: transform 0.08s ease;
+  }
 }
 
 /* Hide font-scale trio on very small phones (< 360px) */
@@ -846,21 +879,22 @@ html {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
-  bottom: 64px !important;
-  width: 270px !important;
+  bottom: 0 !important;
+  width: min(300px, 86vw) !important;
   max-height: none !important;
-  height: calc(100vh - 64px) !important;
-  z-index: 400 !important;
+  height: 100dvh !important;
+  z-index: 99999 !important;
   background: var(--surface) !important;
   border-right: 1px solid var(--line) !important;
-  box-shadow: 4px 0 28px rgba(0, 0, 0, 0.25) !important;
-  padding: 1.25rem 0.85rem !important;
+  box-shadow: 8px 0 36px rgba(0, 0, 0, 0.35) !important;
+  padding: max(1.25rem, env(safe-area-inset-top, 0px)) 1rem max(1.25rem, env(safe-area-inset-bottom, 0px)) !important;
   margin: 0 !important;
   overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
   transform: translateX(-100%) !important;
   visibility: hidden !important;
   pointer-events: none !important;
-  transition: transform 0.25s ease, visibility 0.25s ease !important;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.25s ease !important;
 }
 
 .workspace-tabs.mobile-drawer.drawer-open {
@@ -882,19 +916,33 @@ html {
   display: flex !important;
   align-items: center;
   justify-content: center;
-  width: 2.2rem;
-  height: 2.2rem;
+  min-width: 44px !important;
+  min-height: 44px !important;
   padding: 0 !important;
   border: 1px solid var(--line) !important;
-  border-radius: 0.5rem !important;
-  background: var(--canvas) !important;
+  border-radius: var(--radius) !important;
+  background: var(--surface-sunken) !important;
   color: var(--muted) !important;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
-.workspace-tabs.mobile-drawer .mobile-drawer-close:hover {
+.workspace-tabs.mobile-drawer .mobile-drawer-close:hover,
+.workspace-tabs.mobile-drawer .mobile-drawer-close:active {
   color: var(--teal) !important;
   background: var(--mint) !important;
+}
+
+.workspace-tabs.mobile-drawer a,
+.workspace-tabs.mobile-drawer button {
+  min-height: 46px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  padding: 0.65rem 0.85rem !important;
+  border-radius: var(--radius) !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
 }
 
 /* ─── Mobile Bottom Nav Bar ───────────────────────────────────────────────── */
@@ -909,61 +957,81 @@ html {
     bottom: 0 !important;
     left: 0 !important;
     right: 0 !important;
-    height: 64px !important;
-    z-index: 9999 !important;
+    min-height: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
+    height: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
+    z-index: 9000 !important;
     align-items: stretch;
-    padding: 0;
-    padding-bottom: env(safe-area-inset-bottom, 0);
-    background: var(--surface);
-    border-top: 1px solid var(--line);
-    box-shadow: 0 -4px 24px rgba(10, 40, 80, 0.12);
+    padding: 0 !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+    background: var(--surface) !important;
+    border-top: 1px solid var(--line) !important;
+    box-shadow: 0 -4px 20px rgba(10, 40, 80, 0.08) !important;
+    backdrop-filter: blur(12px);
   }
 
   .mobile-nav-btn {
-    flex: 1;
+    flex: 1 1 0px;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
+    gap: 2px;
     border: none;
     background: transparent;
     color: var(--muted);
     font-family: inherit;
-    font-size: 0.68rem;
+    font-size: 0.65rem;
     font-weight: 700;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     text-decoration: none;
     cursor: pointer;
     position: relative;
+    touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
-    transition: color 0.15s ease;
-    padding: 0 2px;
+    transition: color 0.15s ease, transform 0.1s ease;
+    padding: 4px 2px;
   }
 
   .mobile-nav-btn svg {
     flex-shrink: 0;
     color: var(--muted);
-    transition: color 0.15s ease;
+    transition: color 0.15s ease, transform 0.15s ease;
   }
 
   .mobile-nav-btn.active {
-    color: var(--teal);
+    color: var(--teal) !important;
   }
 
   .mobile-nav-btn.active svg {
-    color: var(--teal);
+    color: var(--teal) !important;
+    transform: translateY(-1px);
   }
 
   .mobile-nav-btn.active::before {
     content: '';
     position: absolute;
     top: 0;
-    left: 20%;
-    right: 20%;
+    left: 18%;
+    right: 18%;
     height: 3px;
     background: var(--teal);
     border-radius: 0 0 3px 3px;
+  }
+
+  /* SOS button dedicated styling in bottom nav */
+  .mobile-nav-btn-sos {
+    color: var(--red) !important;
+  }
+  .mobile-nav-btn-sos svg {
+    color: var(--red) !important;
+  }
+  .mobile-nav-btn-sos:active {
+    background: var(--red-bg);
+  }
+
+  .workspace-content {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
 
@@ -2347,81 +2415,6 @@ html {
 .room-status { color: var(--teal); font-size: .65rem; font-weight: 800; }
 .flow-header { display: flex; justify-content: space-between; gap: 1rem; align-items: end; margin-bottom: 1.5rem; }
 
-/* ═══════════════════════════════════════════════
-   MOBILE BOTTOM NAVIGATION BAR - ALWAYS FIXED
-   ═══════════════════════════════════════════════ */
-.mobile-bottom-nav {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .mobile-bottom-nav {
-    display: flex !important;
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    height: 64px !important;
-    z-index: 9999 !important;
-    align-items: stretch;
-    padding: 0;
-    padding-bottom: env(safe-area-inset-bottom, 0);
-    background: var(--surface) !important;
-    border-top: 1px solid var(--line) !important;
-    box-shadow: 0 -4px 24px rgba(10, 40, 80, 0.12) !important;
-  }
-
-  .mobile-nav-btn {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    border: none;
-    background: transparent;
-    color: var(--muted);
-    font-family: inherit;
-    font-size: 0.62rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    text-decoration: none;
-    cursor: pointer;
-    position: relative;
-    -webkit-tap-highlight-color: transparent;
-    transition: color 0.15s ease;
-    padding: 0 2px;
-  }
-
-  .mobile-nav-btn svg {
-    flex-shrink: 0;
-    color: var(--muted);
-    transition: color 0.15s ease;
-  }
-
-  .mobile-nav-btn.active {
-    color: var(--teal) !important;
-  }
-
-  .mobile-nav-btn.active svg {
-    color: var(--teal) !important;
-  }
-
-  .mobile-nav-btn.active::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 20%;
-    right: 20%;
-    height: 2.5px;
-    background: var(--teal);
-    border-radius: 0 0 4px 4px;
-  }
-
-  .workspace-content {
-    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px)) !important;
-  }
-}
 
 /* ═══════════════════════════════════════════════
    CARE CENTRES LIST & MAP LAYOUT (STEP 2)

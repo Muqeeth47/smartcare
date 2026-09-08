@@ -620,14 +620,14 @@ export function HospitalWorkspacePage() {
       {/* ── Doctor Cancellation Modal ── */}
       {cancellingPatient && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs"
           role="dialog"
           aria-modal="true"
         >
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto animate-in fade-in">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div>
-                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
                   <Ban className="w-5 h-5 text-rose-600" />
                   Cancel / Reschedule Visit
                 </h3>
@@ -638,9 +638,9 @@ export function HospitalWorkspacePage() {
               <button
                 type="button"
                 onClick={() => setCancellingPatient(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"
+                className="flex items-center justify-center min-w-[44px] min-h-[44px] rounded-xl text-slate-400 hover:text-slate-600 active:scale-95 transition-all"
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
@@ -687,17 +687,17 @@ export function HospitalWorkspacePage() {
                 </select>
               </div>
 
-              <div className="flex gap-2 justify-end pt-3">
+              <div className="flex flex-col-reverse sm:flex-row gap-2 justify-end pt-3">
                 <button
                   type="button"
                   onClick={() => setCancellingPatient(null)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 min-h-[48px]"
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 min-h-[44px] active:scale-95 transition-all"
                 >
                   Keep Visit
                 </button>
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition shadow-sm min-h-[48px]"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition shadow-sm min-h-[44px] active:scale-95"
                 >
                   <Ban size={15} /> Confirm Cancellation
                 </button>
@@ -710,38 +710,38 @@ export function HospitalWorkspacePage() {
       {/* ── Prescription Editor Modal ── */}
       {editingPatient && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs transition-opacity"
           role="dialog"
           aria-modal="true"
           onClick={() => setEditingPatient(null)}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-w-xl w-full max-h-[85vh] sm:max-h-[90vh] overflow-y-auto flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-5 border-b border-[var(--line)]">
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[var(--line)] shrink-0">
               <div className="flex items-center gap-2.5">
-                <span className="w-8 h-8 rounded-lg bg-[#0a3b69] text-white flex items-center justify-center">
+                <span className="w-9 h-9 rounded-xl bg-[#0a3b69] text-white flex items-center justify-center shrink-0">
                   <NotebookPen size={18} />
                 </span>
                 <div>
-                  <h3 className="text-base font-bold text-[#0a3b69]">Official Digital E-Prescription Pad</h3>
+                  <h3 className="text-sm sm:text-base font-bold text-[#0a3b69]">Digital E-Prescription Pad</h3>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[11px] font-mono font-bold bg-teal-50 text-teal-800 border border-teal-200 px-1.5 py-0.5 rounded">
-                      Doctor NMC Reg: NMC-2018-94821
+                    <span className="text-[10px] sm:text-[11px] font-mono font-bold bg-teal-50 text-teal-800 border border-teal-200 px-1.5 py-0.5 rounded">
+                      Doctor NMC: NMC-2018-94821
                     </span>
-                    <span className="text-xs text-slate-500">· {hospital || 'SmartCare Hospital'}</span>
+                    <span className="text-xs text-slate-500 truncate hidden sm:inline">· {hospital || 'SmartCare Hospital'}</span>
                   </div>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setEditingPatient(null)}
-                className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] transition-colors"
-                aria-label="Close editor"
+                className="flex items-center justify-center min-w-[44px] min-h-[44px] rounded-xl text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] active:scale-95 transition-all"
+                aria-label="Close prescription"
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
@@ -886,20 +886,20 @@ export function HospitalWorkspacePage() {
               </div>
 
               {/* Modal Actions */}
-              <div className="flex items-center justify-between p-4 border-t border-[var(--line)] bg-[var(--surface-sunken)]">
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 p-4 border-t border-[var(--line)] bg-[var(--surface-sunken)] shrink-0">
                 <button
                   type="button"
                   onClick={() => setEditingPatient(null)}
-                  className="px-4 py-2 rounded-lg border border-[var(--line)] text-xs font-semibold hover:bg-white transition-colors"
+                  className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-xl border border-[var(--line)] text-xs font-semibold hover:bg-white active:scale-95 transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="btn-primary flex items-center gap-1.5 h-9 px-5 rounded-lg text-xs font-bold text-white shadow-sm"
+                  className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-xl text-xs font-bold text-white shadow-sm active:scale-95 transition-all"
                   style={{ background: 'var(--teal)' }}
                 >
-                  <Save size={14} /> Save demo record
+                  <Save size={15} /> Save demo record
                 </button>
               </div>
             </form>

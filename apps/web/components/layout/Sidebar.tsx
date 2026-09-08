@@ -207,7 +207,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div
           onClick={onClose}
           aria-hidden="true"
-          className="workspace-drawer-backdrop fixed inset-0 z-[399] bg-black/40 backdrop-blur-xs transition-opacity"
+          className="workspace-drawer-backdrop fixed inset-0 z-[99998] bg-black/50 backdrop-blur-xs transition-opacity"
         />
       )}
 
@@ -220,65 +220,86 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         )}
       >
         <div className="mobile-drawer-header">
-          <Link href="/" className="brand-lockup flex items-center gap-2 no-underline" onClick={onClose}>
+          <Link href="/" className="brand-lockup flex items-center gap-2.5 no-underline" onClick={onClose}>
             <span
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-white"
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0"
               style={{ background: 'var(--teal-dark)' }}
             >
-              <HeartPulse size={17} />
+              <HeartPulse size={19} />
             </span>
-            <span className="font-extrabold text-[var(--text)] text-sm">SmartCare</span>
+            <span className="font-extrabold text-[var(--text)] text-base">SmartCare</span>
           </Link>
           <button
             ref={closeBtnRef}
             onClick={onClose}
             aria-label="Close navigation"
-            className="mobile-drawer-close"
+            className="mobile-drawer-close flex items-center justify-center min-w-[44px] min-h-[44px] rounded-xl border border-[var(--line)] bg-[var(--surface-sunken)] text-[var(--text-muted)] hover:text-[var(--teal)] active:scale-95 transition-all cursor-pointer"
           >
-            <X size={16} />
+            <X size={18} />
           </button>
         </div>
 
-        {items.main.map((item) => {
-          const Icon = item.icon;
-          const active = checkActive(item.href, pathname);
-          return (
-            <Link
-              key={item.label}
-              href={item.href}
-              onClick={onClose}
-              className={active ? 'active' : ''}
-              aria-current={active ? 'page' : undefined}
-            >
-              <Icon size={16} />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
+        <div className="flex flex-col gap-1 py-1">
+          {items.main.map((item) => {
+            const Icon = item.icon;
+            const active = checkActive(item.href, pathname);
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                onClick={onClose}
+                className={cn(
+                  'flex items-center gap-3 min-h-[48px] px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-[0.98]',
+                  active
+                    ? 'bg-[var(--mint)] text-[var(--teal)] font-bold'
+                    : 'text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text)]'
+                )}
+                aria-current={active ? 'page' : undefined}
+              >
+                <Icon size={18} className="shrink-0" />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
 
-        <div className="nav-divider" />
+        <div className="nav-divider my-2" />
 
-        {items.secondary.map((item) => {
-          const Icon = item.icon;
-          const active = checkActive(item.href, pathname);
-          return (
-            <Link
-              key={item.label}
-              href={item.href}
-              onClick={onClose}
-              className={active ? 'active' : ''}
-              aria-current={active ? 'page' : undefined}
-            >
-              <Icon size={16} />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
+        <div className="flex flex-col gap-1 py-1">
+          {items.secondary.map((item) => {
+            const Icon = item.icon;
+            const active = checkActive(item.href, pathname);
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                onClick={onClose}
+                className={cn(
+                  'flex items-center gap-3 min-h-[48px] px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-[0.98]',
+                  active
+                    ? 'bg-[var(--mint)] text-[var(--teal)] font-bold'
+                    : 'text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text)]'
+                )}
+                aria-current={active ? 'page' : undefined}
+              >
+                <Icon size={18} className="shrink-0" />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
 
-        <button type="button" onClick={handleLogout} className="signout-btn" aria-label="Sign out">
-          <LogOut size={16} />
-          <span>Sign out</span>
-        </button>
+        <div className="mt-auto pt-4 border-t border-[var(--line)]">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="signout-btn flex items-center gap-3 w-full min-h-[48px] px-3.5 py-2.5 rounded-xl text-sm font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 active:scale-[0.98] transition-all cursor-pointer"
+            aria-label="Sign out"
+          >
+            <LogOut size={18} className="shrink-0" />
+            <span>Sign out</span>
+          </button>
+        </div>
       </aside>
     </>
   );

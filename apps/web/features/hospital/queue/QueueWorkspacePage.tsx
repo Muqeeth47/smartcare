@@ -204,11 +204,11 @@ export function QueueWorkspacePage() {
                 Search by patient name, triage priority, symptoms, or registration token.
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => setShowQRModal(true)}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-[var(--line)] bg-[var(--surface-sunken)] hover:bg-[var(--mint)] hover:text-[var(--teal)] transition-colors"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 min-h-[40px] px-3 py-2 text-xs font-bold rounded-xl border border-[var(--line)] bg-[var(--surface-sunken)] hover:bg-[var(--mint)] hover:text-[var(--teal)] active:scale-95 transition-all"
               >
                 <QrCode size={15} />
                 <span>Scan QR Ticket</span>
@@ -216,7 +216,7 @@ export function QueueWorkspacePage() {
               <button
                 type="button"
                 onClick={handleRefresh}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-[var(--line)] bg-[var(--surface-sunken)] hover:bg-[var(--surface)] transition-colors"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 min-h-[40px] px-3 py-2 text-xs font-bold rounded-xl border border-[var(--line)] bg-[var(--surface-sunken)] hover:bg-[var(--surface)] active:scale-95 transition-all"
                 title="Refresh queue"
               >
                 <RefreshCw size={14} className={isRefreshing ? 'animate-spin text-[var(--teal)]' : ''} />
@@ -369,13 +369,13 @@ export function QueueWorkspacePage() {
                     </div>
 
                     {/* Right: Advance Action Button */}
-                    <div className="shrink-0 flex items-center justify-end">
+                    <div className="shrink-0 flex items-center justify-end w-full sm:w-auto">
                       {canAdvance && actionData ? (
                         <button
                           type="button"
                           onClick={() => advance(item.id, status)}
                           className={cn(
-                            'flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-xs cursor-pointer',
+                            'flex items-center justify-center gap-1.5 w-full sm:w-auto min-h-[44px] px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all shadow-xs cursor-pointer active:scale-95',
                             actionData.variant === 'emerald'
                               ? 'bg-emerald-600 hover:bg-emerald-700'
                               : actionData.variant === 'amber'
@@ -383,13 +383,12 @@ export function QueueWorkspacePage() {
                               : 'bg-[var(--teal)] hover:bg-[var(--teal-dark)]'
                           )}
                         >
-                          <actionData.icon size={14} />
+                          <actionData.icon size={15} />
                           <span>{actionData.label}</span>
-                          <ArrowRight size={12} />
                         </button>
                       ) : (
-                        <span className="text-xs font-bold text-[var(--muted)] flex items-center gap-1 bg-[var(--surface-sunken)] px-3 py-1.5 rounded-xl border border-[var(--line)]">
-                          <Check size={14} className="text-emerald-600" /> Completed
+                        <span className="text-xs text-[var(--muted)] flex items-center gap-1">
+                          <Check size={14} className="text-emerald-600" /> Done
                         </span>
                       )}
                     </div>
@@ -401,26 +400,36 @@ export function QueueWorkspacePage() {
         </div>
       </div>
 
-      {/* QR Code Scanner Dialog Modal */}
+      {/* QR Scanner / Lookup Modal */}
       {showQRModal && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-          <div className="bg-[var(--surface)] text-[var(--ink)] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[var(--line)] relative space-y-4">
-            <button
-              type="button"
-              onClick={() => setShowQRModal(false)}
-              className="absolute right-4 top-4 p-1.5 rounded-full text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--surface-sunken)] transition-colors"
-            >
-              <X size={18} />
-            </button>
-
-            <div className="flex items-center gap-3">
-              <span className="w-10 h-10 rounded-xl bg-[var(--mint)] text-[var(--teal)] flex items-center justify-center shrink-0">
-                <QrCode size={20} />
-              </span>
-              <div>
-                <h3 className="text-base font-extrabold text-[var(--ink)]">Scan Patient QR Ticket</h3>
-                <p className="text-xs text-[var(--muted)]">Enter or scan ticket token / Medical Passport</p>
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs transition-opacity"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setShowQRModal(false)}
+        >
+          <div
+            className="bg-white rounded-t-2xl sm:rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-[var(--line)] max-h-[85vh] sm:max-h-[90vh] overflow-y-auto space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="w-10 h-10 rounded-xl bg-[var(--mint)] text-[var(--teal)] flex items-center justify-center shrink-0">
+                  <QrCode size={20} />
+                </span>
+                <div>
+                  <h3 className="text-base font-extrabold text-[var(--ink)]">Scan Patient QR Ticket</h3>
+                  <p className="text-xs text-[var(--muted)]">Enter or scan ticket token / Medical Passport</p>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setShowQRModal(false)}
+                className="flex items-center justify-center min-w-[44px] min-h-[44px] rounded-xl text-[var(--muted)] hover:bg-[var(--surface-sunken)] active:scale-95 transition-all"
+                aria-label="Close scanner"
+              >
+                <X size={18} />
+              </button>
             </div>
 
             <div className="space-y-3 pt-2">
@@ -442,7 +451,7 @@ export function QueueWorkspacePage() {
                     key={q.id}
                     type="button"
                     onClick={() => setQrInput(q.id)}
-                    className="font-mono bg-[var(--surface-sunken)] hover:bg-[var(--mint)] px-2 py-0.5 rounded text-[var(--teal)] transition-colors"
+                    className="font-mono bg-[var(--surface-sunken)] hover:bg-[var(--mint)] px-2 py-0.5 rounded text-[var(--teal)] transition-colors min-h-[32px]"
                   >
                     {q.id}
                   </button>
@@ -450,18 +459,18 @@ export function QueueWorkspacePage() {
               </div>
             </div>
 
-            <div className="pt-3 border-t border-[var(--line)] flex items-center justify-end gap-2">
+            <div className="pt-3 border-t border-[var(--line)] flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setShowQRModal(false)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-[var(--muted)] hover:bg-[var(--surface-sunken)] transition-colors"
+                className="w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold text-[var(--muted)] hover:bg-[var(--surface-sunken)] active:scale-95 transition-all"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleLookupQr}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-[var(--teal)] text-white hover:bg-[var(--teal-dark)] transition-colors shadow-xs"
+                className="w-full sm:w-auto min-h-[44px] px-5 py-2 rounded-xl text-xs font-bold bg-[var(--teal)] text-white hover:bg-[var(--teal-dark)] active:scale-95 transition-all shadow-xs"
               >
                 Lookup Patient
               </button>

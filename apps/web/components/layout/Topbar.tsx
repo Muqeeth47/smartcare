@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { HeartPulse, Globe, ChevronDown, Sun, Moon } from 'lucide-react';
 import { useAppStore } from '@/lib/store/app-store';
 import { useShallow } from 'zustand/react/shallow';
+import { cn } from '@/lib/utils';
 
 const LANGUAGES = [
   { code: 'en', label: 'English (EN)' },
@@ -84,7 +85,10 @@ export function Topbar({
     <Link
       id="global-sos-ambulance-btn"
       href="/ambulance"
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black text-white bg-red-600 hover:bg-red-700 transition shadow-md shrink-0 no-underline"
+      className={cn(
+        "items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-black text-white bg-red-600 hover:bg-red-700 transition shadow-md shrink-0 no-underline",
+        variant === 'landing' ? "inline-flex" : "hidden sm:inline-flex"
+      )}
       style={{
         boxShadow: '0 0 12px rgba(229, 62, 62, 0.65)',
         minHeight: '36px',
@@ -92,18 +96,18 @@ export function Topbar({
       title="Emergency Ambulance Dispatch"
     >
       <Siren className="w-3.5 h-3.5 animate-pulse text-white" />
-      <span className="tracking-wide uppercase text-[11px] sm:text-xs font-black">SOS Ambulance</span>
+      <span className="tracking-wide uppercase text-[10px] sm:text-xs font-black">SOS Ambulance</span>
     </Link>
   ) : null;
 
   // ── Topbar controls shared across variants ─────────────────────────────────
   const Controls = (
-    <div className="topbar-control-group flex items-center gap-1.5">
+    <div className="topbar-control-group flex items-center gap-1 sm:gap-1.5">
       {/* Persistent SOS Button */}
       {SosBeaconButton}
 
       {/* Font size controls: A- A A+ */}
-      <div className="font-scale-controls flex items-center border border-[var(--line)] rounded-[var(--radius)] overflow-hidden bg-[var(--surface)] divide-x divide-[var(--line)]" aria-label="Font size controls">
+      <div className="font-scale-controls flex items-center border border-[var(--line)] rounded-[var(--radius)] overflow-hidden bg-[var(--surface)] divide-x divide-[var(--line)] shrink-0" aria-label="Font size controls">
         <button
           id="font-scale-decrease"
           type="button"
@@ -111,7 +115,7 @@ export function Topbar({
           disabled={fontScale <= -2}
           title="Decrease font size"
           aria-label="Decrease font size"
-          className="flex items-center justify-center w-8 h-8 text-[0.7rem] font-bold text-[var(--text-muted)] hover:bg-[var(--mint)] hover:text-[var(--teal)] transition-colors disabled:opacity-35 disabled:cursor-not-allowed cursor-pointer"
+          className="flex items-center justify-center w-7 sm:w-8 h-8 text-[0.7rem] font-bold text-[var(--text-muted)] hover:bg-[var(--mint)] hover:text-[var(--teal)] transition-colors disabled:opacity-35 disabled:cursor-not-allowed cursor-pointer"
         >
           A<span className="text-[0.5rem] leading-none">-</span>
         </button>
@@ -121,7 +125,7 @@ export function Topbar({
           onClick={() => setFontScale(0)}
           title="Reset font size to default"
           aria-label="Reset font size"
-          className="flex items-center justify-center w-8 h-8 text-[0.8rem] font-extrabold transition-colors cursor-pointer"
+          className="flex items-center justify-center w-7 sm:w-8 h-8 text-[0.78rem] font-extrabold transition-colors cursor-pointer"
           style={{ color: fontScale === 0 ? 'var(--teal)' : 'var(--text-muted)' }}
         >
           A
@@ -133,7 +137,7 @@ export function Topbar({
           disabled={fontScale >= 2}
           title="Increase font size"
           aria-label="Increase font size"
-          className="flex items-center justify-center w-8 h-8 text-[0.95rem] font-bold text-[var(--text-muted)] hover:bg-[var(--mint)] hover:text-[var(--teal)] transition-colors disabled:opacity-35 disabled:cursor-not-allowed cursor-pointer"
+          className="flex items-center justify-center w-7 sm:w-8 h-8 text-[0.9rem] font-bold text-[var(--text-muted)] hover:bg-[var(--mint)] hover:text-[var(--teal)] transition-colors disabled:opacity-35 disabled:cursor-not-allowed cursor-pointer"
         >
           A<span className="text-[0.55rem] leading-none">+</span>
         </button>
@@ -148,7 +152,7 @@ export function Topbar({
           aria-label={isSidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
           aria-expanded={!isSidebarCollapsed}
           title={isSidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
-          className="topbar-control-btn mobile-menu-btn flex items-center justify-center w-9 h-9 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-[var(--teal)] hover:bg-[var(--mint)] transition-colors cursor-pointer"
+          className="topbar-control-btn mobile-menu-btn flex items-center justify-center min-w-[38px] min-h-[38px] w-9 h-9 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-[var(--teal)] hover:bg-[var(--mint)] active:scale-95 transition-all cursor-pointer shrink-0"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
@@ -157,20 +161,20 @@ export function Topbar({
       )}
 
       {/* Language selector */}
-      <div className="lang-dropdown-wrapper relative flex items-center gap-1 h-9 px-2.5 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--mint)] transition-colors">
-        <Globe size={14} className="lang-globe-icon text-[var(--text-muted)] shrink-0 pointer-events-none" />
+      <div className="lang-dropdown-wrapper relative flex items-center gap-1 h-9 px-2 sm:px-2.5 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--mint)] transition-colors shrink-0">
+        <Globe size={13} className="lang-globe-icon text-[var(--text-muted)] shrink-0 pointer-events-none" />
         <select
           id="global-lang-select"
           value={lang}
           onChange={handleLangChange}
           aria-label="Select language"
-          className="lang-select-native appearance-none bg-transparent text-[var(--text)] text-xs font-semibold border-none outline-none cursor-pointer pr-4 max-w-[5rem]"
+          className="lang-select-native appearance-none bg-transparent text-[var(--text)] text-xs font-semibold border-none outline-none cursor-pointer pr-3.5 max-w-[3.4rem] sm:max-w-[5rem]"
         >
           {LANGUAGES.map((l) => (
             <option key={l.code} value={l.code}>{l.label}</option>
           ))}
         </select>
-        <ChevronDown size={11} className="lang-dropdown-icon text-[var(--text-muted)] shrink-0 pointer-events-none absolute right-1.5" />
+        <ChevronDown size={10} className="lang-dropdown-icon text-[var(--text-muted)] shrink-0 pointer-events-none absolute right-1 sm:right-1.5" />
       </div>
 
       {/* Theme toggle */}
@@ -179,10 +183,10 @@ export function Topbar({
         onClick={handleThemeToggle}
         aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
         title={`Theme: ${themeLabel} (Click to toggle)`}
-        className="topbar-control-btn flex items-center gap-1.5 h-9 px-2.5 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-xs font-bold hover:bg-[var(--mint)] transition-colors"
+        className="topbar-control-btn flex items-center justify-center gap-1.5 min-w-[38px] min-h-[38px] h-9 px-2 sm:px-2.5 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-xs font-bold hover:bg-[var(--mint)] active:scale-95 transition-all shrink-0"
       >
         <ThemeIcon size={14} />
-        <span className="hidden sm:inline">{themeLabel}</span>
+        <span className="hidden md:inline">{themeLabel}</span>
       </button>
     </div>
   );

@@ -26,6 +26,9 @@ interface TopbarProps {
   subtitle?: string;
 }
 
+import { usePathname } from 'next/navigation';
+import { Siren } from 'lucide-react';
+
 export function Topbar({
   variant = 'landing',
   onMenuClick,
@@ -35,6 +38,9 @@ export function Topbar({
   title,
   subtitle,
 }: TopbarProps) {
+  const pathname = usePathname() || '';
+  const isAmbulancePage = pathname.startsWith('/ambulance');
+
   const { theme, setTheme, showToast } = useAppStore(
     useShallow((s) => ({ theme: s.theme, setTheme: s.setTheme, showToast: s.showToast }))
   );
@@ -73,9 +79,29 @@ export function Topbar({
   const ThemeIcon = theme === 'dark' ? Moon : Sun;
   const themeLabel = theme === 'dark' ? 'Dark' : 'Light';
 
+  // ── Persistent Glowing SOS Ambulance Button ────────────────────────────────
+  const SosBeaconButton = !isAmbulancePage ? (
+    <Link
+      id="global-sos-ambulance-btn"
+      href="/ambulance"
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black text-white bg-red-600 hover:bg-red-700 transition shadow-md shrink-0 no-underline"
+      style={{
+        boxShadow: '0 0 12px rgba(229, 62, 62, 0.65)',
+        minHeight: '36px',
+      }}
+      title="Emergency Ambulance Dispatch"
+    >
+      <Siren className="w-3.5 h-3.5 animate-pulse text-white" />
+      <span className="tracking-wide uppercase text-[11px] sm:text-xs">🚨 SOS Ambulance</span>
+    </Link>
+  ) : null;
+
   // ── Topbar controls shared across variants ─────────────────────────────────
   const Controls = (
     <div className="topbar-control-group flex items-center gap-2">
+      {/* Persistent SOS Button */}
+      {SosBeaconButton}
+
       {/* Workspace & Patient navigation toggle (collapses on desktop, opens drawer on mobile) */}
       {(variant === 'workspace' || variant === 'patient') && onMenuClick && (
         <button
@@ -160,35 +186,36 @@ export function Topbar({
     );
   }
 
-  // ── Landing topbar — exact match to old shell-nav ──────────────────────────
-  // Old: white bg, brand-lockup left, nav-links centre, nav-actions right
+  // ── Landing topbar ─────────────────────────────────────────────────────────
   return (
     <header
       data-section="site-header"
       className="shell-nav sticky top-0 z-[100] bg-[var(--surface)] border-b border-[var(--line)]"
     >
-      <div className="max-w-[1240px] mx-auto px-5 sm:px-6 h-[70px] flex items-center justify-between gap-4">
+      <div className="max-w-[1240px] mx-auto px-4 sm:px-6 py-2.5 sm:py-0 min-h-[70px] flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
 
         {/* Brand lockup */}
-        <Link href="/" aria-label="SmartCare home" className="brand-lockup flex items-center gap-3 no-underline shrink-0">
+        <Link href="/" aria-label="SmartCare home" className="brand-lockup flex items-center gap-2.5 sm:gap-3 no-underline shrink-0">
           <span
-            className="brand-mark w-[2.7rem] h-[2.7rem] rounded-[0.9rem] flex items-center justify-center text-white shrink-0"
+            className="brand-mark w-9 h-9 sm:w-[2.7rem] sm:h-[2.7rem] rounded-[0.8rem] sm:rounded-[0.9rem] flex items-center justify-center text-white shrink-0"
             style={{ background: 'var(--teal-dark)', boxShadow: '0 8px 18px rgba(18,61,53,.20)' }}
           >
-            <HeartPulse size={21} />
+            <HeartPulse size={19} className="sm:w-[21px] sm:h-[21px]" />
           </span>
           <span className="flex flex-col">
-            <span className="brand-name text-[0.95rem] font-extrabold text-[var(--text)] leading-none">SmartCare</span>
-            <span className="brand-caption text-[0.6rem] text-[var(--text-muted)] leading-none mt-0.5 uppercase tracking-widest">Care access, simplified</span>
+            <span className="brand-name text-[0.9rem] sm:text-[0.95rem] font-extrabold text-[var(--text)] leading-none">SmartCare</span>
+            <span className="brand-caption text-[0.58rem] sm:text-[0.6rem] text-[var(--text-muted)] leading-none mt-0.5 uppercase tracking-widest">Care access, simplified</span>
           </span>
         </Link>
 
-        {/* Nav links — hidden on mobile */}
-        <nav className="nav-links hidden md:flex items-center gap-6" aria-label="Primary navigation">
-          <a href="#how-it-works" className="text-[0.88rem] font-bold text-[var(--text-muted)] hover:text-[var(--teal)] transition-colors no-underline">How it works</a>
-          <a href="#for-providers"  className="text-[0.88rem] font-bold text-[var(--text-muted)] hover:text-[var(--teal)] transition-colors no-underline">For hospitals</a>
-          <Link href="/donate"      className="text-[0.88rem] font-bold text-[var(--text-muted)] hover:text-[var(--teal)] transition-colors no-underline">Donation</Link>
-          <a href="#trust"          className="text-[0.88rem] font-bold text-[var(--text-muted)] hover:text-[var(--teal)] transition-colors no-underline">Why SmartCare</a>
+        {/* Primary nav links — Desktop row, Mobile touch-scrollable horizontal pill bar */}
+        <nav className="nav-links flex items-center" aria-label="Primary navigation">
+          <a href="/#how-it-works" className="nav-link-item">How it works</a>
+          <Link href="/ambulance" className="nav-link-item nav-link-highlight text-red-600 font-extrabold">🚨 Ambulance</Link>
+          <Link href="/pharmacy" className="nav-link-item">Pharmacy</Link>
+          <Link href="/verify-rx" className="nav-link-item">Verify Rx</Link>
+          <Link href="/donate" className="nav-link-item">Donation</Link>
+          <a href="/#for-providers" className="nav-link-item">For hospitals</a>
         </nav>
 
         {/* Actions: lang + theme + sign in + sign up */}
@@ -197,14 +224,14 @@ export function Topbar({
           <Link
             id="nav-login"
             href="/login"
-            className="btn-ghost flex items-center justify-center h-[2.75rem] px-3 rounded-[0.65rem] text-[0.84rem] font-extrabold text-[var(--text-muted)] hover:bg-[var(--mint)] transition-colors border border-transparent no-underline"
+            className="btn-ghost hidden sm:flex items-center justify-center h-[2.75rem] px-3 rounded-[0.65rem] text-[0.84rem] font-extrabold text-[var(--text-muted)] hover:bg-[var(--mint)] transition-colors border border-transparent no-underline"
           >
             Sign in
           </Link>
           <Link
             id="nav-signup"
             href="/login?mode=signup"
-            className="btn-primary flex items-center justify-center h-[2.75rem] px-4 rounded-[0.65rem] text-[0.84rem] font-extrabold text-white transition-all no-underline"
+            className="btn-primary flex items-center justify-center h-[2.4rem] sm:h-[2.75rem] px-3 sm:px-4 rounded-[0.65rem] text-xs sm:text-[0.84rem] font-extrabold text-white transition-all no-underline"
             style={{ background: 'var(--teal)', boxShadow: '0 4px 12px rgba(15,92,168,.28)' }}
           >
             Sign up

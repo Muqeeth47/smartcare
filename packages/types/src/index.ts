@@ -44,18 +44,26 @@ export interface QueueItem {
   patientEmail?: string;
   patientAuthId?: string;
   demoMirrored?: boolean;
+  rxId?: string;
   created_at: string;
   updated_at?: string;
+  // Cancellation and Refund fields
+  cancelledBy?: 'patient' | 'doctor';
+  cancellationReason?: string;
+  cancelledAt?: string;
+  refundStatus?: 'none' | 'eligible' | 'claimed' | 'processed';
+  refundRef?: string;
+  refundClaimedAt?: string;
 }
 
 export interface AppointmentBooking {
   name: string;
   age: string;
   gender: string;
-  doctorPref: string;
   department: string;
-  doctorId: string;
-  doctorName: string;
+  doctorId?: string;
+  doctorName?: string;
+  doctorPref?: string;
   consultationType: string;
   appointmentDate: string;
   appointmentSlot: string;
@@ -69,6 +77,13 @@ export interface AppointmentBooking {
   state: string;
   city: string;
   lastBookingId?: string;
+  status?: string;
+  cancelledBy?: 'patient' | 'doctor';
+  cancellationReason?: string;
+  cancelledAt?: string;
+  refundStatus?: 'none' | 'eligible' | 'claimed' | 'processed';
+  refundRef?: string;
+  refundClaimedAt?: string;
 }
 
 export type DonationPost = PatientDonationPost;
@@ -115,6 +130,12 @@ export interface PatientVisit {
   consultationType?: string;
   appointmentDate?: string;
   appointmentSlot?: string;
+  cancelledBy?: 'patient' | 'doctor';
+  cancellationReason?: string;
+  cancelledAt?: string;
+  refundStatus?: 'none' | 'eligible' | 'claimed' | 'processed';
+  refundRef?: string;
+  refundClaimedAt?: string;
 }
 
 // ─── Medical History (Passport) ──────────────────────────────────────────────
@@ -177,7 +198,7 @@ export interface PatientMedicalHistory {
   emergencyProtocols: EmergencyProtocolItem[];
 }
 
-// ─── Prescriptions ───────────────────────────────────────────────────────────
+// ─── Prescriptions & Anti-Abuse QR ───────────────────────────────────────────
 
 export interface PrescriptionMedicine {
   name: string;
@@ -188,13 +209,80 @@ export interface PrescriptionMedicine {
 }
 
 export interface Prescription {
+  rxId?: string;
   visitId?: string;
+  patientName?: string;
+  patientAge?: number;
+  patientGender?: string;
+  doctorName?: string;
+  doctorRegNo?: string;
+  vitals?: { bp?: string; pulse?: string; temp?: string; weight?: string; spo2?: string };
   assessment: string;
   medicines: PrescriptionMedicine[];
   labSummary?: string;
   providerName?: string;
+  doctorNmc?: string;
+  hospital?: string;
   issuedAt?: string;
+  status?: 'active' | 'dispensed';
+  dispensedAt?: string;
+  dispensedBy?: string;
+  dispensedPharmacist?: string;
+  pharmacistLicense?: string;
+  tamperHash?: string;
   demo?: boolean;
+}
+
+// ─── Ambulance & Emergency Trauma Fleet ──────────────────────────────────────
+
+export interface AmbulanceDriver {
+  name: string;
+  phone: string;
+  vehicleNo: string;
+  vehicleModel: string;
+}
+
+export interface AmbulanceBooking {
+  id: string;
+  type: 'BLS' | 'ALS' | 'PatientTransport';
+  typeLabel: string;
+  status: 'dispatched' | 'cancelled' | 'completed';
+  patientName: string;
+  patientPhone: string;
+  pickupAddress: string;
+  coords?: { lat: number; lng: number };
+  hospital: string;
+  cost: number;
+  driver: AmbulanceDriver;
+  etaMinutes: number;
+  dispatchedAt: string;
+  cancelReason?: string;
+  cancelledAt?: string;
+}
+
+// ─── Pharmacy Orders ─────────────────────────────────────────────────────────
+
+export interface PharmacyOrderItem {
+  name: string;
+  isGeneric: boolean;
+  price: number;
+  quantity: number;
+  qty?: number;
+}
+
+export interface PharmacyOrder {
+  id: string;
+  rxId: string;
+  patientName: string;
+  patientPhone?: string;
+  counterNo: string;
+  items: PharmacyOrderItem[];
+  total: number;
+  fulfillmentType: 'counter' | 'delivery';
+  deliveryAddress?: string;
+  status: 'placed' | 'preparing' | 'ready' | 'dispensed' | 'completed';
+  createdAt: string;
+  updatedAt?: string;
 }
 
 // ─── Donations ───────────────────────────────────────────────────────────────

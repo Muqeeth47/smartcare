@@ -10,6 +10,8 @@ import type {
   BloodDonationCentre,
   ProfessionalProfile,
   AppointmentBooking,
+  AmbulanceBooking,
+  PharmacyOrder,
 } from '@smartcare/types';
 
 // ─── Storage helpers ─────────────────────────────────────────────────────────
@@ -36,6 +38,9 @@ const QUEUE_KEY = 'smartcare.demoQueue';
 const ACCOUNTS_KEY = 'smartcare.localAccounts';
 const PRESCRIPTIONS_KEY = 'smartcare.prescriptions';
 const DONATIONS_KEY = 'smartcare.donations';
+const AMBULANCE_KEY = 'smartcare.activeAmbulance';
+const AMBULANCE_HISTORY_KEY = 'smartcare.ambulanceHistory';
+const PHARMACY_ORDERS_KEY = 'smartcare.pharmacyOrders';
 
 // ─── Default Data ────────────────────────────────────────────────────────────
 
@@ -140,14 +145,45 @@ const DEFAULT_DONATIONS: DonationsData = {
 
 const DEFAULT_PRESCRIPTIONS: Record<string, Prescription> = {
   'visit-demo-001': {
-    assessment: 'Seasonal upper respiratory symptoms; demo clinical summary only.',
-    medicines: [{ name: 'Paracetamol', strength: '500 mg', dosage: 'One tablet when needed', duration: 'Up to 3 days', instructions: 'Take after food; follow clinician guidance' }],
-    labSummary: 'Demo CBC summary: parameters shown within the sample reference range.',
+    rxId: 'RX-2026-DEMO01',
+    visitId: 'visit-demo-001',
+    patientName: 'Asha Rao',
+    patientAge: 29,
+    patientGender: 'Female',
+    vitals: { bp: '120/80 mmHg', pulse: '72 bpm', temp: '98.6°F', weight: '58 kg' },
+    assessment: 'Seasonal upper respiratory symptoms; acute pharyngitis and mild fever.',
+    medicines: [
+      { name: 'Paracetamol', strength: '500 mg', dosage: '1-0-1', duration: '3 days', instructions: 'Take after food for fever control' },
+      { name: 'Amoxyclav', strength: '625 mg', dosage: '1-0-1', duration: '5 days', instructions: 'Complete full antibacterial course' },
+      { name: 'Cetirizine', strength: '10 mg', dosage: '0-0-1', duration: '5 days', instructions: 'Take at bedtime for allergic congestion' },
+    ],
+    labSummary: 'Demo CBC summary: parameters within normal reference range.',
     providerName: 'Dr Meera Shah',
+    doctorNmc: 'NMC-2018-94821',
+    hospital: 'SmartCare Community Hospital',
     issuedAt: '18 Jul 2026',
+    status: 'active',
+    tamperHash: 'SEC-99A82B-VERIFIED',
     demo: true,
   },
 };
+
+const DEFAULT_PHARMACY_ORDERS: PharmacyOrder[] = [
+  {
+    id: 'PHARM-DEMO1',
+    rxId: 'RX-2026-DEMO01',
+    patientName: 'Asha Rao',
+    counterNo: 'Counter #02',
+    items: [
+      { name: 'Paracetamol 500mg', isGeneric: true, price: 15, quantity: 1 },
+      { name: 'Amoxyclav 625mg', isGeneric: false, price: 120, quantity: 1 },
+    ],
+    total: 135,
+    fulfillmentType: 'counter',
+    status: 'ready',
+    createdAt: new Date(Date.now() - 25 * 60000).toISOString(),
+  },
+];
 
 const DEFAULT_MEDICAL_HISTORY: PatientMedicalHistory = {
   lastUpdated: '',
@@ -328,17 +364,242 @@ export const DemoDB = {
 
   submitDonationInterest: async (payload: Record<string, unknown>) => ({ success: true, id: `donation-demo-${Date.now()}`, payload }),
 
-  // Prescriptions
+  // Appointments Cancellation & Refunds
+  cancelAppointment: async (
+    id: string,
+    cancelledBy: 'patient' | 'doctor' = 'patient',
+    reason = 'Schedule conflict'
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const updates: Partial<QueueItem> = {
+        status: 'cancelled',
+        cancelledBy,
+        cancellationReason: reason,
+        cancelledAt: new Date().toISOString(),
+        refundStatus: cancelledBy === 'doctor' ? 'eligible' : 'none',
+      };
+      await DemoDB.updatePatient(id, updates);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('smartcare:appointment-cancelled', {
+            detail: { id, cancelledBy, reason, cancelledAt: updates.cancelledAt },
+          })
+        );
+      }
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error?.message || 'Failed to cancel appointment.' };
+    }
+  },
+
+  claimRefund: async (id: string): Promise<{ success: boolean; ref?: string; error?: string }> => {
+    try {
+      const ref = 'REF-' + Date.now().toString(36).toUpperCase();
+      const updates: Partial<QueueItem> = {
+        refundStatus: 'claimed',
+        refundRef: ref,
+        refundClaimedAt: new Date().toISOString(),
+      };
+      await DemoDB.updatePatient(id, updates);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('smartcare:refund-claimed', { detail: { id, ref, now: updates.refundClaimedAt } }));
+      }
+      return { success: true, ref };
+    } catch (error: any) {
+      return { success: false, error: error?.message || 'Failed to claim refund' };
+    }
+  },
+
+  getCancelledAppointments: (): QueueItem[] => {
+    const queue = getQueue();
+    return queue.filter((item) => item.status === 'cancelled');
+  },
+
+  // Prescriptions & Anti-Abuse
   getPrescription: (visitId: string): Prescription | null => {
     const stored = readStorage<Record<string, Prescription>>(PRESCRIPTIONS_KEY) || {};
     return stored[visitId] || DEFAULT_PRESCRIPTIONS[visitId] || null;
   },
 
-  savePrescription: (visitId: string, prescription: Prescription): Prescription => {
+  getPrescriptionByRxId: (rxId: string): Prescription | null => {
+    const clean = String(rxId || '').trim();
+    if (!clean) return null;
     const stored = readStorage<Record<string, Prescription>>(PRESCRIPTIONS_KEY) || {};
-    stored[visitId] = { ...prescription, visitId, demo: true };
+    for (const key of Object.keys(stored)) {
+      if (stored[key].rxId === clean || key === clean) {
+        return stored[key];
+      }
+    }
+    // Check default prescriptions
+    for (const key of Object.keys(DEFAULT_PRESCRIPTIONS)) {
+      if (DEFAULT_PRESCRIPTIONS[key].rxId === clean || key === clean) {
+        return DEFAULT_PRESCRIPTIONS[key];
+      }
+    }
+    if (clean === 'RX-2026-DEMO01' || clean === 'visit-demo-001' || clean === 'SC-DEMO001' || clean === 'RX-2026-8821') {
+      return DEFAULT_PRESCRIPTIONS['visit-demo-001'];
+    }
+    return null;
+  },
+
+  savePrescription: (visitId: string, prescription: Prescription): Prescription => {
+    const id = String(visitId || '');
+    if (!id) throw new Error('A visit reference is required.');
+    const stored = readStorage<Record<string, Prescription>>(PRESCRIPTIONS_KEY) || {};
+    const rxId = prescription.rxId || `RX-2026-${Math.floor(100000 + Math.random() * 900000)}`;
+    const saved: Prescription = {
+      ...prescription,
+      rxId,
+      visitId: id,
+      doctorNmc: prescription.doctorNmc || 'NMC-2018-94821',
+      hospital: prescription.hospital || 'SmartCare Community Hospital',
+      status: prescription.status || 'active',
+      tamperHash: prescription.tamperHash || `SEC-${Math.random().toString(36).slice(2, 8).toUpperCase()}-VERIFIED`,
+      demo: true,
+    };
+    stored[id] = saved;
     writeStorage(PRESCRIPTIONS_KEY, stored);
-    return stored[visitId];
+    return saved;
+  },
+
+  dispensePrescription: (
+    rxId: string,
+    pharmacistInfo: { pharmacistName?: string; pharmacyName?: string; licenseNo?: string } = {}
+  ): { success: boolean; prescription?: Prescription; alreadyDispensed?: boolean; error?: string } => {
+    const clean = String(rxId || '').trim();
+    const stored = readStorage<Record<string, Prescription>>(PRESCRIPTIONS_KEY) || {};
+    let foundKey: string | null = null;
+    for (const key of Object.keys(stored)) {
+      if (stored[key].rxId === clean || key === clean) {
+        foundKey = key;
+        break;
+      }
+    }
+    if (!foundKey && (clean === 'RX-2026-DEMO01' || clean === 'visit-demo-001' || clean === 'SC-DEMO001' || clean === 'RX-2026-8821')) {
+      foundKey = 'visit-demo-001';
+      stored[foundKey] = { ...DEFAULT_PRESCRIPTIONS['visit-demo-001'] };
+    }
+    if (!foundKey || !stored[foundKey]) {
+      return { success: false, error: 'Prescription record not found in registered hospital database.' };
+    }
+    if (stored[foundKey].status === 'dispensed') {
+      return {
+        success: false,
+        alreadyDispensed: true,
+        error: `This prescription was already dispensed at ${stored[foundKey].dispensedBy || 'SmartCare Pharmacy'} on ${stored[foundKey].dispensedAt || 'an earlier date'}. Duplicate dispensing is strictly prohibited.`,
+      };
+    }
+    stored[foundKey].status = 'dispensed';
+    stored[foundKey].dispensedAt = new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+    stored[foundKey].dispensedBy = pharmacistInfo.pharmacyName || 'SmartCare Hospital In-House Dispensary';
+    stored[foundKey].dispensedPharmacist = pharmacistInfo.pharmacistName || 'Registered Pharmacist';
+    stored[foundKey].pharmacistLicense = pharmacistInfo.licenseNo || 'TS-PH-8821';
+    writeStorage(PRESCRIPTIONS_KEY, stored);
+    return { success: true, prescription: stored[foundKey] };
+  },
+
+  // Ambulance Fleet Management
+  getActiveAmbulance: (): AmbulanceBooking | null => {
+    return readStorage<AmbulanceBooking>(AMBULANCE_KEY) || null;
+  },
+
+  bookAmbulance: (request: Partial<AmbulanceBooking>): AmbulanceBooking => {
+    const id = 'AMB-' + Date.now().toString(36).toUpperCase();
+    const booking: AmbulanceBooking = {
+      id,
+      type: request.type || 'ALS',
+      typeLabel:
+        request.type === 'BLS'
+          ? 'Basic Life Support (BLS)'
+          : request.type === 'PatientTransport'
+          ? 'Patient Transport Vehicle'
+          : 'Advanced Life Support / ICU (ALS)',
+      status: 'dispatched',
+      patientName: request.patientName || 'Emergency Patient',
+      patientPhone: request.patientPhone || '+91 98490 12345',
+      pickupAddress: request.pickupAddress || 'Current GPS Emergency Location',
+      coords: request.coords || { lat: 17.4126, lng: 78.4482 },
+      hospital: request.hospital || 'SmartCare Trauma Centre (Banjara Hills)',
+      cost: request.type === 'BLS' ? 750 : request.type === 'PatientTransport' ? 500 : 1800,
+      driver: {
+        name: 'Ram Singh (Senior EMT)',
+        phone: '+91 98490 11234',
+        vehicleNo: 'TS-09-EM-4412',
+        vehicleModel: 'Force Traveller Advanced ICU',
+      },
+      etaMinutes: request.type === 'ALS' ? 7 : request.type === 'BLS' ? 10 : 18,
+      dispatchedAt: new Date().toISOString(),
+    };
+    writeStorage(AMBULANCE_KEY, booking);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('smartcare:ambulance-dispatched', { detail: booking }));
+    }
+    return booking;
+  },
+
+  cancelAmbulance: (id: string, reason = 'Emergency situation managed'): { success: boolean; error?: string } => {
+    const current = DemoDB.getActiveAmbulance();
+    if (current && current.id === id) {
+      current.status = 'cancelled';
+      current.cancelReason = reason;
+      current.cancelledAt = new Date().toISOString();
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(AMBULANCE_KEY);
+        const history = readStorage<AmbulanceBooking[]>(AMBULANCE_HISTORY_KEY) || [];
+        history.unshift(current);
+        writeStorage(AMBULANCE_HISTORY_KEY, history.slice(0, 10));
+        window.dispatchEvent(new CustomEvent('smartcare:ambulance-cancelled', { detail: current }));
+      }
+      return { success: true };
+    }
+    return { success: false, error: 'No active ambulance dispatch found.' };
+  },
+
+  // In-House Pharmacy Orders
+  getPharmacyOrders: (): PharmacyOrder[] => {
+    const stored = readStorage<PharmacyOrder[]>(PHARMACY_ORDERS_KEY);
+    return Array.isArray(stored) && stored.length ? stored : DEFAULT_PHARMACY_ORDERS;
+  },
+
+  createPharmacyOrder: (order: Partial<PharmacyOrder>): PharmacyOrder => {
+    const orders = DemoDB.getPharmacyOrders();
+    const id = 'PHARM-' + Date.now().toString(36).toUpperCase();
+    const newOrder: PharmacyOrder = {
+      id,
+      rxId: order.rxId || 'RX-DIRECT',
+      patientName: order.patientName || 'Patient',
+      counterNo: order.fulfillmentType === 'counter' ? 'Counter #02' : 'Home Delivery Dispatch',
+      items: order.items || [],
+      total: order.total || 0,
+      fulfillmentType: order.fulfillmentType || 'counter',
+      deliveryAddress: order.deliveryAddress,
+      status: 'placed',
+      createdAt: new Date().toISOString(),
+    };
+    orders.unshift(newOrder);
+    writeStorage(PHARMACY_ORDERS_KEY, orders.slice(0, 30));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('smartcare:pharmacy-order-created', { detail: newOrder }));
+    }
+    return newOrder;
+  },
+
+  updatePharmacyOrderStatus: (
+    id: string,
+    nextStatus: PharmacyOrder['status']
+  ): { success: boolean; error?: string } => {
+    const orders = DemoDB.getPharmacyOrders();
+    const found = orders.find((o) => o.id === id);
+    if (found) {
+      found.status = nextStatus;
+      found.updatedAt = new Date().toISOString();
+      writeStorage(PHARMACY_ORDERS_KEY, orders);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('smartcare:pharmacy-order-updated', { detail: found }));
+      }
+      return { success: true };
+    }
+    return { success: false, error: 'Order not found' };
   },
 
   // Donations

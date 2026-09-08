@@ -29,14 +29,19 @@ import {
   BadgeInfo,
   Hospital as HospitalIcon,
   Camera,
+  Ban,
+  ShieldCheck,
+  ExternalLink,
 } from 'lucide-react';
 import type { QueueItem, Prescription, QueueStatus, PatientMedicalHistory } from '@smartcare/types';
+import { useAmbulance } from '@/lib/store/app-store';
 
 export function HospitalWorkspacePage() {
   const { role } = useAuthGuard(['doctor', 'staff']);
   const { hospital, city } = useSession();
-  const { queue, metrics, sorted, nextPatient } = useQueue();
-  const { updateQueueItem, showToast } = useAppStore();
+  const { queue, metrics, sorted, nextPatient, cancelledQueue } = useQueue();
+  const { updateQueueItem, cancelAppointment, showToast } = useAppStore();
+  const { activeAmbulance } = useAmbulance();
   const router = useRouter();
 
   // QR Scanner modal state
@@ -48,6 +53,10 @@ export function HospitalWorkspacePage() {
     history: PatientMedicalHistory;
   } | null>(null);
 
+  // Cancellation modal state
+  const [cancellingPatient, setCancellingPatient] = useState<QueueItem | null>(null);
+  const [cancelReason, setCancelReason] = useState('Doctor summoned for emergency trauma surgery');
+
   // Prescription modal state
   const [editingPatient, setEditingPatient] = useState<QueueItem | null>(null);
   const [rxAssessment, setRxAssessment] = useState('');
@@ -57,6 +66,9 @@ export function HospitalWorkspacePage() {
   const [rxDuration, setRxDuration] = useState('');
   const [rxInstructions, setRxInstructions] = useState('');
   const [rxLabSummary, setRxLabSummary] = useState('');
+  const [rxBp, setRxBp] = useState('120/80 mmHg');
+  const [rxPulse, setRxPulse] = useState('72 bpm');
+  const [rxSpo2, setRxSpo2] = useState('99%');
 
   if (!role) return null;
 
@@ -98,6 +110,15 @@ export function HospitalWorkspacePage() {
     setRxDuration(med?.duration || '');
     setRxInstructions(med?.instructions || '');
     setRxLabSummary(existing?.labSummary || '');
+    if (existing?.vitals) {
+      setRxBp(existing.vitals.bp || '120/80 mmHg');
+      setRxPulse(existing.vitals.pulse || '72 bpm');
+      setRxSpo2(existing.vitals.spo2 || '99%');
+    } else {
+      setRxBp('120/80 mmHg');
+      setRxPulse('72 bpm');
+      setRxSpo2('99%');
+    }
     setEditingPatient(patient);
   };
 
@@ -116,15 +137,27 @@ export function HospitalWorkspacePage() {
         ]
       : [];
 
+    const rxId = editingPatient.rxId || `RX-2026-${editingPatient.id.slice(-6).toUpperCase()}`;
+
     DemoDB.savePrescription(editingPatient.id, {
+      rxId,
       assessment: rxAssessment.trim(),
       medicines,
       labSummary: rxLabSummary.trim(),
       providerName: 'Dr Meera Shah',
+      doctorName: 'Dr Meera Shah',
+      doctorRegNo: 'NMC-2018-94821',
+      hospital: hospital || 'SmartCare Community Hospital',
+      tamperHash: 'SEC-99A82B-VERIFIED',
+      vitals: {
+        bp: rxBp,
+        pulse: rxPulse,
+        spo2: rxSpo2,
+      },
       issuedAt: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
     });
 
-    showToast(`Demo prescription saved for ${editingPatient.name}`, 'success');
+    showToast(`Prescription ${rxId} issued with tamper-proof QR code.`, 'success');
     setEditingPatient(null);
   };
 
@@ -159,9 +192,40 @@ export function HospitalWorkspacePage() {
     }
   };
 
+
   return (
     <WorkspaceShell title="Hospital workspace" subtitle="Hospital portal" backHref="/" backLabel="Back to home">
       <div className="max-w-6xl mx-auto py-6 space-y-6">
+        {/* Incoming Emergency Trauma Alert Banner */}
+        {activeAmbulance && activeAmbulance.status === 'dispatched' && (
+          <div className="emergency-trauma-banner bg-red-50 border-2 border-red-300 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md animate-pulse">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-red-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                <Siren className="w-6 h-6 animate-bounce" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <strong className="text-red-700 text-sm sm:text-base font-extrabold uppercase tracking-wide">
+                    🚨 INCOMING EMERGENCY TRAUMA ALERT ({activeAmbulance.typeLabel})
+                  </strong>
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-200">
+                    ICU Bed #03 Held
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-700 mt-1">
+                  Patient: <strong>{activeAmbulance.patientName}</strong> (Age 48 · Severe respiratory distress) · Vehicle: <strong>{activeAmbulance.driver.vehicleNo}</strong> · ETA:{' '}
+                  <strong className="text-red-700 font-extrabold">~{activeAmbulance.etaMinutes} mins</strong>
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="px-3 py-1.5 rounded-xl bg-white border border-red-200 text-xs font-bold text-red-700 shadow-2xs">
+                Trauma Team Standby
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Header matching original provider-header */}
         <header className="provider-header flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b-2 border-[#0a3b69] pb-3 mb-5">
           <div>
@@ -242,14 +306,25 @@ export function HospitalWorkspacePage() {
               </button>
 
               {current && (
-                <button
-                  id="issue-prescription"
-                  type="button"
-                  onClick={() => handleOpenPrescriptionModal(current)}
-                  className="btn-secondary flex items-center gap-1.5 h-10 px-4 rounded-xl text-xs font-bold text-white border border-white/25 bg-transparent hover:bg-white hover:text-[#0a3b69] transition-all"
-                >
-                  <NotebookPen size={16} /> {currentPrescription ? 'Edit' : 'Create'} demo Rx
-                </button>
+                <>
+                  <button
+                    id="issue-prescription"
+                    type="button"
+                    onClick={() => handleOpenPrescriptionModal(current)}
+                    className="btn-secondary flex items-center gap-1.5 h-10 px-4 rounded-xl text-xs font-bold text-white border border-white/25 bg-transparent hover:bg-white hover:text-[#0a3b69] transition-all"
+                  >
+                    <NotebookPen size={16} /> {currentPrescription ? 'Edit' : 'Create'} demo Rx
+                  </button>
+
+                  <button
+                    id="doctor-cancel-patient"
+                    type="button"
+                    onClick={() => setCancellingPatient(current)}
+                    className="btn-secondary flex items-center gap-1.5 h-10 px-3.5 rounded-xl text-xs font-bold text-rose-200 border border-rose-400/40 bg-rose-950/30 hover:bg-rose-600 hover:text-white transition-all"
+                  >
+                    <Ban size={15} /> Cancel Slot
+                  </button>
+                </>
               )}
 
               <button
@@ -450,6 +525,16 @@ export function HospitalWorkspacePage() {
                             >
                               <NotebookPen size={13} />
                             </button>
+                            {['waiting', 'called'].includes(pStatus) && (
+                              <button
+                                type="button"
+                                onClick={() => setCancellingPatient(patient)}
+                                title="Cancel visit and release slot"
+                                className="h-7 w-7 rounded-lg border border-rose-200 bg-rose-50 flex items-center justify-center text-rose-700 hover:bg-rose-100"
+                              >
+                                <Ban size={13} />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -460,7 +545,166 @@ export function HospitalWorkspacePage() {
             </div>
           )}
         </section>
+
+        {/* Released / Cancelled Slots Section */}
+        {cancelledQueue && cancelledQueue.length > 0 && (
+          <section className="bg-white border-t-4 border-slate-400 border-x border-b border-[var(--line)] rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--line)] mb-4">
+              <div>
+                <h2 className="text-base font-bold text-[#0a3b69] flex items-center gap-2">
+                  <Ban size={16} className="text-rose-600" />
+                  Released / Cancelled Slots ({cancelledQueue.length})
+                </h2>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                  Visits released by patients or cancelled by clinicians. Capacity returned to pool.
+                </p>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 text-slate-700 border-b border-slate-200">
+                    <th className="p-3 font-bold">Patient</th>
+                    <th className="p-3 font-bold">Cancelled By</th>
+                    <th className="p-3 font-bold">Clinical Reason</th>
+                    <th className="p-3 font-bold">Time</th>
+                    <th className="p-3 font-bold">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {cancelledQueue.map((item) => (
+                    <tr key={item.id} className="opacity-85 hover:opacity-100">
+                      <td className="p-3">
+                        <strong className="text-slate-900 block font-bold">{item.name}</strong>
+                        <small className="text-slate-500">{item.department || 'General'}</small>
+                      </td>
+                      <td className="p-3">
+                        <span
+                          className={cn(
+                            'px-2 py-0.5 rounded-full text-[11px] font-bold',
+                            item.cancelledBy === 'doctor'
+                              ? 'bg-rose-100 text-rose-800'
+                              : 'bg-slate-100 text-slate-700'
+                          )}
+                        >
+                          {item.cancelledBy === 'doctor' ? 'Clinician' : 'Patient'}
+                        </span>
+                      </td>
+                      <td className="p-3 text-slate-700 font-medium">
+                        {item.cancellationReason || 'Schedule conflict'}
+                      </td>
+                      <td className="p-3 text-slate-500 font-mono">
+                        {item.cancelledAt
+                          ? new Date(item.cancelledAt).toLocaleTimeString('en-IN', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
+                          : 'Recently'}
+                      </td>
+                      <td className="p-3">
+                        <span className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 text-slate-600">
+                          Slot Released
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
       </div>
+
+      {/* ── Doctor Cancellation Modal ── */}
+      {cancellingPatient && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <Ban className="w-5 h-5 text-rose-600" />
+                  Cancel / Reschedule Visit
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Patient: <strong>{cancellingPatient.name}</strong> (Ref: {cancellingPatient.id})
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCancellingPatient(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const res = await cancelAppointment(cancellingPatient.id, 'doctor', cancelReason);
+                setCancellingPatient(null);
+                if (res.success) {
+                  showToast('Visit cancelled. Slot released back to department and patient notified.', 'info');
+                } else {
+                  showToast(res.error || 'Failed to cancel appointment', 'error');
+                }
+              }}
+              className="space-y-4"
+            >
+              <p className="text-xs text-slate-600 bg-rose-50 border border-rose-200 p-3 rounded-xl">
+                Cancelling immediately releases this slot back to the department and notifies the patient with a free reschedule voucher.
+              </p>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Clinical Reason for Cancellation
+                </label>
+                <select
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  style={{ fontSize: '16px' }}
+                >
+                  <option value="Doctor summoned for emergency trauma surgery">
+                    Doctor summoned for emergency trauma surgery
+                  </option>
+                  <option value="Urgent Ward Callout">Urgent Ward Callout</option>
+                  <option value="Clinician emergency medical leave / Off-duty">
+                    Clinician emergency medical leave / Off-duty
+                  </option>
+                  <option value="OT / Diagnostic lab equipment maintenance">
+                    OT / Diagnostic lab equipment maintenance
+                  </option>
+                  <option value="Patient transferred to specialist ward">
+                    Patient transferred to specialist ward
+                  </option>
+                </select>
+              </div>
+
+              <div className="flex gap-2 justify-end pt-3">
+                <button
+                  type="button"
+                  onClick={() => setCancellingPatient(null)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 min-h-[48px]"
+                >
+                  Keep Visit
+                </button>
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition shadow-sm min-h-[48px]"
+                >
+                  <Ban size={15} /> Confirm Cancellation
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ── Prescription Editor Modal ── */}
       {editingPatient && (
@@ -481,8 +725,13 @@ export function HospitalWorkspacePage() {
                   <NotebookPen size={18} />
                 </span>
                 <div>
-                  <h3 className="text-base font-bold text-[#0a3b69]">Clinical note &amp; demo e-prescription</h3>
-                  <p className="text-xs text-[var(--text-muted)]">Saved only in this browser for the SmartCare prototype.</p>
+                  <h3 className="text-base font-bold text-[#0a3b69]">Official Digital E-Prescription Pad</h3>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[11px] font-mono font-bold bg-teal-50 text-teal-800 border border-teal-200 px-1.5 py-0.5 rounded">
+                      Doctor NMC Reg: NMC-2018-94821
+                    </span>
+                    <span className="text-xs text-slate-500">· {hospital || 'SmartCare Hospital'}</span>
+                  </div>
                 </div>
               </div>
               <button
@@ -498,23 +747,69 @@ export function HospitalWorkspacePage() {
             {/* Modal Form */}
             <form onSubmit={handleSavePrescription}>
               <div className="p-6 space-y-4">
-                <div className="p-3 bg-[#f4f8fc] rounded-lg border border-[#e0ecf7]">
-                  <strong className="text-sm text-[#0a3b69] block font-bold">{editingPatient.name}</strong>
-                  <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                    {editingPatient.symptoms || 'General consultation'} · Visit Ref: {editingPatient.id}
-                  </p>
+                <div className="p-3 bg-[#f4f8fc] rounded-lg border border-[#e0ecf7] flex items-center justify-between">
+                  <div>
+                    <strong className="text-sm text-[#0a3b69] block font-bold">{editingPatient.name}</strong>
+                    <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                      {editingPatient.symptoms || 'General consultation'} · Visit Ref: {editingPatient.id}
+                    </p>
+                  </div>
+                  <a
+                    href={`/verify-rx?id=${editingPatient.rxId || 'RX-2026-DEMO01'}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-teal-700 bg-white border border-teal-200 px-2.5 py-1 rounded-lg hover:bg-teal-50"
+                  >
+                    <QrCode size={13} />
+                    Verify Public Rx
+                    <ExternalLink size={11} />
+                  </a>
+                </div>
+
+                {/* Recorded Vitals Row */}
+                <div className="grid grid-cols-3 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Blood Pressure</label>
+                    <input
+                      type="text"
+                      value={rxBp}
+                      onChange={(e) => setRxBp(e.target.value)}
+                      placeholder="120/80 mmHg"
+                      className="w-full p-2 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Pulse Rate</label>
+                    <input
+                      type="text"
+                      value={rxPulse}
+                      onChange={(e) => setRxPulse(e.target.value)}
+                      placeholder="72 bpm"
+                      className="w-full p-2 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">SpO2 Oxygen</label>
+                    <input
+                      type="text"
+                      value={rxSpo2}
+                      onChange={(e) => setRxSpo2(e.target.value)}
+                      placeholder="99%"
+                      className="w-full p-2 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none"
+                    />
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-[var(--text)] mb-1">
-                    Clinical assessment <span className="text-red-500">*</span>
+                    Clinical assessment / Diagnosis <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     rows={3}
                     required
                     value={rxAssessment}
                     onChange={(e) => setRxAssessment(e.target.value)}
-                    placeholder="Record the assessment made during this consultation"
+                    placeholder="Record clinical diagnosis and assessment notes"
                     className="w-full p-2.5 rounded-lg border border-[var(--line)] text-xs text-[var(--text)] bg-[var(--surface)] focus:border-[#0f5ca8] focus:outline-none"
                   />
                 </div>
@@ -543,12 +838,12 @@ export function HospitalWorkspacePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-[var(--text)] mb-1">Dosage</label>
+                    <label className="block text-xs font-semibold text-[var(--text)] mb-1">Dosage (e.g. 1-0-1)</label>
                     <input
                       type="text"
                       value={rxDosage}
                       onChange={(e) => setRxDosage(e.target.value)}
-                      placeholder="e.g. One tablet TDS"
+                      placeholder="e.g. 1-0-1 (After Food)"
                       className="w-full p-2 rounded-lg border border-[var(--line)] text-xs text-[var(--text)] bg-[var(--surface)] focus:border-[#0f5ca8] focus:outline-none"
                     />
                   </div>
@@ -558,7 +853,7 @@ export function HospitalWorkspacePage() {
                       type="text"
                       value={rxDuration}
                       onChange={(e) => setRxDuration(e.target.value)}
-                      placeholder="e.g. 3 days"
+                      placeholder="e.g. 5 days"
                       className="w-full p-2 rounded-lg border border-[var(--line)] text-xs text-[var(--text)] bg-[var(--surface)] focus:border-[#0f5ca8] focus:outline-none"
                     />
                   </div>

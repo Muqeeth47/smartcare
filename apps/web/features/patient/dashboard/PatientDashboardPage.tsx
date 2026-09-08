@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
-import { useSession, usePatient, useAppStore, sortQueue, queueStatus } from '@/lib/store/app-store';
+import { useSession, usePatient, useAppStore, sortQueue, queueStatus, getAppointmentSlots } from '@/lib/store/app-store';
 import { PatientShell } from '@/components/layout/Shell';
 import { DemoDB } from '@/lib/db/demo-db';
 import { cn, estimatedWait } from '@/lib/utils';
@@ -23,19 +23,33 @@ import {
   X,
   Printer,
   HeartPulse,
+  AlertTriangle,
+  CheckCircle2,
+  Receipt,
+  Ban,
+  Clock,
+  Check,
 } from 'lucide-react';
-import type { Prescription } from '@smartcare/types';
+import type { Prescription, PatientVisit } from '@smartcare/types';
 
 export function PatientDashboardPage() {
   const { role } = useAuthGuard(['patient']);
   const { email } = useSession();
   const { patientData, patientVisits } = usePatient();
   const queue = useAppStore((s) => s.queue);
+  const { cancelAppointment, claimRefund, showToast, recordPatientVisit, updateQueueItem } = useAppStore();
   const router = useRouter();
 
   // Selected visit for Prescription modal
   const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
   const [prescription, setPrescription] = useState<Prescription | null>(null);
+
+  // Appointment manager & cancellation state
+  const [managingVisit, setManagingVisit] = useState<PatientVisit | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState('');
+  const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
+  const [patientCancelReason, setPatientCancelReason] = useState('Schedule conflict or travel');
+  const [refundReceipt, setRefundReceipt] = useState<PatientVisit | null>(null);
 
   if (!role) return null;
 
@@ -46,6 +60,17 @@ export function PatientDashboardPage() {
   const activeVisit = patientVisits.find((v) =>
     !['completed', 'cancelled', 'withdrawn', 'no-show'].includes(String(v.status || '').toLowerCase())
   );
+
+  // Doctor or recently cancelled visit
+  const recentlyCancelledVisit = patientVisits.find(
+    (visit) =>
+      ['cancelled', 'withdrawn'].includes(String(visit.status || '').toLowerCase()) &&
+      (visit.cancelledBy === 'doctor' ||
+        Date.now() - new Date(visit.cancelledAt || visit.date || Date.now()).getTime() < 48 * 3600 * 1000)
+  );
+
+  const availableSlots = getAppointmentSlots();
+
 
   const activeQueue = sortQueue(queue);
   const liveQueueEntry = activeVisit
@@ -145,6 +170,108 @@ export function PatientDashboardPage() {
           </Link>
         </section>
 
+        {/* ── Emergency Cancellation Banner ── */}
+        {recentlyCancelledVisit && (
+          <section
+            className={cn(
+              'p-5 rounded-2xl border-l-4 shadow-sm bg-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all',
+              recentlyCancelledVisit.cancelledBy === 'doctor'
+                ? 'border-l-red-600 border-t border-r border-b border-red-200 bg-red-50/40'
+                : 'border-l-amber-500 border-t border-r border-b border-amber-200 bg-amber-50/40'
+            )}
+          >
+            <div className="flex items-start gap-3.5">
+              <div
+                className={cn(
+                  'w-11 h-11 rounded-xl flex items-center justify-center shrink-0 font-bold',
+                  recentlyCancelledVisit.cancelledBy === 'doctor'
+                    ? 'bg-red-100 text-red-600'
+                    : 'bg-amber-100 text-amber-700'
+                )}
+              >
+                <AlertTriangle size={22} />
+              </div>
+              <div>
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-full mb-1',
+                    recentlyCancelledVisit.cancelledBy === 'doctor'
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-amber-100 text-amber-800'
+                  )}
+                >
+                  {recentlyCancelledVisit.cancelledBy === 'doctor'
+                    ? '🚨 Appointment Cancelled by Hospital'
+                    : 'Appointment Cancelled'}
+                </span>
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 mt-0.5">
+                  {recentlyCancelledVisit.cancelledBy === 'doctor'
+                    ? `Dr. ${recentlyCancelledVisit.doctorName || 'Clinician'} had an unexpected clinical emergency`
+                    : 'You cancelled this consultation'}
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-700 mt-1">
+                  <strong>Clinician's Note:</strong>{' '}
+                  {recentlyCancelledVisit.cancellationReason ||
+                    (recentlyCancelledVisit.cancelledBy === 'doctor'
+                      ? 'Doctor summoned for emergency trauma surgery duty'
+                      : 'Schedule conflict')}
+                </p>
+                <small className="text-xs text-slate-500 mt-0.5 block">
+                  Centre: {recentlyCancelledVisit.hospital} · Ref:{' '}
+                  <strong className="text-slate-800 font-mono">{recentlyCancelledVisit.id}</strong>
+                </small>
+              </div>
+            </div>
+
+            {/* Actions: Reschedule Free of Charge or Claim ₹125 Refund */}
+            <div className="flex items-center gap-2 flex-wrap shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setManagingVisit(recentlyCancelledVisit);
+                  setSelectedSlot(availableSlots[0]?.value || '');
+                  setShowCancelConfirmation(false);
+                }}
+                className="btn-primary inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold transition shadow-sm min-h-[44px]"
+              >
+                <CalendarClock size={14} /> Reschedule free of charge
+              </button>
+
+              {recentlyCancelledVisit.refundStatus === 'claimed' || recentlyCancelledVisit.refundStatus === 'processed' ? (
+                <button
+                  type="button"
+                  onClick={() => setRefundReceipt(recentlyCancelledVisit)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-300 text-xs font-bold min-h-[44px]"
+                >
+                  <CheckCircle2 size={14} className="text-emerald-600" />
+                  Refund Claimed ({recentlyCancelledVisit.refundRef || 'REF-OK'})
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const res = await claimRefund(recentlyCancelledVisit.id);
+                    if (res.success) {
+                      showToast(`Full fee refund ₹125 initiated. Reference: ${res.ref}`, 'success');
+                      setRefundReceipt({
+                        ...recentlyCancelledVisit,
+                        refundStatus: 'claimed',
+                        refundRef: res.ref,
+                      });
+                    } else {
+                      showToast(res.error || 'Refund request failed', 'error');
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold transition min-h-[44px]"
+                >
+                  <Receipt size={14} className="text-teal-700" />
+                  Claim ₹125 refund
+                </button>
+              )}
+            </div>
+          </section>
+        )}
+
         {/* 4 Summary Stats matching provider-stats patient-stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3" aria-label="Patient summary">
           <div className="p-4 rounded-xl border border-[#cbd5e1] bg-[#f8fafc]">
@@ -231,12 +358,17 @@ export function PatientDashboardPage() {
                 >
                   <FileText size={14} /> Clinical slip
                 </button>
-                <Link
-                  href="/dashboard/patient/apply/1"
-                  className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-[var(--line)] bg-white text-xs font-semibold text-[var(--text)] hover:bg-[var(--mint)] transition-colors no-underline"
+                <button
+                  type="button"
+                  onClick={() => {
+                    setManagingVisit(activeVisit);
+                    setSelectedSlot(availableSlots[0]?.value || '');
+                    setShowCancelConfirmation(false);
+                  }}
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-[var(--line)] bg-white text-xs font-semibold text-[var(--text)] hover:bg-[var(--mint)] transition-colors"
                 >
                   <CalendarCog size={14} /> Manage
-                </Link>
+                </button>
               </div>
             </div>
           </section>
@@ -500,6 +632,228 @@ export function PatientDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* ── Appointment Manager Modal ── */}
+      {managingVisit && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <CalendarCog className="w-5 h-5 text-teal-600" />
+                  Manage Appointment
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {managingVisit.hospital || 'SmartCare centre'} ·{' '}
+                  {managingVisit.doctorName || 'General care clinician'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setManagingVisit(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Reschedule Form */}
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const slotObj = availableSlots.find((s) => s.value === selectedSlot) || availableSlots[0];
+                try {
+                  const updated = {
+                    ...managingVisit,
+                    appointmentDate: slotObj.date,
+                    appointmentSlot: slotObj.slot,
+                    status: 'waiting' as const,
+                    cancelledBy: undefined,
+                    cancellationReason: undefined,
+                  };
+                  recordPatientVisit(updated);
+                  updateQueueItem(managingVisit.id, {
+                    status: 'waiting',
+                    appointmentDate: slotObj.date,
+                    appointmentSlot: slotObj.slot,
+                  });
+                  showToast('Appointment rescheduled free of charge! Slot synced.', 'success');
+                  setManagingVisit(null);
+                  window.location.reload();
+                } catch (err) {
+                  showToast('Failed to reschedule appointment', 'error');
+                }
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Choose New Consultation Slot (Free of charge)
+                </label>
+                <select
+                  value={selectedSlot}
+                  onChange={(e) => setSelectedSlot(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-600"
+                  style={{ fontSize: '16px' }}
+                >
+                  {availableSlots.map((slot) => (
+                    <option key={slot.value} value={slot.value}>
+                      {slot.label}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-[11px] text-slate-500 mt-1 block">
+                  Rescheduling releases your old slot and updates the hospital queue in real-time.
+                </span>
+              </div>
+
+              <div className="flex gap-2 justify-end pt-1">
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition shadow-sm min-h-[44px]"
+                >
+                  <CalendarClock size={15} /> Save New Time
+                </button>
+              </div>
+            </form>
+
+            {/* Danger Zone: Patient Cancellation */}
+            <div className="mt-6 pt-5 border-t border-slate-200">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <strong className="text-xs font-bold text-rose-700 uppercase tracking-wider block">
+                    Cancel Appointment
+                  </strong>
+                  <p className="text-xs text-slate-500">
+                    Releases this consultation slot back to other patients in need.
+                  </p>
+                </div>
+                {!showCancelConfirmation && (
+                  <button
+                    type="button"
+                    onClick={() => setShowCancelConfirmation(true)}
+                    className="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-700 hover:bg-rose-50 text-xs font-bold transition"
+                  >
+                    Cancel Consultation
+                  </button>
+                )}
+              </div>
+
+              {showCancelConfirmation && (
+                <div className="mt-3 p-3.5 rounded-xl bg-rose-50 border border-rose-200 animate-in fade-in">
+                  <label className="block text-xs font-bold text-rose-900 mb-1">
+                    Select reason for cancellation:
+                  </label>
+                  <select
+                    value={patientCancelReason}
+                    onChange={(e) => setPatientCancelReason(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-rose-200 bg-white text-xs text-slate-800 focus:outline-none mb-3"
+                    style={{ fontSize: '16px' }}
+                  >
+                    <option value="Schedule conflict or travel">Schedule conflict or travel</option>
+                    <option value="Health improved / Emergency resolved">
+                      Health improved / Emergency resolved
+                    </option>
+                    <option value="Visiting alternate clinic / Chose alternative hospital">
+                      Visiting alternate clinic / Chose alternative hospital
+                    </option>
+                    <option value="Wait time too long">Wait time too long</option>
+                    <option value="Personal circumstances">Personal circumstances</option>
+                  </select>
+
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setShowCancelConfirmation(false)}
+                      className="px-3 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold bg-white hover:bg-slate-50 min-h-[44px]"
+                    >
+                      Keep Appointment
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const res = await cancelAppointment(
+                          managingVisit.id,
+                          'patient',
+                          patientCancelReason
+                        );
+                        if (res.success) {
+                          showToast('Appointment cancelled and doctor slot released.', 'info');
+                          setManagingVisit(null);
+                        } else {
+                          showToast(res.error || 'Failed to cancel appointment', 'error');
+                        }
+                      }}
+                      className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition min-h-[44px]"
+                    >
+                      Confirm Cancellation
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Refund Receipt Modal ── */}
+      {refundReceipt && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in">
+            <div className="text-center pb-4 border-b border-slate-100 mb-4">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto mb-2 font-bold">
+                <CheckCircle2 size={26} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900">₹125 Full Refund Initiated</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Official SmartCare Compensation Voucher</p>
+            </div>
+
+            <div className="space-y-2.5 text-xs text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-200 font-mono mb-4">
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-sans">Refund Amount:</span>
+                <strong className="text-emerald-700 text-sm font-bold">₹125.00</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-sans">Transaction Ref:</span>
+                <span className="font-bold text-slate-800">{refundReceipt.refundRef || 'REF-OK'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-sans">Consultation Ref:</span>
+                <span className="text-slate-800">{refundReceipt.id}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-sans">Hospital / Centre:</span>
+                <span className="text-slate-800">{refundReceipt.hospital}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-sans">Payout Target:</span>
+                <span className="text-slate-800">Original UPI / Bank Account</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-sans">Settlement Window:</span>
+                <span className="text-slate-800">Instant (Within 15 mins)</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setRefundReceipt(null)}
+              className="w-full py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition min-h-[44px]"
+            >
+              Close Receipt
+            </button>
+          </div>
+        </div>
+      )}
     </PatientShell>
   );
 }
+

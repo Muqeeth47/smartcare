@@ -15,7 +15,10 @@ import type {
   HospitalCentre,
   CareTeamMember,
   AppointmentSlot,
+  AmbulanceBooking,
+  PharmacyOrder,
 } from '@smartcare/types';
+import { DemoDB } from '@/lib/db/demo-db';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -53,6 +56,12 @@ export interface AppState {
   // Queue (full list, scoped in selectors)
   queue: QueueItem[];
 
+  // Ambulance & Emergency Fleet
+  activeAmbulance: AmbulanceBooking | null;
+
+  // Pharmacy Orders
+  pharmacyOrders: PharmacyOrder[];
+
   // UI
   theme: 'light' | 'dark';
   toastMessage: string | null;
@@ -73,9 +82,21 @@ export interface AppActions {
   resetPatient: () => void;
   recordPatientVisit: (visit: PatientVisit) => void;
 
-  // Queue
+  // Queue & Cancellations
   setQueue: (queue: QueueItem[]) => void;
   updateQueueItem: (id: string, updates: Partial<QueueItem>) => void;
+  cancelAppointment: (id: string, cancelledBy?: 'patient' | 'doctor', reason?: string) => Promise<{ success: boolean; error?: string }>;
+  claimRefund: (id: string) => Promise<{ success: boolean; ref?: string; error?: string }>;
+
+  // Ambulance
+  setActiveAmbulance: (amb: AmbulanceBooking | null) => void;
+  bookAmbulance: (req: Partial<AmbulanceBooking>) => AmbulanceBooking;
+  cancelAmbulance: (id: string, reason?: string) => { success: boolean; error?: string };
+
+  // Pharmacy
+  setPharmacyOrders: (orders: PharmacyOrder[]) => void;
+  createPharmacyOrder: (order: Partial<PharmacyOrder>) => PharmacyOrder;
+  updatePharmacyOrderStatus: (id: string, nextStatus: PharmacyOrder['status']) => { success: boolean; error?: string };
 
   // UI
   setTheme: (theme: 'light' | 'dark') => void;
@@ -196,6 +217,8 @@ export const useAppStore = create<AppState & AppActions>()(
       careResultsFetchedAt: '',
 
       queue: [],
+      activeAmbulance: null,
+      pharmacyOrders: [],
       theme: 'light',
       toastMessage: null,
       toastType: 'info',
@@ -301,8 +324,76 @@ export const useAppStore = create<AppState & AppActions>()(
 
       updateQueueItem: (id, updates) => {
         set((s) => ({
-          queue: s.queue.map((item) => item.id === id ? { ...item, ...updates } : item),
+          queue: s.queue.map((item) => (item.id === id ? { ...item, ...updates } : item)),
         }));
+      },
+
+      cancelAppointment: async (id, cancelledBy = 'patient', reason = 'Schedule conflict') => {
+        const res = await DemoDB.cancelAppointment(id, cancelledBy, reason);
+        if (res.success) {
+          const fresh = await DemoDB.fetchQueue();
+          get().setQueue(fresh);
+          const historyVisit = get().patientVisits.find((v) => String(v.id) === String(id));
+          if (historyVisit) {
+            get().recordPatientVisit({
+              ...historyVisit,
+              status: 'Cancelled',
+              cancelledBy,
+              cancellationReason: reason,
+              cancelledAt: new Date().toISOString(),
+              refundStatus: cancelledBy === 'doctor' ? 'eligible' : 'none',
+            });
+          }
+        }
+        return res;
+      },
+
+      claimRefund: async (id) => {
+        const res = await DemoDB.claimRefund(id);
+        if (res.success && res.ref) {
+          const historyVisit = get().patientVisits.find((v) => String(v.id) === String(id));
+          if (historyVisit) {
+            get().recordPatientVisit({
+              ...historyVisit,
+              refundStatus: 'claimed',
+              refundRef: res.ref,
+              refundClaimedAt: new Date().toISOString(),
+            });
+          }
+          const fresh = await DemoDB.fetchQueue();
+          get().setQueue(fresh);
+        }
+        return res;
+      },
+
+      // ── Ambulance actions ─────────────────────────────────────────────────
+      setActiveAmbulance: (amb) => set({ activeAmbulance: amb }),
+      bookAmbulance: (req) => {
+        const amb = DemoDB.bookAmbulance(req);
+        set({ activeAmbulance: amb });
+        return amb;
+      },
+      cancelAmbulance: (id, reason) => {
+        const res = DemoDB.cancelAmbulance(id, reason);
+        if (res.success) {
+          set({ activeAmbulance: null });
+        }
+        return res;
+      },
+
+      // ── Pharmacy actions ──────────────────────────────────────────────────
+      setPharmacyOrders: (orders) => set({ pharmacyOrders: orders }),
+      createPharmacyOrder: (order) => {
+        const newOrder = DemoDB.createPharmacyOrder(order);
+        set({ pharmacyOrders: DemoDB.getPharmacyOrders() });
+        return newOrder;
+      },
+      updatePharmacyOrderStatus: (id, nextStatus) => {
+        const res = DemoDB.updatePharmacyOrderStatus(id, nextStatus);
+        if (res.success) {
+          set({ pharmacyOrders: DemoDB.getPharmacyOrders() });
+        }
+        return res;
       },
 
       // ── UI actions ───────────────────────────────────────────────────────
@@ -376,7 +467,11 @@ export const useQueue = () => {
     () => sorted.find((item) => ['in_progress', 'called', 'waiting'].includes(queueStatus(item))) || null,
     [sorted]
   );
-  return { queue, metrics, sorted, nextPatient };
+  const cancelledQueue = useMemo(
+    () => DemoDB.getCancelledAppointments(),
+    [queue]
+  );
+  return { queue, metrics, sorted, nextPatient, cancelledQueue };
 };
 
 export const usePatient = () =>
@@ -389,3 +484,17 @@ export const usePatient = () =>
       tempHospitals: s.tempHospitals,
     }))
   );
+
+export const useAmbulance = () => {
+  const activeAmbulance = useAppStore((s) => s.activeAmbulance);
+  const bookAmbulance = useAppStore((s) => s.bookAmbulance);
+  const cancelAmbulance = useAppStore((s) => s.cancelAmbulance);
+  return { activeAmbulance, bookAmbulance, cancelAmbulance };
+};
+
+export const usePharmacy = () => {
+  const orders = useAppStore((s) => s.pharmacyOrders);
+  const createOrder = useAppStore((s) => s.createPharmacyOrder);
+  const updateStatus = useAppStore((s) => s.updatePharmacyOrderStatus);
+  return { orders, createOrder, updateStatus };
+};

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight, Eye, EyeOff, LogIn, UserPlus, UserRound, Hospital, Building2, ListChecks, ShieldCheck, Clock3 } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, LogIn, UserPlus, UserRound, Hospital, Building2, ListChecks, ShieldCheck, Clock3, CheckCircle2, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/lib/store/app-store';
 import { useShallow } from 'zustand/react/shallow';
@@ -45,19 +45,31 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'error' | 'success'>('error');
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const isPatient = role === 'patient';
+
+  const markTouched = (field: string) => setTouched((prev) => ({ ...prev, [field]: true }));
+
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const passwordValid = mode === 'signup' ? password.length >= 8 : password.length > 0;
+  const confirmValid = mode === 'signup' ? confirm.length > 0 && confirm === password : true;
+  const nameValid = isPatient && mode === 'signup' ? name.trim().length > 0 : true;
+  const facilityValid = !isPatient ? facility.trim().length > 0 : true;
 
   const handleRoleChange = useCallback((newRole: UserRole) => {
     setRole(newRole);
     setAuthTarget(newRole);
     setMessage('');
+    setTouched({});
   }, [setAuthTarget]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) { setMessage('Please fill in all required fields.'); setMessageType('error'); return; }
-    if (!isPatient && !facility) { setMessage('Please enter your care centre name.'); setMessageType('error'); return; }
+    setTouched({ email: true, password: true, facility: true });
+    if (!emailValid) { setMessage('Please enter a valid email address.'); setMessageType('error'); return; }
+    if (!password) { setMessage('Please enter your password.'); setMessageType('error'); return; }
+    if (!isPatient && !facilityValid) { setMessage('Please enter your care centre name.'); setMessageType('error'); return; }
     setLoading(true);
     setMessage('');
     try {
@@ -75,11 +87,12 @@ export function LoginPage() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) { setMessage('Please fill in all required fields.'); setMessageType('error'); return; }
-    if (password !== confirm) { setMessage('Passwords do not match.'); setMessageType('error'); return; }
+    setTouched({ email: true, password: true, confirm: true, name: true, facility: true });
+    if (!emailValid) { setMessage('Please enter a valid email address.'); setMessageType('error'); return; }
+    if (isPatient && !nameValid) { setMessage('Please enter your full name.'); setMessageType('error'); return; }
+    if (!isPatient && !facilityValid) { setMessage('Please enter your care centre name.'); setMessageType('error'); return; }
     if (password.length < 8) { setMessage('Password must be at least 8 characters.'); setMessageType('error'); return; }
-    if (isPatient && !name) { setMessage('Please enter your full name.'); setMessageType('error'); return; }
-    if (!isPatient && !facility) { setMessage('Please enter your care centre name.'); setMessageType('error'); return; }
+    if (password !== confirm) { setMessage('Passwords do not match.'); setMessageType('error'); return; }
     setLoading(true);
     setMessage('');
     try {
@@ -256,6 +269,7 @@ export function LoginPage() {
                       setEmail(creds.email);
                       setPassword(creds.password);
                       if (role !== 'patient') setFacility(creds.hospital);
+                      setTouched({ email: true, password: true });
                     }}
                     className="font-bold underline hover:opacity-80"
                   >
@@ -274,8 +288,13 @@ export function LoginPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="auth-email" className="text-sm font-medium">
-                  {isPatient ? 'Email address' : 'Work email'} <span className="text-[var(--red)]">*</span>
+                <label htmlFor="auth-email" className="text-sm font-medium flex items-center justify-between">
+                  <span>{isPatient ? 'Email address' : 'Work email'} <span className="text-[var(--red)]">*</span></span>
+                  {touched.email && (emailValid ? (
+                    <span className="text-xs text-[var(--green)] flex items-center gap-1 font-normal"><CheckCircle2 size={12} /> Valid</span>
+                  ) : (
+                    <span className="text-xs text-[var(--red)] flex items-center gap-1 font-normal"><XCircle size={12} /> Invalid email</span>
+                  ))}
                 </label>
                 <input
                   id="auth-email"
@@ -283,29 +302,49 @@ export function LoginPage() {
                   autoComplete="username"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onBlur={() => markTouched('email')}
                   placeholder={isPatient ? 'you@example.com' : 'name@carecentre.org'}
                   required
-                  className={cn('h-11 px-3 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-sm', 'focus:outline-none focus:border-[var(--teal)] focus:ring-1 focus:ring-[var(--teal)]/20')}
+                  className={cn(
+                    'h-11 px-3 rounded-[var(--radius)] border text-sm transition-colors focus:outline-none focus:ring-1',
+                    touched.email && !emailValid
+                      ? 'border-[var(--red)] bg-red-500/5 focus:border-[var(--red)] focus:ring-[var(--red)]/20'
+                      : touched.email && emailValid
+                      ? 'border-[var(--green)] bg-emerald-500/5 focus:border-[var(--green)] focus:ring-[var(--green)]/20'
+                      : 'border-[var(--line)] bg-[var(--surface)] focus:border-[var(--teal)] focus:ring-[var(--teal)]/20'
+                  )}
                 />
               </div>
               {!isPatient && (
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="auth-facility" className="text-sm font-medium">
-                    Care centre <span className="text-[var(--red)]">*</span>
+                  <label htmlFor="auth-facility" className="text-sm font-medium flex items-center justify-between">
+                    <span>Care centre <span className="text-[var(--red)]">*</span></span>
+                    {touched.facility && !facilityValid && (
+                      <span className="text-xs text-[var(--red)] flex items-center gap-1 font-normal"><XCircle size={12} /> Required</span>
+                    )}
                   </label>
                   <input
                     id="auth-facility"
                     value={facility}
                     onChange={(e) => setFacility(e.target.value)}
+                    onBlur={() => markTouched('facility')}
                     placeholder="e.g. SmartCare Community Hospital"
                     required
-                    className="h-11 px-3 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-sm focus:outline-none focus:border-[var(--teal)] focus:ring-1 focus:ring-[var(--teal)]/20"
+                    className={cn(
+                      'h-11 px-3 rounded-[var(--radius)] border text-sm transition-colors focus:outline-none focus:ring-1',
+                      touched.facility && !facilityValid
+                        ? 'border-[var(--red)] bg-red-500/5 focus:border-[var(--red)] focus:ring-[var(--red)]/20'
+                        : 'border-[var(--line)] bg-[var(--surface)] focus:border-[var(--teal)] focus:ring-[var(--teal)]/20'
+                    )}
                   />
                 </div>
               )}
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="auth-password" className="text-sm font-medium">
-                  Password <span className="text-[var(--red)]">*</span>
+                <label htmlFor="auth-password" className="text-sm font-medium flex items-center justify-between">
+                  <span>Password <span className="text-[var(--red)]">*</span></span>
+                  {touched.password && !passwordValid && (
+                    <span className="text-xs text-[var(--red)] flex items-center gap-1 font-normal"><XCircle size={12} /> Required</span>
+                  )}
                 </label>
                 <div className="relative">
                   <input
@@ -314,9 +353,15 @@ export function LoginPage() {
                     autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onBlur={() => markTouched('password')}
                     placeholder="Enter your password"
                     required
-                    className="w-full h-11 pl-3 pr-10 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-sm focus:outline-none focus:border-[var(--teal)] focus:ring-1 focus:ring-[var(--teal)]/20"
+                    className={cn(
+                      'w-full h-11 pl-3 pr-10 rounded-[var(--radius)] border text-sm transition-colors focus:outline-none focus:ring-1',
+                      touched.password && !passwordValid
+                        ? 'border-[var(--red)] bg-red-500/5 focus:border-[var(--red)] focus:ring-[var(--red)]/20'
+                        : 'border-[var(--line)] bg-[var(--surface)] focus:border-[var(--teal)] focus:ring-[var(--teal)]/20'
+                    )}
                   />
                   <button
                     type="button"
@@ -343,7 +388,7 @@ export function LoginPage() {
               </button>
               <div className="flex items-center justify-center gap-2 text-sm text-[var(--text-muted)]">
                 <span>{isPatient ? 'Part of a hospital team?' : 'New hospital user?'}</span>
-                <button type="button" onClick={() => setMode('signup')} className="text-[var(--teal)] font-semibold hover:underline">
+                <button type="button" onClick={() => { setMode('signup'); setTouched({}); }} className="text-[var(--teal)] font-semibold hover:underline">
                   {isPatient ? 'Open hospital access' : 'Create an account'}
                 </button>
               </div>
@@ -354,8 +399,13 @@ export function LoginPage() {
           {mode === 'signup' && (
             <form onSubmit={handleSignUp} className="flex flex-col gap-4" noValidate>
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="auth-email" className="text-sm font-medium">
-                  {isPatient ? 'Email address' : 'Work email'} <span className="text-[var(--red)]">*</span>
+                <label htmlFor="auth-email" className="text-sm font-medium flex items-center justify-between">
+                  <span>{isPatient ? 'Email address' : 'Work email'} <span className="text-[var(--red)]">*</span></span>
+                  {touched.email && (emailValid ? (
+                    <span className="text-xs text-[var(--green)] flex items-center gap-1 font-normal"><CheckCircle2 size={12} /> Valid</span>
+                  ) : (
+                    <span className="text-xs text-[var(--red)] flex items-center gap-1 font-normal"><XCircle size={12} /> Invalid email</span>
+                  ))}
                 </label>
                 <input
                   id="auth-email"
@@ -363,42 +413,144 @@ export function LoginPage() {
                   autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onBlur={() => markTouched('email')}
                   placeholder={isPatient ? 'you@example.com' : 'name@carecentre.org'}
                   required
-                  className="h-11 px-3 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-sm focus:outline-none focus:border-[var(--teal)]"
+                  className={cn(
+                    'h-11 px-3 rounded-[var(--radius)] border text-sm transition-colors focus:outline-none focus:ring-1',
+                    touched.email && !emailValid
+                      ? 'border-[var(--red)] bg-red-500/5 focus:border-[var(--red)] focus:ring-[var(--red)]/20'
+                      : touched.email && emailValid
+                      ? 'border-[var(--green)] bg-emerald-500/5 focus:border-[var(--green)] focus:ring-[var(--green)]/20'
+                      : 'border-[var(--line)] bg-[var(--surface)] focus:border-[var(--teal)] focus:ring-[var(--teal)]/20'
+                  )}
                 />
               </div>
               {isPatient ? (
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="auth-name" className="text-sm font-medium">Full name <span className="text-[var(--red)]">*</span></label>
-                  <input id="auth-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Asha Rao" required className="h-11 px-3 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-sm focus:outline-none focus:border-[var(--teal)]" />
+                  <label htmlFor="auth-name" className="text-sm font-medium flex items-center justify-between">
+                    <span>Full name <span className="text-[var(--red)]">*</span></span>
+                    {touched.name && !nameValid && (
+                      <span className="text-xs text-[var(--red)] flex items-center gap-1 font-normal"><XCircle size={12} /> Required</span>
+                    )}
+                  </label>
+                  <input
+                    id="auth-name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    onBlur={() => markTouched('name')}
+                    placeholder="e.g. Asha Rao"
+                    required
+                    className={cn(
+                      'h-11 px-3 rounded-[var(--radius)] border text-sm transition-colors focus:outline-none focus:ring-1',
+                      touched.name && !nameValid
+                        ? 'border-[var(--red)] bg-red-500/5 focus:border-[var(--red)] focus:ring-[var(--red)]/20'
+                        : 'border-[var(--line)] bg-[var(--surface)] focus:border-[var(--teal)] focus:ring-[var(--teal)]/20'
+                    )}
+                  />
                 </div>
               ) : (
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="auth-facility" className="text-sm font-medium">Care centre name <span className="text-[var(--red)]">*</span></label>
-                  <input id="auth-facility" value={facility} onChange={(e) => setFacility(e.target.value)} placeholder="Your registered care centre" required className="h-11 px-3 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-sm focus:outline-none focus:border-[var(--teal)]" />
+                  <label htmlFor="auth-facility" className="text-sm font-medium flex items-center justify-between">
+                    <span>Care centre name <span className="text-[var(--red)]">*</span></span>
+                    {touched.facility && !facilityValid && (
+                      <span className="text-xs text-[var(--red)] flex items-center gap-1 font-normal"><XCircle size={12} /> Required</span>
+                    )}
+                  </label>
+                  <input
+                    id="auth-facility"
+                    value={facility}
+                    onChange={(e) => setFacility(e.target.value)}
+                    onBlur={() => markTouched('facility')}
+                    placeholder="Your registered care centre"
+                    required
+                    className={cn(
+                      'h-11 px-3 rounded-[var(--radius)] border text-sm transition-colors focus:outline-none focus:ring-1',
+                      touched.facility && !facilityValid
+                        ? 'border-[var(--red)] bg-red-500/5 focus:border-[var(--red)] focus:ring-[var(--red)]/20'
+                        : 'border-[var(--line)] bg-[var(--surface)] focus:border-[var(--teal)] focus:ring-[var(--teal)]/20'
+                    )}
+                  />
                 </div>
               )}
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="auth-password" className="text-sm font-medium">Create password <span className="text-[var(--red)]">*</span></label>
+                <label htmlFor="auth-password" className="text-sm font-medium flex items-center justify-between">
+                  <span>Create password <span className="text-[var(--red)]">*</span></span>
+                  {touched.password && (passwordValid ? (
+                    <span className="text-xs text-[var(--green)] flex items-center gap-1 font-normal"><CheckCircle2 size={12} /> ≥8 chars</span>
+                  ) : (
+                    <span className="text-xs text-[var(--red)] flex items-center gap-1 font-normal"><XCircle size={12} /> Min 8 chars</span>
+                  ))}
+                </label>
                 <div className="relative">
-                  <input id="auth-password" type={passwordVisible ? 'text' : 'password'} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" required className="w-full h-11 pl-3 pr-10 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-sm focus:outline-none focus:border-[var(--teal)]" />
-                  <button type="button" onClick={() => setPasswordVisible(!passwordVisible)} aria-label="Toggle password" className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
+                  <input
+                    id="auth-password"
+                    type={passwordVisible ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onBlur={() => markTouched('password')}
+                    placeholder="At least 8 characters"
+                    required
+                    className={cn(
+                      'w-full h-11 pl-3 pr-10 rounded-[var(--radius)] border text-sm transition-colors focus:outline-none focus:ring-1',
+                      touched.password && !passwordValid
+                        ? 'border-[var(--red)] bg-red-500/5 focus:border-[var(--red)] focus:ring-[var(--red)]/20'
+                        : touched.password && passwordValid
+                        ? 'border-[var(--green)] bg-emerald-500/5 focus:border-[var(--green)] focus:ring-[var(--green)]/20'
+                        : 'border-[var(--line)] bg-[var(--surface)] focus:border-[var(--teal)] focus:ring-[var(--teal)]/20'
+                    )}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setPasswordVisible(!passwordVisible)}
+                    aria-label="Toggle password"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+                  >
                     {passwordVisible ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="auth-confirm" className="text-sm font-medium">Confirm password <span className="text-[var(--red)]">*</span></label>
-                <input id="auth-confirm" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Repeat your password" required className="h-11 px-3 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-sm focus:outline-none focus:border-[var(--teal)]" />
+                <label htmlFor="auth-confirm" className="text-sm font-medium flex items-center justify-between">
+                  <span>Confirm password <span className="text-[var(--red)]">*</span></span>
+                  {touched.confirm && (confirmValid ? (
+                    <span className="text-xs text-[var(--green)] flex items-center gap-1 font-normal"><CheckCircle2 size={12} /> Matches</span>
+                  ) : (
+                    <span className="text-xs text-[var(--red)] flex items-center gap-1 font-normal"><XCircle size={12} /> Does not match</span>
+                  ))}
+                </label>
+                <input
+                  id="auth-confirm"
+                  type="password"
+                  autoComplete="new-password"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  onBlur={() => markTouched('confirm')}
+                  placeholder="Repeat your password"
+                  required
+                  className={cn(
+                    'h-11 px-3 rounded-[var(--radius)] border text-sm transition-colors focus:outline-none focus:ring-1',
+                    touched.confirm && !confirmValid
+                      ? 'border-[var(--red)] bg-red-500/5 focus:border-[var(--red)] focus:ring-[var(--red)]/20'
+                      : touched.confirm && confirmValid && confirm.length > 0
+                      ? 'border-[var(--green)] bg-emerald-500/5 focus:border-[var(--green)] focus:ring-[var(--green)]/20'
+                      : 'border-[var(--line)] bg-[var(--surface)] focus:border-[var(--teal)] focus:ring-[var(--teal)]/20'
+                  )}
+                />
               </div>
-              <button type="submit" disabled={loading} className="flex items-center justify-center gap-2 h-11 rounded-[var(--radius)] bg-[var(--teal)] text-white font-bold text-sm hover:bg-[var(--teal-dark)] disabled:opacity-60 transition-colors">
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex items-center justify-center gap-2 h-11 rounded-[var(--radius)] bg-[var(--teal)] text-white font-bold text-sm hover:bg-[var(--teal-dark)] disabled:opacity-60 transition-colors"
+              >
                 {loading ? 'Creating account…' : (isPatient ? 'Create patient account' : 'Create hospital account')}
                 {!loading && <ArrowRight size={15} />}
               </button>
               <div className="flex items-center justify-center gap-2 text-sm text-[var(--text-muted)]">
                 <span>Already registered?</span>
-                <button type="button" onClick={() => setMode('signin')} className="text-[var(--teal)] font-semibold hover:underline">Return to sign in</button>
+                <button type="button" onClick={() => { setMode('signin'); setTouched({}); }} className="text-[var(--teal)] font-semibold hover:underline">Return to sign in</button>
               </div>
             </form>
           )}

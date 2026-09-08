@@ -128,6 +128,7 @@ export function DesktopSidebar({ onToggleCollapse }: { onToggleCollapse?: () => 
             href={item.href}
             className={active ? 'active' : ''}
             aria-current={active ? 'page' : undefined}
+            title={item.label}
           >
             <Icon size={16} />
             <span>{item.label}</span>
@@ -146,6 +147,7 @@ export function DesktopSidebar({ onToggleCollapse }: { onToggleCollapse?: () => 
             href={item.href}
             className={active ? 'active' : ''}
             aria-current={active ? 'page' : undefined}
+            title={item.label}
           >
             <Icon size={16} />
             <span>{item.label}</span>
@@ -153,7 +155,7 @@ export function DesktopSidebar({ onToggleCollapse }: { onToggleCollapse?: () => 
         );
       })}
 
-      <button type="button" onClick={handleLogout} className="signout-btn" aria-label="Sign out">
+      <button type="button" onClick={handleLogout} className="signout-btn" aria-label="Sign out" title="Sign out">
         <LogOut size={16} />
         <span>Sign out</span>
       </button>

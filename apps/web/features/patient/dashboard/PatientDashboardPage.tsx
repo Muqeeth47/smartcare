@@ -31,6 +31,8 @@ import {
   Check,
 } from 'lucide-react';
 import type { Prescription, PatientVisit } from '@smartcare/types';
+import { EmptyState } from '@/components/ui/EmptyState';
+
 
 export function PatientDashboardPage() {
   const { role } = useAuthGuard(['patient']);
@@ -173,12 +175,12 @@ export function PatientDashboardPage() {
         {/* ── Emergency Cancellation Banner ── */}
         {recentlyCancelledVisit && (
           <section
-            className={cn(
-              'p-5 rounded-2xl border-l-4 shadow-sm bg-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all',
-              recentlyCancelledVisit.cancelledBy === 'doctor'
-                ? 'border-l-red-600 border-t border-r border-b border-red-200 bg-red-50/40'
-                : 'border-l-amber-500 border-t border-r border-b border-amber-200 bg-amber-50/40'
-            )}
+        className={cn(
+          'p-5 rounded-2xl border-l-4 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all animate-slide-down',
+          recentlyCancelledVisit.cancelledBy === 'doctor'
+            ? 'border-l-red-600 border-t border-r border-b border-red-200 bg-red-50/40'
+            : 'border-l-amber-500 border-t border-r border-b border-amber-200 bg-amber-50/40'
+        )}
           >
             <div className="flex items-start gap-3.5">
               <div
@@ -277,35 +279,35 @@ export function PatientDashboardPage() {
           </section>
         )}
 
-        {/* 4 Summary Stats matching provider-stats patient-stats */}
+        {/* 4 Summary Stats — theme-aware via CSS classes */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3" aria-label="Patient summary">
-          <div className="p-4 rounded-xl border border-[#cbd5e1] bg-[#f8fafc]">
-            <span className="text-xs text-[var(--text-muted)] block mb-1">Previous visits</span>
-            <strong className="text-xl font-extrabold text-[#0a3b69] block">{patientVisits.length}</strong>
-            <small className="text-[0.7rem] text-[var(--text-dim)]">Stored on this device</small>
+          <div className="patient-stat-card stat-card">
+            <span className="patient-stat-label">Previous visits</span>
+            <strong className="patient-stat-value">{patientVisits.length}</strong>
+            <small className="patient-stat-sub">Stored on this device</small>
           </div>
-          <div className="p-4 rounded-xl border border-[#cbd5e1] bg-[#f8fafc]">
-            <span className="text-xs text-[var(--text-muted)] block mb-1">Last visit</span>
-            <strong className="text-xl font-extrabold text-[#0a3b69] block truncate">
+          <div className="patient-stat-card stat-card">
+            <span className="patient-stat-label">Last visit</span>
+            <strong className="patient-stat-value truncate">
               {latestVisit ? latestVisit.date.replace(' 2026', '') : '—'}
             </strong>
-            <small className="text-[0.7rem] text-[var(--text-dim)] truncate block">
+            <small className="patient-stat-sub truncate block">
               {latestVisit ? latestVisit.hospital : 'No history yet'}
             </small>
           </div>
-          <div className="p-4 rounded-xl border border-[#cbd5e1] bg-[#f8fafc]">
-            <span className="text-xs text-[var(--text-muted)] block mb-1">Care preference</span>
-            <strong className="text-xl font-extrabold text-[#0a3b69] block">
+          <div className="patient-stat-card stat-card">
+            <span className="patient-stat-label">Care preference</span>
+            <strong className="patient-stat-value">
               {patientData.doctorPref || 'General'}
             </strong>
-            <small className="text-[0.7rem] text-[var(--text-dim)]">Can change during booking</small>
+            <small className="patient-stat-sub">Can change during booking</small>
           </div>
-          <div className="p-4 rounded-xl border border-[#cbd5e1] bg-[#f8fafc]">
-            <span className="text-xs text-[var(--text-muted)] block mb-1">Location</span>
-            <strong className="text-xl font-extrabold text-[#0a3b69] block">
+          <div className="patient-stat-card stat-card">
+            <span className="patient-stat-label">Location</span>
+            <strong className="patient-stat-value">
               {patientData.city || 'Hyderabad'}
             </strong>
-            <small className="text-[0.7rem] text-[var(--text-dim)]">Used only for care search</small>
+            <small className="patient-stat-sub">Used only for care search</small>
           </div>
         </div>
 
@@ -316,7 +318,12 @@ export function PatientDashboardPage() {
             aria-label="Next appointment and live queue status"
           >
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-[#e5f1fc] text-[#0f5ca8] flex items-center justify-center shrink-0">
+          <div className={cn(
+            'w-12 h-12 rounded-xl flex items-center justify-center shrink-0',
+            liveStatus === 'called' ? 'bg-green-100 text-green-700 queue-badge-called' :
+            liveStatus === 'in_progress' ? 'bg-[var(--teal-10)] text-[var(--teal)]' :
+            'bg-[var(--mint)] text-[var(--teal)]'
+          )}>
                 <CalendarClock size={24} />
               </div>
               <div>
@@ -422,10 +429,16 @@ export function PatientDashboardPage() {
           </div>
 
           {patientVisits.length === 0 ? (
-            <div className="text-center py-10 text-[var(--text-muted)] flex flex-col items-center gap-2">
-              <ClipboardX size={32} />
-              <p className="text-sm">No visits saved yet.</p>
-            </div>
+            <EmptyState
+              icon={ClipboardX}
+              title="No clinical visits yet"
+              description="Your consultation notes and prescriptions will appear here after your first appointment."
+              action={{
+                label: "Book an Appointment",
+                href: "/dashboard/patient/apply/1",
+              }}
+              compact
+            />
           ) : (
             <div className="divide-y divide-[var(--line)]">
               {patientVisits.map((visit) => {

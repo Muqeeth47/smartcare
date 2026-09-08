@@ -1332,7 +1332,7 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
                       {isPaid ? <Check size={16} /> : <CreditCard size={16} />}
                       <span>
                         {isPaid
-                          ? `Payment done ✓ (Ref: ${paymentTxn})`
+                          ? `Payment completed (Ref: ${paymentTxn})`
                           : 'Simulate "Payment Done" portal (₹125)'}
                       </span>
                     </button>

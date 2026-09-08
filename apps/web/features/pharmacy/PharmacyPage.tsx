@@ -565,9 +565,24 @@ export function PharmacyPage() {
                                   : 'bg-amber-100 text-amber-800'
                               }`}
                             >
-                              {order.status === 'ready' && '🟢 Ready for Pickup'}
-                              {order.status === 'placed' && '🟡 Being Packed'}
-                              {order.status === 'completed' && '✅ Dispensed'}
+                              {order.status === 'ready' && (
+                                <>
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                                  Ready for Pickup
+                                </>
+                              )}
+                              {order.status === 'placed' && (
+                                <>
+                                  <Clock className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                                  Being Packed
+                                </>
+                              )}
+                              {order.status === 'completed' && (
+                                <>
+                                  <Check className="w-3.5 h-3.5 text-slate-700 shrink-0" />
+                                  Dispensed
+                                </>
+                              )}
                             </span>
                           </td>
                         </tr>

@@ -205,8 +205,9 @@ export function HospitalWorkspacePage() {
               </div>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <strong className="text-red-700 text-sm sm:text-base font-extrabold uppercase tracking-wide">
-                    🚨 INCOMING EMERGENCY TRAUMA ALERT ({activeAmbulance.typeLabel})
+                  <strong className="text-red-700 text-sm sm:text-base font-extrabold uppercase tracking-wide flex items-center gap-1.5">
+                    <Siren className="w-4 h-4 text-red-600 animate-pulse shrink-0" />
+                    INCOMING EMERGENCY TRAUMA ALERT ({activeAmbulance.typeLabel})
                   </strong>
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-200">
                     ICU Bed #03 Held

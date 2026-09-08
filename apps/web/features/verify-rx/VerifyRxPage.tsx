@@ -173,9 +173,17 @@ export function VerifyRxPage() {
                             : 'bg-emerald-700 text-white'
                         }`}
                       >
-                        {rxRecord.status === 'dispensed'
-                          ? '🔴 DISPENSED & LOCKED'
-                          : '🟢 VERIFIED GENUINE PRESCRIPTION'}
+                        {rxRecord.status === 'dispensed' ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            <Lock className="w-3.5 h-3.5 text-white" />
+                            DISPENSED &amp; LOCKED
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5">
+                            <ShieldCheck className="w-3.5 h-3.5 text-white" />
+                            VERIFIED GENUINE PRESCRIPTION
+                          </span>
+                        )}
                       </span>
                       <span className="text-xs font-mono text-slate-500 bg-white/80 px-2 py-0.5 rounded border border-slate-200">
                         Hash: {rxRecord.tamperHash || 'SEC-99A82B-VERIFIED'}
@@ -413,8 +421,9 @@ export function VerifyRxPage() {
             </div>
 
             <form onSubmit={handleConfirmDispensation} className="space-y-4">
-              <p className="text-xs text-slate-600 bg-amber-50 border border-amber-200 p-3 rounded-xl">
-                ⚠️ Once marked dispensed, this prescription will be permanently locked across all pharmacies to prevent drug reuse.
+              <p className="text-xs text-slate-700 bg-amber-50 border border-amber-200 p-3 rounded-xl flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <span>Once marked dispensed, this prescription will be permanently locked across all pharmacies to prevent drug reuse.</span>
               </p>
 
               <div>

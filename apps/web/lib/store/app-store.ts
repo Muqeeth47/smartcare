@@ -64,6 +64,7 @@ export interface AppState {
 
   // UI
   theme: 'light' | 'dark';
+  fontScale: number; // -2 to +2, default 0
   toastMessage: string | null;
   toastType: 'info' | 'success' | 'error';
 }
@@ -100,6 +101,7 @@ export interface AppActions {
 
   // UI
   setTheme: (theme: 'light' | 'dark') => void;
+  setFontScale: (scale: number) => void;
   showToast: (message: string, type?: 'info' | 'success' | 'error') => void;
   clearToast: () => void;
 }
@@ -220,6 +222,7 @@ export const useAppStore = create<AppState & AppActions>()(
       activeAmbulance: null,
       pharmacyOrders: [],
       theme: 'light',
+      fontScale: 0,
       toastMessage: null,
       toastType: 'info',
 
@@ -258,6 +261,11 @@ export const useAppStore = create<AppState & AppActions>()(
           sessionExpiresAt: expiresAt,
           patientVisits,
           patientData,
+        });
+
+        // Immediately scope queue for this portal
+        DemoDB.fetchQueue().then((fresh) => {
+          get().setQueue(fresh);
         });
       },
 
@@ -405,6 +413,18 @@ export const useAppStore = create<AppState & AppActions>()(
         try { localStorage.setItem('smartcare.theme', theme); } catch {}
       },
 
+      setFontScale: (scale) => {
+        const clamped = Math.max(-2, Math.min(2, Math.round(scale)));
+        set({ fontScale: clamped });
+        // Font size steps: -2=13, -1=14, 0=16, 1=18, 2=20
+        const sizes: Record<string, string> = { '-2': '13px', '-1': '14px', '0': '16px', '1': '18px', '2': '20px' };
+        const px = sizes[String(clamped)] ?? '16px';
+        if (typeof document !== 'undefined') {
+          document.documentElement.style.setProperty('--font-base', px);
+        }
+        try { localStorage.setItem('smartcare.fontScale', String(clamped)); } catch {}
+      },
+
       showToast: (message, type = 'info') => {
         set({ toastMessage: message, toastType: type });
         setTimeout(() => set({ toastMessage: null }), 3500);
@@ -427,6 +447,7 @@ export const useAppStore = create<AppState & AppActions>()(
         sessionExpiresAt: state.sessionExpiresAt,
         auth: state.auth,
         theme: state.theme,
+        fontScale: state.fontScale,
       }),
       onRehydrateStorage: () => (state) => {
         // Expire sessions
@@ -438,6 +459,13 @@ export const useAppStore = create<AppState & AppActions>()(
         // Apply theme
         if (state?.theme && typeof document !== 'undefined') {
           document.documentElement.setAttribute('data-theme', state.theme);
+        }
+        // Apply font scale
+        if (typeof document !== 'undefined') {
+          const scale = state?.fontScale ?? 0;
+          const sizes: Record<string, string> = { '-2': '13px', '-1': '14px', '0': '16px', '1': '18px', '2': '20px' };
+          const px = sizes[String(scale)] ?? '16px';
+          document.documentElement.style.setProperty('--font-base', px);
         }
       },
     }

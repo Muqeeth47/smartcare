@@ -90,6 +90,19 @@ export function LoginPage() {
         result = await DemoDB.registerProfessional({ email, password, role, hospital: facility });
       }
       if (!result.success) { setMessage(result.error || 'Registration failed.'); setMessageType('error'); return; }
+      if (result.user) {
+        const u = result.user;
+        login(u.email, u.role as UserRole, {
+          hospital: u.hospital || (isPatient ? 'SmartCare Community Hospital' : facility),
+          country: u.country || 'India',
+          state: u.state || 'Telangana',
+          city: u.city || 'Hyderabad',
+        });
+        showToast('Account created! Signed in successfully.', 'success');
+        const dest = u.role === 'patient' ? '/dashboard/patient' : u.role === 'doctor' ? '/dashboard/hospital' : '/dashboard/admin';
+        router.push(dest);
+        return;
+      }
       setMessageType('success');
       setMessage('Account created. You can now sign in.');
       setMode('signin');

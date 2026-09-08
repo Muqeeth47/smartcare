@@ -47,6 +47,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               try {
                 var t = localStorage.getItem('smartcare.theme');
                 if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+                var fs = parseInt(localStorage.getItem('smartcare.fontScale') || '0', 10);
+                var fsMap = {'-2':'13px','-1':'14px','0':'16px','1':'18px','2':'20px'};
+                document.documentElement.style.setProperty('--font-base', fsMap[String(fs)] || '16px');
               } catch(e) {}
             `,
           }}

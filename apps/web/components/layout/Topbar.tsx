@@ -41,8 +41,8 @@ export function Topbar({
   const pathname = usePathname() || '';
   const isAmbulancePage = pathname.startsWith('/ambulance');
 
-  const { theme, setTheme, showToast } = useAppStore(
-    useShallow((s) => ({ theme: s.theme, setTheme: s.setTheme, showToast: s.showToast }))
+  const { theme, setTheme, showToast, fontScale, setFontScale } = useAppStore(
+    useShallow((s) => ({ theme: s.theme, setTheme: s.setTheme, showToast: s.showToast, fontScale: s.fontScale, setFontScale: s.setFontScale }))
   );
   const [lang, setLang] = useState('en');
 
@@ -92,15 +92,52 @@ export function Topbar({
       title="Emergency Ambulance Dispatch"
     >
       <Siren className="w-3.5 h-3.5 animate-pulse text-white" />
-      <span className="tracking-wide uppercase text-[11px] sm:text-xs">🚨 SOS Ambulance</span>
+      <span className="tracking-wide uppercase text-[11px] sm:text-xs font-black">SOS Ambulance</span>
     </Link>
   ) : null;
 
   // ── Topbar controls shared across variants ─────────────────────────────────
   const Controls = (
-    <div className="topbar-control-group flex items-center gap-2">
+    <div className="topbar-control-group flex items-center gap-1.5">
       {/* Persistent SOS Button */}
       {SosBeaconButton}
+
+      {/* Font size controls: A- A A+ */}
+      <div className="font-scale-controls flex items-center border border-[var(--line)] rounded-[var(--radius)] overflow-hidden bg-[var(--surface)] divide-x divide-[var(--line)]" aria-label="Font size controls">
+        <button
+          id="font-scale-decrease"
+          type="button"
+          onClick={() => setFontScale(fontScale - 1)}
+          disabled={fontScale <= -2}
+          title="Decrease font size"
+          aria-label="Decrease font size"
+          className="flex items-center justify-center w-8 h-8 text-[0.7rem] font-bold text-[var(--text-muted)] hover:bg-[var(--mint)] hover:text-[var(--teal)] transition-colors disabled:opacity-35 disabled:cursor-not-allowed cursor-pointer"
+        >
+          A<span className="text-[0.5rem] leading-none">-</span>
+        </button>
+        <button
+          id="font-scale-reset"
+          type="button"
+          onClick={() => setFontScale(0)}
+          title="Reset font size to default"
+          aria-label="Reset font size"
+          className="flex items-center justify-center w-8 h-8 text-[0.8rem] font-extrabold transition-colors cursor-pointer"
+          style={{ color: fontScale === 0 ? 'var(--teal)' : 'var(--text-muted)' }}
+        >
+          A
+        </button>
+        <button
+          id="font-scale-increase"
+          type="button"
+          onClick={() => setFontScale(fontScale + 1)}
+          disabled={fontScale >= 2}
+          title="Increase font size"
+          aria-label="Increase font size"
+          className="flex items-center justify-center w-8 h-8 text-[0.95rem] font-bold text-[var(--text-muted)] hover:bg-[var(--mint)] hover:text-[var(--teal)] transition-colors disabled:opacity-35 disabled:cursor-not-allowed cursor-pointer"
+        >
+          A<span className="text-[0.55rem] leading-none">+</span>
+        </button>
+      </div>
 
       {/* Workspace & Patient navigation toggle (collapses on desktop, opens drawer on mobile) */}
       {(variant === 'workspace' || variant === 'patient') && onMenuClick && (
@@ -211,7 +248,10 @@ export function Topbar({
         {/* Primary nav links — Desktop row, Mobile touch-scrollable horizontal pill bar */}
         <nav className="nav-links flex items-center" aria-label="Primary navigation">
           <a href="/#how-it-works" className="nav-link-item">How it works</a>
-          <Link href="/ambulance" className="nav-link-item nav-link-highlight text-red-600 font-extrabold">🚨 Ambulance</Link>
+          <Link href="/ambulance" className="nav-link-item nav-link-highlight text-red-600 font-extrabold flex items-center gap-1">
+            <Siren className="w-3.5 h-3.5 text-red-600" />
+            Ambulance
+          </Link>
           <Link href="/pharmacy" className="nav-link-item">Pharmacy</Link>
           <Link href="/verify-rx" className="nav-link-item">Verify Rx</Link>
           <Link href="/donate" className="nav-link-item">Donation</Link>

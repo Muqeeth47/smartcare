@@ -200,9 +200,14 @@ export function PatientDashboardPage() {
                       : 'bg-amber-100 text-amber-800'
                   )}
                 >
-                  {recentlyCancelledVisit.cancelledBy === 'doctor'
-                    ? '🚨 Appointment Cancelled by Hospital'
-                    : 'Appointment Cancelled'}
+                  {recentlyCancelledVisit.cancelledBy === 'doctor' ? (
+                    <>
+                      <AlertTriangle className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                      Appointment Cancelled by Hospital
+                    </>
+                  ) : (
+                    'Appointment Cancelled'
+                  )}
                 </span>
                 <h2 className="text-base sm:text-lg font-bold text-slate-900 mt-0.5">
                   {recentlyCancelledVisit.cancelledBy === 'doctor'

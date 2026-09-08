@@ -100,7 +100,7 @@
 
 html {
   font-family: var(--font-noto);
-  font-size: 16px;
+  font-size: var(--font-base, 16px);
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;
   background: var(--surface-sunken);
@@ -147,6 +147,12 @@ a:hover { text-decoration: underline; }
 .triage-yellow { color: var(--yellow); background: var(--yellow-bg); }
 .triage-green  { color: var(--green);  background: var(--green-bg);  }
 .triage-unassessed { color: var(--text-muted); background: var(--surface-sunken); }
+
+/* ─── Font Scale Controls ─────────────────────────────────────────────────── */
+/* Smooth font-size transitions when using A- / A / A+ buttons */
+html {
+  transition: font-size 0.2s ease;
+}
 
 /* ─── UNIFIED PRINT & PDF GENERATION STYLESHEET ───────────────────────────── */
 #printable-medical-report {

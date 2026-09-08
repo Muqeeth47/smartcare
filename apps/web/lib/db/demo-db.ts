@@ -248,11 +248,29 @@ function saveRegisteredUsers(users: Record<string, typeof DEMO_USERS[string]>): 
 export const DemoDB = {
   // Auth
   checkCredentials: async (hospital: string, email: string, password: string, role: string) => {
+    // Extensible API Hook: If external API endpoint is configured, query remote service first
+    const apiEndpoint = process.env.NEXT_PUBLIC_AUTH_API_URL || (typeof window !== 'undefined' ? (window as any).__SMARTCARE_AUTH_API__ : null);
+    if (apiEndpoint) {
+      try {
+        const res = await fetch(`${apiEndpoint}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hospital, email, password, role }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          return { success: true, user: data.user };
+        }
+      } catch (err) {
+        console.warn('External Auth API unreachable, checking local demo database.', err);
+      }
+    }
+
     const users = getAllUsers();
     const user = users[email.toLowerCase()];
     const hospitalMatches = role === 'patient' || !hospital || String(user?.hospital || '').toLowerCase() === String(hospital).toLowerCase();
     if (user && user.password === password && user.role === role && hospitalMatches) {
-      return { success: true, user: { email: user.email, role: user.role, hospital: user.hospital || '', country: user.country, state: user.state || '', city: user.city || '' } };
+      return { success: true, user: { email: user.email, role: user.role, hospital: user.hospital || '', country: user.country, state: user.state || '', city: user.city || '', name: user.name } };
     }
     return { success: false, error: 'The email, password, portal, or care centre does not match this account.' };
   },
@@ -273,13 +291,51 @@ export const DemoDB = {
   },
 
   registerPatient: async (data: { email: string; password: string; name: string; city?: string }) => {
+    // Extensible API Hook: If external API endpoint is configured, query remote service first
+    const apiEndpoint = process.env.NEXT_PUBLIC_AUTH_API_URL || (typeof window !== 'undefined' ? (window as any).__SMARTCARE_AUTH_API__ : null);
+    if (apiEndpoint) {
+      try {
+        const res = await fetch(`${apiEndpoint}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...data, role: 'patient' }),
+        });
+        if (res.ok) {
+          const resData = await res.json();
+          return { success: true, user: resData.user };
+        }
+      } catch (err) {
+        console.warn('External Auth API unreachable, saving into local demo database.', err);
+      }
+    }
+
     const users = getAllUsers();
     const email = data.email.toLowerCase();
     if (users[email]) return { success: false, error: 'An account with this email already exists.' };
-    const newUser = { email, password: data.password, role: 'patient' as const, name: data.name, hospital: '', country: 'India', state: 'Telangana', city: data.city || 'Hyderabad' };
+    const newUser = {
+      email,
+      password: data.password,
+      role: 'patient' as const,
+      name: data.name,
+      hospital: 'SmartCare Community Hospital',
+      country: 'India',
+      state: 'Telangana',
+      city: data.city || 'Hyderabad',
+    };
     users[email] = newUser;
     saveRegisteredUsers(users);
-    return { success: true, user: { email, role: 'patient' as const, name: data.name } };
+    return {
+      success: true,
+      user: {
+        email,
+        role: 'patient' as const,
+        name: data.name,
+        hospital: newUser.hospital,
+        country: newUser.country,
+        state: newUser.state,
+        city: newUser.city,
+      },
+    };
   },
 
   verifyPasswordHint: async () => ({ success: false, error: 'Password recovery is unavailable in local demo mode.' }),

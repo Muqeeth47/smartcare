@@ -25,6 +25,7 @@ import {
   AlertTriangle,
   Zap,
   Lock,
+  Check,
 } from 'lucide-react';
 
 const VEHICLE_TIERS = [
@@ -95,13 +96,13 @@ export function AmbulancePage() {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           setIsLocating(false);
-          setGpsStatus(`📍 GPS: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)} (Accurate to 15m)`);
+          setGpsStatus(`GPS: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)} (Accurate to 15m)`);
           setPickupAddress('Near Gachibowli Outer Ring Road, Hyderabad (GPS Verified)');
           showToast('GPS location verified with dispatch station', 'success');
         },
         () => {
           setIsLocating(false);
-          setGpsStatus('📍 Address set via local network location.');
+          setGpsStatus('Address set via local network location.');
           setPickupAddress('Financial District Road No. 2, Hyderabad');
           showToast('Using verified network location', 'info');
         },
@@ -130,7 +131,7 @@ export function AmbulancePage() {
       });
       setActiveBooking(booking);
       setIsDispatching(false);
-      showToast('🚨 Ambulance dispatched! Paramedic Ram Singh is en route.', 'success');
+      showToast('Ambulance dispatched! Paramedic Ram Singh is en route.', 'success');
     }, 600);
   };
 
@@ -365,8 +366,15 @@ export function AmbulancePage() {
 
                       <div className="pt-3 mt-3 border-t border-[var(--line)] flex items-center justify-between font-extrabold">
                         <span className="text-sm text-[var(--ink)]">₹{tier.price}</span>
-                        <span className={cn('text-xs font-bold', isSelected ? 'text-rose-600' : 'text-[var(--muted)]')}>
-                          {isSelected ? '✓ Selected' : 'Select'}
+                        <span className={cn('text-xs font-bold inline-flex items-center gap-1', isSelected ? 'text-rose-600' : 'text-[var(--muted)]')}>
+                          {isSelected ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-rose-600" />
+                              Selected
+                            </>
+                          ) : (
+                            'Select'
+                          )}
                         </span>
                       </div>
                     </button>

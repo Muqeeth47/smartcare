@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAppStore } from '@/lib/store/app-store';
 import { Topbar } from '@/components/layout/Topbar';
 import { Footer } from '@/components/layout/Shell';
@@ -69,9 +69,22 @@ const DEMO_BLOOD_CENTRES = [
 
 export function DonationFinderPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState<'blood' | 'organ'>(
+    tabParam === 'organ' ? 'organ' : 'blood'
+  );
+
+  const handleTabChange = (tab: 'blood' | 'organ') => {
+    setActiveTab(tab);
+    setOrganMessage(null);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', tab);
+    router.replace(`/donate?${params.toString()}`, { scroll: false });
+  };
+
   const { showToast } = useAppStore();
 
-  const [activeTab, setActiveTab] = useState<'blood' | 'organ'>('blood');
   const [selectedGroup, setSelectedGroup] = useState<string>('O+');
   const [cityInput, setCityInput] = useState<string>('Hyderabad');
   const [locating, setLocating] = useState(false);
@@ -241,11 +254,11 @@ export function DonationFinderPage() {
           <div>
             {/* Intro & Tab Switch */}
             <div className="mb-6">
-              <div className="inline-flex bg-[var(--surface-sunken)] border border-[var(--line)] rounded-full p-1 gap-1 mb-3">
+              <div className="w-full sm:w-auto inline-flex bg-[var(--surface-sunken)] border border-[var(--line)] rounded-full p-1 gap-1 mb-3">
                 <button
                   type="button"
-                  onClick={() => { setActiveTab('blood'); setOrganMessage(null); }}
-                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                  onClick={() => handleTabChange('blood')}
+                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all min-h-[44px] cursor-pointer ${
                     activeTab === 'blood' ? 'bg-[#0a3b69] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[#0a3b69]'
                   }`}
                 >
@@ -253,8 +266,8 @@ export function DonationFinderPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setActiveTab('organ'); setOrganMessage(null); }}
-                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                  onClick={() => handleTabChange('organ')}
+                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all min-h-[44px] cursor-pointer ${
                     activeTab === 'organ' ? 'bg-[#0a3b69] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[#0a3b69]'
                   }`}
                 >

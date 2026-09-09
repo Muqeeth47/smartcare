@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useSession, usePatient, useAppStore } from '@/lib/store/app-store';
 import { PatientShell } from '@/components/layout/Shell';
@@ -29,18 +30,50 @@ import {
 import type { PatientMedicalHistory } from '@smartcare/types';
 
 export function MedicalHistoryPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { role } = useAuthGuard(['patient']);
   const { email } = useSession();
   const { patientData } = usePatient();
   const { showToast } = useAppStore();
 
+  const modalParam = searchParams.get('modal');
+  const tabParam = searchParams.get('tab') as 'med' | 'alg' | 'cond' | 'emg' | 'provider' | null;
+
   const [history, setHistory] = useState<PatientMedicalHistory>(() => DemoDB.getMedicalHistory(email || 'patient@smartcare.demo'));
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showQrModal, setShowQrModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(modalParam === 'edit');
+  const [showQrModal, setShowQrModal] = useState(modalParam === 'qr');
   const [copied, setCopied] = useState(false);
 
   // Form states for Add/Edit
-  const [editTab, setEditTab] = useState<'med' | 'alg' | 'cond' | 'emg' | 'provider'>('med');
+  const [editTab, setEditTab] = useState<'med' | 'alg' | 'cond' | 'emg' | 'provider'>(
+    tabParam && ['med', 'alg', 'cond', 'emg', 'provider'].includes(tabParam) ? tabParam : 'med'
+  );
+
+  const openEditModal = (tab?: 'med' | 'alg' | 'cond' | 'emg' | 'provider') => {
+    const t = tab || editTab;
+    setEditTab(t);
+    setShowEditModal(true);
+    setShowQrModal(false);
+    router.replace(`/dashboard/patient/history?modal=edit&tab=${t}`, { scroll: false });
+  };
+
+  const handleEditTabChange = (t: 'med' | 'alg' | 'cond' | 'emg' | 'provider') => {
+    setEditTab(t);
+    router.replace(`/dashboard/patient/history?modal=edit&tab=${t}`, { scroll: false });
+  };
+
+  const openQrModal = () => {
+    setShowQrModal(true);
+    setShowEditModal(false);
+    router.replace('/dashboard/patient/history?modal=qr', { scroll: false });
+  };
+
+  const closeModal = () => {
+    setShowEditModal(false);
+    setShowQrModal(false);
+    router.replace('/dashboard/patient/history', { scroll: false });
+  };
   const [newMed, setNewMed] = useState({ name: '', dosage: '', condition: '', notes: '' });
   const [newAlg, setNewAlg] = useState<{ substance: string; severity: 'Mild' | 'Moderate' | 'Severe' | 'Life-Threatening'; reaction: string }>({
     substance: '',
@@ -167,7 +200,7 @@ export function MedicalHistoryPage() {
     updated.lastUpdated = now;
     DemoDB.saveMedicalHistory(email, updated);
     setHistory(updated);
-    setShowEditModal(false);
+    closeModal();
     showToast('Medical history updated successfully', 'success');
   };
 
@@ -203,12 +236,12 @@ export function MedicalHistoryPage() {
           </div>
 
           {/* Action buttons matching original history.js */}
-          <div className="flex items-center gap-3 flex-wrap pt-2">
+          <div className="flex items-center gap-2.5 flex-wrap pt-2">
             <button
               id="edit-passport-btn"
               type="button"
-              onClick={() => setShowEditModal(true)}
-              className="btn-primary flex items-center gap-2 h-10 px-4 rounded-xl text-xs font-bold text-white shadow-sm transition-all"
+              onClick={() => openEditModal()}
+              className="btn-primary flex-1 sm:flex-none flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl text-xs font-bold text-white shadow-sm transition-all cursor-pointer"
               style={{ background: 'var(--teal)' }}
             >
               <PlusCircle size={16} /> Add / Edit Medical Record
@@ -218,7 +251,7 @@ export function MedicalHistoryPage() {
               id="download-pdf-btn"
               type="button"
               onClick={handleDownloadPdf}
-              className="btn-secondary flex items-center gap-2 h-10 px-4 rounded-xl text-xs font-bold text-[#0a3b69] border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] shadow-sm transition-all"
+              className="btn-secondary flex-1 sm:flex-none flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl text-xs font-bold text-[#0a3b69] border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] shadow-sm transition-all cursor-pointer"
             >
               <Download size={16} /> Download PDF Report
             </button>
@@ -226,8 +259,8 @@ export function MedicalHistoryPage() {
             <button
               id="qr-handoff-btn"
               type="button"
-              onClick={() => setShowQrModal(true)}
-              className="btn-ghost flex items-center gap-2 h-10 px-4 rounded-xl text-xs font-bold text-[#0f5ca8] hover:bg-[#e5f1fc] transition-all"
+              onClick={openQrModal}
+              className="btn-ghost w-full sm:w-auto flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl text-xs font-bold text-[#0f5ca8] hover:bg-[#e5f1fc] transition-all cursor-pointer"
             >
               <QrCode size={16} /> Share with hospital
             </button>
@@ -539,13 +572,13 @@ export function MedicalHistoryPage() {
       {/* ── Add / Edit Medical Record Modal ── */}
       {showEditModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
-          onClick={() => setShowEditModal(false)}
+          onClick={closeModal}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl max-w-lg w-full max-h-[88vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -561,15 +594,15 @@ export function MedicalHistoryPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setShowEditModal(false)}
-                className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] transition-colors"
+                onClick={closeModal}
+                className="p-2 rounded-lg text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
               >
                 <X size={18} />
               </button>
             </div>
 
             {/* Tab switch */}
-            <div className="flex p-2 bg-[#f4f8fc] border-b border-[var(--line)] gap-1 text-xs font-bold">
+            <div className="flex p-2 bg-[#f4f8fc] border-b border-[var(--line)] gap-1.5 text-xs font-bold overflow-x-auto" role="tablist">
               {[
                 { id: 'med', label: 'Medicine' },
                 { id: 'alg', label: 'Allergy' },
@@ -580,9 +613,11 @@ export function MedicalHistoryPage() {
                 <button
                   key={t.id}
                   type="button"
-                  onClick={() => setEditTab(t.id as any)}
-                  className={`flex-1 py-1.5 px-2 rounded-lg transition-colors ${
-                    editTab === t.id ? 'bg-[#0a3b69] text-white' : 'text-[#0a3b69] hover:bg-white'
+                  role="tab"
+                  aria-selected={editTab === t.id}
+                  onClick={() => handleEditTabChange(t.id as any)}
+                  className={`flex-1 min-h-[44px] py-2 px-2.5 rounded-lg transition-all font-bold text-center shrink-0 cursor-pointer ${
+                    editTab === t.id ? 'bg-[#0a3b69] text-white shadow-xs' : 'text-[#0a3b69] hover:bg-white'
                   }`}
                 >
                   {t.label}
@@ -783,17 +818,17 @@ export function MedicalHistoryPage() {
               )}
 
               {/* Submit Buttons */}
-              <div className="flex items-center justify-between pt-4 border-t border-[var(--line)]">
+              <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-2.5 pt-4 border-t border-[var(--line)]">
                 <button
                   type="button"
-                  onClick={() => setShowEditModal(false)}
-                  className="px-4 py-2 rounded-lg border border-[var(--line)] text-xs font-semibold hover:bg-slate-50 transition-colors"
+                  onClick={closeModal}
+                  className="w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-lg border border-[var(--line)] text-xs font-semibold hover:bg-slate-50 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="btn-primary flex items-center gap-1.5 h-9 px-5 rounded-lg text-xs font-bold text-white shadow-sm"
+                  className="btn-primary w-full sm:w-auto min-h-[44px] flex items-center justify-center gap-1.5 px-5 rounded-lg text-xs font-bold text-white shadow-sm cursor-pointer"
                   style={{ background: 'var(--teal)' }}
                 >
                   <Save size={14} /> Save Record
@@ -807,13 +842,13 @@ export function MedicalHistoryPage() {
       {/* ── Share With Hospital QR Modal ── */}
       {showQrModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
-          onClick={() => setShowQrModal(false)}
+          onClick={closeModal}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center space-y-4"
+            className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center space-y-4 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center pb-2 border-b border-[var(--line)]">
@@ -822,8 +857,8 @@ export function MedicalHistoryPage() {
               </h3>
               <button
                 type="button"
-                onClick={() => setShowQrModal(false)}
-                className="p-1 rounded-lg text-[var(--text-muted)] hover:bg-[var(--surface-sunken)]"
+                onClick={closeModal}
+                className="p-2 rounded-lg text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -842,11 +877,11 @@ export function MedicalHistoryPage() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-center gap-2">
               <button
                 type="button"
                 onClick={handleCopyPassport}
-                className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded-xl border border-[var(--line)] text-xs font-bold text-[#0a3b69] hover:bg-[#f0f7fc] transition-colors"
+                className="w-full sm:flex-1 flex items-center justify-center gap-1.5 min-h-[44px] rounded-xl border border-[var(--line)] text-xs font-bold text-[#0a3b69] hover:bg-[#f0f7fc] transition-colors cursor-pointer"
               >
                 {copied ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
                 <span>{copied ? 'Copied' : 'Copy ID'}</span>
@@ -854,7 +889,7 @@ export function MedicalHistoryPage() {
               <button
                 type="button"
                 onClick={handleDownloadPdf}
-                className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded-xl bg-[#0a3b69] text-xs font-bold text-white hover:brightness-110 transition-all"
+                className="w-full sm:flex-1 flex items-center justify-center gap-1.5 min-h-[44px] rounded-xl bg-[#0a3b69] text-xs font-bold text-white hover:brightness-110 transition-all cursor-pointer"
               >
                 <Download size={14} />
                 <span>Save PDF</span>

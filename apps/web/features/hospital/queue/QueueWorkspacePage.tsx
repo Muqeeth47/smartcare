@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useQueue, useSession, useAppStore, sortQueue, queueStatus } from '@/lib/store/app-store';
 import { WorkspaceShell } from '@/components/layout/Shell';
@@ -32,9 +33,35 @@ export function QueueWorkspacePage() {
   const setQueue = useAppStore((s) => s.setQueue);
   const updateQueueItem = useAppStore((s) => s.updateQueueItem);
 
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const priorityParam = searchParams.get('priority') as 'all' | 'Red' | 'Yellow' | 'Green' | null;
+  const statusParam = searchParams.get('status') as 'all' | 'waiting' | 'called' | 'in_progress' | 'completed' | null;
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState<'all' | 'Red' | 'Yellow' | 'Green'>('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'waiting' | 'called' | 'in_progress' | 'completed'>('all');
+  const [priorityFilter, setPriorityFilter] = useState<'all' | 'Red' | 'Yellow' | 'Green'>(
+    priorityParam && ['Red', 'Yellow', 'Green'].includes(priorityParam) ? priorityParam : 'all'
+  );
+  const [statusFilter, setStatusFilter] = useState<'all' | 'waiting' | 'called' | 'in_progress' | 'completed'>(
+    statusParam && ['waiting', 'called', 'in_progress', 'completed'].includes(statusParam) ? statusParam : 'all'
+  );
+
+  const handlePriorityFilterChange = (priority: 'all' | 'Red' | 'Yellow' | 'Green') => {
+    setPriorityFilter(priority);
+    const params = new URLSearchParams(searchParams.toString());
+    if (priority === 'all') params.delete('priority');
+    else params.set('priority', priority);
+    router.replace(`/dashboard/queue?${params.toString()}`, { scroll: false });
+  };
+
+  const handleStatusFilterChange = (status: 'all' | 'waiting' | 'called' | 'in_progress' | 'completed') => {
+    setStatusFilter(status);
+    const params = new URLSearchParams(searchParams.toString());
+    if (status === 'all') params.delete('status');
+    else params.set('status', status);
+    router.replace(`/dashboard/queue?${params.toString()}`, { scroll: false });
+  };
+
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // QR Modal
@@ -234,13 +261,13 @@ export function QueueWorkspacePage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search patient, symptoms, or ID..."
-                className="w-full pl-10 pr-3 py-2 text-xs sm:text-sm rounded-xl border border-[var(--line)] bg-[var(--surface)] focus:outline-none focus:border-[var(--teal)] transition-colors"
+                className="w-full pl-10 pr-3 py-2.5 min-h-[44px] text-xs sm:text-sm rounded-xl border border-[var(--line)] bg-[var(--surface)] focus:outline-none focus:border-[var(--teal)] transition-colors"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--ink)]"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--ink)] p-1 min-h-[32px] min-w-[32px] flex items-center justify-center"
                 >
                   <X size={14} />
                 </button>
@@ -250,8 +277,8 @@ export function QueueWorkspacePage() {
             <div className="sm:col-span-3">
               <select
                 value={priorityFilter}
-                onChange={(e) => setPriorityFilter(e.target.value as any)}
-                className="w-full px-3 py-2 text-xs sm:text-sm rounded-xl border border-[var(--line)] bg-[var(--surface)] focus:outline-none focus:border-[var(--teal)] font-medium text-[var(--ink)] cursor-pointer"
+                onChange={(e) => handlePriorityFilterChange(e.target.value as any)}
+                className="w-full px-3 py-2.5 min-h-[44px] text-xs sm:text-sm rounded-xl border border-[var(--line)] bg-[var(--surface)] focus:outline-none focus:border-[var(--teal)] font-medium text-[var(--ink)] cursor-pointer"
               >
                 <option value="all">All priorities</option>
                 <option value="Red">Red (Urgent)</option>
@@ -263,8 +290,8 @@ export function QueueWorkspacePage() {
             <div className="sm:col-span-3">
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as any)}
-                className="w-full px-3 py-2 text-xs sm:text-sm rounded-xl border border-[var(--line)] bg-[var(--surface)] focus:outline-none focus:border-[var(--teal)] font-medium text-[var(--ink)] cursor-pointer"
+                onChange={(e) => handleStatusFilterChange(e.target.value as any)}
+                className="w-full px-3 py-2.5 min-h-[44px] text-xs sm:text-sm rounded-xl border border-[var(--line)] bg-[var(--surface)] focus:outline-none focus:border-[var(--teal)] font-medium text-[var(--ink)] cursor-pointer"
               >
                 <option value="all">All statuses</option>
                 <option value="waiting">Waiting</option>

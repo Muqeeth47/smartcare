@@ -59,6 +59,12 @@
   /* Print */
   --print-navy: #0a3b69;
   --print-light-blue: #f0f7fc;
+
+  /* ── Legacy aliases (keep in sync with --text-muted / --text / --surface-sunken) ── */
+  /* Used throughout globals.css for sidebar nav, mobile nav, and card text colors */
+  --muted:  #5c6a7a;   /* = --text-muted light */
+  --ink:    #0d1b2a;   /* = --text light */
+  --canvas: #f1f5f9;   /* = --surface-sunken light */
 }
 
 /* ─── Design Tokens (Dark) ────────────────────────────────────────────────── */
@@ -89,6 +95,11 @@
 
   --line: #1e2d42;
   --line-strong: #2a3d57;
+
+  /* ── Legacy aliases (dark) ── */
+  --muted:  #8ba4c1;   /* = --text-muted dark */
+  --ink:    #e8f0fb;   /* = --text dark */
+  --canvas: #0a1220;   /* = --surface-sunken dark */
 }
 
 /* ─── Base Reset ──────────────────────────────────────────────────────────── */
@@ -1826,11 +1837,17 @@ html {
     gap: 0.35rem;
     margin-bottom: 0.85rem;
 }
+@media (max-width: 480px) {
+    .payment-methods-tabs {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
 .pm-tab {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.3rem;
+    min-height: 44px;
     padding: 0.5rem 0.25rem;
     border: 1px solid var(--line);
     border-radius: 0.55rem;
@@ -2421,12 +2438,12 @@ html {
    ═══════════════════════════════════════════════ */
 .step-location-shell { display: flex; flex-direction: column; gap: 1rem; }
 .location-search-header { display: flex; flex-direction: column; gap: .75rem; margin-bottom: .5rem; }
-.location-unified-bar { display: flex; align-items: center; gap: .5rem; background: var(--surface); border: 1px solid var(--line); border-radius: .75rem; padding: .35rem .5rem; box-shadow: 0 2px 8px rgba(10,59,105,.05); }
-.location-unified-bar input { border: 0; outline: none; background: transparent; flex: 1; min-width: 0; font-size: .85rem; color: var(--ink); padding: .4rem .5rem; }
-.map-toolbar { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.location-unified-bar { display: flex; align-items: center; gap: .5rem; background: var(--surface); border: 1px solid var(--line); border-radius: .75rem; padding: .35rem .5rem; min-height: 48px; box-shadow: 0 2px 8px rgba(10,59,105,.05); }
+.location-unified-bar input { border: 0; outline: none; background: transparent; flex: 1; min-width: 0; font-size: .85rem; color: var(--ink); padding: .4rem .5rem; min-height: 44px; }
+.map-toolbar { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
 .map-toolbar-actions { display: flex; align-items: center; gap: .75rem; }
-.map-view-toggle { display: inline-flex; border: 1px solid var(--line); border-radius: .5rem; overflow: hidden; background: var(--surface); }
-.map-view-toggle button { border: 0; padding: .4rem .65rem; color: var(--muted); background: var(--surface); font-size: .7rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: .35rem; }
+.map-view-toggle { display: inline-flex; border: 1px solid var(--line); border-radius: .65rem; overflow: hidden; background: var(--surface); }
+.map-view-toggle button { border: 0; padding: .5rem .85rem; min-height: 44px; color: var(--muted); background: var(--surface); font-size: .75rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: .35rem; }
 .map-view-toggle button.active { color: #fff; background: var(--teal); }
 
 .map-layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 1.25rem; align-items: start; }
@@ -2660,3 +2677,75 @@ html {
   }
 }
 
+/* ─── Flow-Shell Safe-Area Bottom Clearance (public pages) ───────────────── */
+/* Spec §5.2: Every flow shell must include safe-area padding so submit       */
+/* buttons and action bars are never hidden behind .mobile-bottom-nav         */
+@media (max-width: 768px) {
+  .flow-page-main,
+  .ambulance-page-main,
+  .pharmacy-page-main,
+  .verify-rx-page-main,
+  .donate-page-main,
+  .public-page-main {
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ─── Modal Mobile Standards (Spec §5.3) ─────────────────────────────────── */
+/* max-width: min(94vw, 560px), max-height: 88vh, internal scroll, btn stack  */
+@media (max-width: 600px) {
+  .modal-box,
+  [role="dialog"],
+  .modal-dialog,
+  .prescription-modal,
+  .rx-modal,
+  .passport-modal,
+  .qr-modal {
+    max-width: min(94vw, 560px) !important;
+    max-height: 88vh !important;
+    overflow-y: auto !important;
+    border-radius: var(--radius-lg) !important;
+  }
+
+  /* Button stack inside modals on mobile */
+  .modal-actions,
+  .modal-footer,
+  .prescription-modal-actions {
+    flex-direction: column-reverse !important;
+    gap: 0.5rem !important;
+  }
+
+  .modal-actions > *,
+  .modal-footer > *,
+  .prescription-modal-actions > * {
+    width: 100% !important;
+    min-height: 48px !important;
+    justify-content: center !important;
+  }
+}
+
+/* ─── Touch Target Standards (Spec §5.1) ─────────────────────────────────── */
+/* Tablet: min 44px; Mobile: min 48px                                         */
+@media (max-width: 768px) {
+  button:not(.sidebar-collapse-btn):not(.icon-btn-sm),
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost,
+  select,
+  input:not([type="checkbox"]):not([type="radio"]) {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 600px) {
+  button:not(.sidebar-collapse-btn):not(.icon-btn-sm),
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost,
+  select,
+  input:not([type="checkbox"]):not([type="radio"]) {
+    min-height: 48px;
+  }
+}

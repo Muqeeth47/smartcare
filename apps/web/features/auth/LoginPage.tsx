@@ -62,7 +62,18 @@ export function LoginPage() {
     setAuthTarget(newRole);
     setMessage('');
     setTouched({});
-  }, [setAuthTarget]);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('role', newRole);
+    router.replace(`/login?${params.toString()}`, { scroll: false });
+  }, [setAuthTarget, searchParams, router]);
+
+  const handleModeChange = useCallback((newMode: AuthMode) => {
+    setMode(newMode);
+    setMessage('');
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('mode', newMode);
+    router.replace(`/login?${params.toString()}`, { scroll: false });
+  }, [searchParams, router]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -180,10 +191,11 @@ export function LoginPage() {
             {(['signin', 'signup'] as const).map((m) => (
               <button
                 key={m}
-                onClick={() => { setMode(m); setMessage(''); }}
+                type="button"
+                onClick={() => handleModeChange(m)}
                 aria-selected={mode === m}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-2 min-h-[42px] rounded-full text-xs sm:text-sm font-bold transition-all active:scale-95',
+                  'flex-1 flex items-center justify-center gap-2 min-h-[44px] rounded-full text-xs sm:text-sm font-bold transition-all active:scale-95 cursor-pointer',
                   mode === m
                     ? 'bg-[var(--teal)] text-white shadow-xs'
                     : 'text-[var(--text-muted)] hover:bg-[var(--surface-sunken)]'
@@ -202,11 +214,12 @@ export function LoginPage() {
               return (
                 <button
                   key={r}
+                  type="button"
                   role="tab"
                   aria-selected={role === r}
                   onClick={() => handleRoleChange(r)}
                   className={cn(
-                    'flex-1 flex items-center justify-center gap-1 sm:gap-1.5 min-h-[42px] px-2 rounded-xl text-xs font-semibold transition-all border active:scale-95',
+                    'flex-1 flex items-center justify-center gap-1 sm:gap-1.5 min-h-[44px] px-2 rounded-xl text-xs font-semibold transition-all border active:scale-95 cursor-pointer',
                     role === r
                       ? 'bg-[var(--mint)] border-[var(--teal)]/40 text-[var(--teal)] font-bold shadow-xs'
                       : 'bg-[var(--surface)] border-[var(--line)] text-[var(--text-muted)] hover:bg-[var(--surface-sunken)]'

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Topbar } from '@/components/layout/Topbar';
 import { Footer } from '@/components/layout/Shell';
 import { usePharmacy, useAppStore } from '@/lib/store/app-store';
@@ -93,7 +94,20 @@ const CATALOG_ITEMS: MedicineCatalogItem[] = [
 
 export function PharmacyPage() {
   const { orders: pharmacyOrders, createOrder: createPharmacyOrder, updateStatus: updatePharmacyOrderStatus } = usePharmacy();
-  const [activeTab, setActiveTab] = useState<'patient' | 'dispensary'>('patient');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState<'patient' | 'dispensary'>(
+    tabParam === 'dispensary' ? 'dispensary' : 'patient'
+  );
+
+  const handleTabChange = (tab: 'patient' | 'dispensary') => {
+    setActiveTab(tab);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', tab);
+    router.replace(`/pharmacy?${params.toString()}`, { scroll: false });
+  };
+
   const [useGeneric, setUseGeneric] = useState(true);
   const [fulfillmentType, setFulfillmentType] = useState<'counter' | 'delivery'>('counter');
   const [deliveryAddress, setDeliveryAddress] = useState('Flat 402, Aditya Towers, Gachibowli, Hyderabad');
@@ -200,11 +214,11 @@ export function PharmacyPage() {
           </div>
 
           {/* Role Pill Switch */}
-          <div className="inline-flex p-1 rounded-xl bg-slate-200/70 border border-slate-300/80 self-start md:self-auto">
+          <div className="w-full sm:w-auto inline-flex p-1 rounded-xl bg-slate-200/70 border border-slate-300/80">
             <button
               type="button"
-              onClick={() => setActiveTab('patient')}
-              className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition min-h-[44px] ${
+              onClick={() => handleTabChange('patient')}
+              className={`flex-1 sm:flex-initial text-center px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition min-h-[44px] cursor-pointer ${
                 activeTab === 'patient'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
@@ -214,8 +228,8 @@ export function PharmacyPage() {
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab('dispensary')}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition min-h-[44px] ${
+              onClick={() => handleTabChange('dispensary')}
+              className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition min-h-[44px] cursor-pointer ${
                 activeTab === 'dispensary'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'

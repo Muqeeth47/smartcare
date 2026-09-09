@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useQueue, useSession, useAppStore } from '@/lib/store/app-store';
 import { WorkspaceShell } from '@/components/layout/Shell';
@@ -17,12 +18,24 @@ import {
 } from 'lucide-react';
 
 export function AnalyticsDashboardPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { role } = useAuthGuard(['doctor', 'staff']);
   const { queue, metrics } = useQueue();
   const { hospital, city } = useSession();
   const { showToast } = useAppStore();
 
-  const [selectedRange, setSelectedRange] = useState<'today' | 'week' | 'month'>('today');
+  const initialRange = (searchParams.get('range') as 'today' | 'week' | 'month') || 'today';
+  const [selectedRange, setSelectedRange] = useState<'today' | 'week' | 'month'>(
+    ['today', 'week', 'month'].includes(initialRange) ? initialRange : 'today'
+  );
+
+  const handleRangeChange = (range: 'today' | 'week' | 'month') => {
+    setSelectedRange(range);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('range', range);
+    router.replace(`/dashboard/analytics?${params.toString()}`, { scroll: false });
+  };
 
   if (!role) return null;
 
@@ -154,15 +167,15 @@ export function AnalyticsDashboardPage() {
                   type="button"
                   role="tab"
                   aria-selected={selectedRange === r}
-                  onClick={() => setSelectedRange(r)}
+                  onClick={() => handleRangeChange(r)}
                   className={cn(
-                    'flex-1 sm:flex-none flex items-center justify-center gap-1.5 min-h-[38px] px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95',
+                    'flex-1 sm:flex-none flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-lg text-xs font-bold transition-all active:scale-95 cursor-pointer',
                     selectedRange === r
                       ? 'bg-[#0a3b69] text-white shadow-xs'
                       : 'text-[var(--text-muted)] hover:bg-[#f0f7fc] hover:text-[#0a3b69]'
                   )}
                 >
-                  <Icon size={13} />
+                  <Icon size={14} />
                   <span>{labels[r]}</span>
                 </button>
               );

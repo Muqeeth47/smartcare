@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Topbar } from '@/components/layout/Topbar';
 import { Footer } from '@/components/layout/Shell';
 import { useSession, useAppStore } from '@/lib/store/app-store';
@@ -60,11 +60,23 @@ const VEHICLE_TIERS = [
 
 export function AmbulancePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { email } = useSession();
   const showToast = useAppStore((s) => s.showToast);
 
+  const initialTier = (searchParams.get('tier') as 'BLS' | 'ALS' | 'PatientTransport') || 'ALS';
+  const [selectedType, setSelectedType] = useState<'BLS' | 'ALS' | 'PatientTransport'>(
+    ['BLS', 'ALS', 'PatientTransport'].includes(initialTier) ? initialTier : 'ALS'
+  );
+
+  const handleTypeChange = (tier: 'BLS' | 'ALS' | 'PatientTransport') => {
+    setSelectedType(tier);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tier', tier);
+    router.replace(`/ambulance?${params.toString()}`, { scroll: false });
+  };
+
   const [activeBooking, setActiveBooking] = useState<AmbulanceBooking | null>(null);
-  const [selectedType, setSelectedType] = useState<'BLS' | 'ALS' | 'PatientTransport'>('ALS');
   const [pickupAddress, setPickupAddress] = useState('Gachibowli Ring Road, Hyderabad');
   const [callerName, setCallerName] = useState(email ? email.split('@')[0] : 'Emergency Patient');
   const [callerPhone, setCallerPhone] = useState('+91 98765 43210');
@@ -332,7 +344,7 @@ export function AmbulancePage() {
                     <button
                       key={tier.id}
                       type="button"
-                      onClick={() => setSelectedType(tier.id)}
+                      onClick={() => handleTypeChange(tier.id)}
                       className={cn(
                         'text-left p-4 rounded-2xl border-2 transition-all flex flex-col justify-between cursor-pointer min-h-[48px]',
                         isSelected

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { DemoDB } from '@/lib/db/demo-db';
 import { WorkspaceShell, PatientShell } from '@/components/layout/Shell';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
@@ -39,9 +40,41 @@ export function DonationsPage({ role: roleProp }: DonationsPageProps) {
   const { hospital, city } = useSession();
   const showToast = useAppStore((s) => s.showToast);
 
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const typeParam = searchParams.get('type') || searchParams.get('tab');
+  const modeParam = searchParams.get('mode');
+
   const [data, setData] = useState<DonationsData>({ hospitalPosts: [], patientPosts: [] });
-  const [donationType, setDonationType] = useState<DonationType>('blood');
-  const [mode, setMode] = useState<'offer' | 'request'>('offer');
+  const [donationType, setDonationType] = useState<DonationType>(
+    typeParam === 'organ' ? 'organ' : 'blood'
+  );
+  const [mode, setMode] = useState<'offer' | 'request'>(
+    modeParam === 'request' ? 'request' : 'offer'
+  );
+
+  const effectiveRole = roleProp || authRole;
+  const isPatientView = effectiveRole === 'patient';
+  const Shell = isPatientView ? PatientShell : WorkspaceShell;
+  const shellProps = isPatientView
+    ? { subtitle: 'Donations', backHref: '/dashboard/patient' }
+    : { title: 'Donations', subtitle: 'Hospital portal' };
+
+  const handleTypeChange = (newType: DonationType) => {
+    setDonationType(newType);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('type', newType);
+    const basePath = isPatientView ? '/dashboard/patient/donations' : effectiveRole === 'admin' ? '/dashboard/admin/donations' : '/dashboard/hospital/donations';
+    router.replace(`${basePath}?${params.toString()}`, { scroll: false });
+  };
+
+  const handleModeChange = (newMode: 'offer' | 'request') => {
+    setMode(newMode);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('mode', newMode);
+    const basePath = isPatientView ? '/dashboard/patient/donations' : effectiveRole === 'admin' ? '/dashboard/admin/donations' : '/dashboard/hospital/donations';
+    router.replace(`${basePath}?${params.toString()}`, { scroll: false });
+  };
 
   // Form states
   const [selectedGroup, setSelectedGroup] = useState('O+');
@@ -55,13 +88,6 @@ export function DonationsPage({ role: roleProp }: DonationsPageProps) {
   useEffect(() => {
     setData(DemoDB.getDonationsData());
   }, []);
-
-  const effectiveRole = roleProp || authRole;
-  const isPatientView = effectiveRole === 'patient';
-  const Shell = isPatientView ? PatientShell : WorkspaceShell;
-  const shellProps = isPatientView
-    ? { subtitle: 'Donations', backHref: '/dashboard/patient' }
-    : { title: 'Donations', subtitle: 'Hospital portal' };
 
   // Filter matching records
   const targetPatientMode = mode === 'offer' ? 'receive' : 'give';
@@ -147,15 +173,15 @@ export function DonationsPage({ role: roleProp }: DonationsPageProps) {
           <span className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider px-2">
             Donation Category
           </span>
-          <div className="flex items-center gap-2 bg-[var(--surface-sunken)] p-1 rounded-xl">
+          <div className="w-full sm:w-auto grid grid-cols-2 sm:flex sm:items-center gap-2 bg-[var(--surface-sunken)] p-1 rounded-xl">
             <button
               type="button"
               onClick={() => {
-                setDonationType('blood');
+                handleTypeChange('blood');
                 setSelectedGroup('O+');
               }}
               className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all',
+                'flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all min-h-[44px] cursor-pointer',
                 donationType === 'blood'
                   ? 'bg-[var(--teal)] text-white shadow-xs'
                   : 'text-[var(--muted)] hover:text-[var(--ink)]'
@@ -167,11 +193,11 @@ export function DonationsPage({ role: roleProp }: DonationsPageProps) {
             <button
               type="button"
               onClick={() => {
-                setDonationType('organ');
+                handleTypeChange('organ');
                 setSelectedOrgan('Kidney');
               }}
               className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all',
+                'flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all min-h-[44px] cursor-pointer',
                 donationType === 'organ'
                   ? 'bg-[var(--teal)] text-white shadow-xs'
                   : 'text-[var(--muted)] hover:text-[var(--ink)]'
@@ -194,9 +220,9 @@ export function DonationsPage({ role: roleProp }: DonationsPageProps) {
               <div className="grid grid-cols-2 gap-2 bg-[var(--surface-sunken)] p-1 rounded-xl">
                 <button
                   type="button"
-                  onClick={() => setMode('offer')}
+                  onClick={() => handleModeChange('offer')}
                   className={cn(
-                    'flex items-center justify-center gap-2 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all',
+                    'flex items-center justify-center gap-2 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all min-h-[44px] cursor-pointer',
                     mode === 'offer'
                       ? 'bg-[var(--teal)] text-white shadow-xs'
                       : 'text-[var(--muted)] hover:text-[var(--ink)]'
@@ -207,9 +233,9 @@ export function DonationsPage({ role: roleProp }: DonationsPageProps) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setMode('request')}
+                  onClick={() => handleModeChange('request')}
                   className={cn(
-                    'flex items-center justify-center gap-2 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all',
+                    'flex items-center justify-center gap-2 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all min-h-[44px] cursor-pointer',
                     mode === 'request'
                       ? 'bg-[var(--teal)] text-white shadow-xs'
                       : 'text-[var(--muted)] hover:text-[var(--ink)]'

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -15,13 +15,41 @@ import {
   Users,
   Stethoscope,
   Building2,
-  HeartPulse,
+  Hospital as HospitalIcon,
+  CheckCircle2,
+  Clock,
 } from 'lucide-react';
 import { Topbar } from '@/components/layout/Topbar';
 import { Footer } from '@/components/layout/Shell';
 
 export function LandingPage() {
-  const router = useRouter();
+  const [selectedHospital, setSelectedHospital] = useState<'SmartCare Community Hospital' | 'CityCare Trauma Centre'>('SmartCare Community Hospital');
+
+  const HOSPITALS = [
+    {
+      id: 'SmartCare Community Hospital' as const,
+      name: 'SmartCare Community Hospital',
+      area: 'Gachibowli',
+      distance: '2.1 km',
+      icuBeds: 4,
+      waitMins: 12,
+      waitColor: 'green',
+      Icon: HospitalIcon,
+    },
+    {
+      id: 'CityCare Trauma Centre' as const,
+      name: 'CityCare Trauma Centre',
+      area: 'Financial District',
+      distance: '3.8 km',
+      icuBeds: 2,
+      waitMins: 24,
+      waitColor: 'yellow',
+      Icon: Activity,
+    },
+  ];
+
+  const selectedHosp = HOSPITALS.find((h) => h.id === selectedHospital)!;
+  const bookHref = `/dashboard/patient/apply/1?hospital=${encodeURIComponent(selectedHospital)}`;
 
   return (
     <div className="min-h-dvh bg-[var(--canvas)] flex flex-col" data-section="landing-page">
@@ -154,7 +182,7 @@ export function LandingPage() {
               </div>
             </div>
 
-            {/* ── Right: care-panel ──────────────────────────────────────── */}
+            {/* ── Right: Interactive Live Care Network Panel ──────────── */}
             <div className="hero-side relative z-10 flex items-center justify-center">
               <div
                 className="care-panel w-full"
@@ -167,117 +195,115 @@ export function LandingPage() {
                 }}
               >
                 {/* Panel head */}
-                <div className="care-panel-head flex justify-between gap-4 items-start pb-4" style={{ padding: '.25rem .25rem 1rem' }}>
+                <div className="care-panel-head flex justify-between gap-4 items-start" style={{ padding: '.25rem .25rem .9rem' }}>
                   <div>
-                    <p className="care-panel-title m-0 font-extrabold" style={{ fontSize: '1rem' }}>Care near you</p>
-                    <p className="care-panel-subtitle m-0 mt-1" style={{ color: '#c2dcf3', fontSize: '.75rem' }}>A calmer way to choose where to go.</p>
+                    <span className="care-tag flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider mb-1.5"
+                      style={{ color: '#b8daf5', letterSpacing: '.12em' }}>
+                      <MapPin size={12} style={{ color: '#b8daf5' }} /> Live Care Network
+                    </span>
+                    <p className="care-panel-title m-0 font-extrabold" style={{ fontSize: '1rem', color: '#fff' }}>Verified Care Centres</p>
                   </div>
                   <span className="status-eyebrow flex items-center gap-1.5"
-                    style={{ color: '#c2dcf3', fontSize: '.67rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.12em', whiteSpace: 'nowrap' }}>
-                    <i style={{ display: 'inline-block', width: '.45rem', height: '.45rem', borderRadius: '50%', background: '#a9d4f6', boxShadow: '0 0 0 .25rem rgba(169,212,246,.15)' }} />
-                    Demo preview
+                    style={{ color: '#b8daf5', fontSize: '.67rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.12em', whiteSpace: 'nowrap' }}>
+                    <span style={{ display: 'inline-block', width: '.45rem', height: '.45rem', borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 0 .25rem rgba(74,222,128,.2)', animation: 'pulse 2s ease-in-out infinite' }} />
+                    Live queue
                   </span>
                 </div>
 
-                {/* Mini map — matches old CSS: bg #e5f1fc, arc via border trick */}
+                {/* Hospital Cards — clickable toggle */}
+                <div className="care-panel-body flex flex-col gap-2.5">
+                  {HOSPITALS.map((h) => {
+                    const isActive = selectedHospital === h.id;
+                    return (
+                      <button
+                        key={h.id}
+                        type="button"
+                        onClick={() => setSelectedHospital(h.id)}
+                        className="care-hosp-preview w-full text-left flex items-center gap-3 transition-all"
+                        style={{
+                          padding: '0.85rem 1rem',
+                          borderRadius: '0.9rem',
+                          border: isActive ? '2px solid rgba(255,255,255,0.55)' : '1.5px solid rgba(255,255,255,0.14)',
+                          background: isActive ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.07)',
+                          cursor: 'pointer',
+                          boxShadow: isActive ? '0 4px 18px rgba(0,0,0,0.18)' : 'none',
+                          transform: isActive ? 'translateY(-1px)' : 'none',
+                          transition: 'all 0.18s ease',
+                        }}
+                        aria-pressed={isActive}
+                      >
+                        {/* Icon */}
+                        <span style={{
+                          width: '2.3rem', height: '2.3rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: isActive ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.1)',
+                          borderRadius: '0.65rem', flexShrink: 0, color: '#fff',
+                        }}>
+                          <h.Icon size={17} />
+                        </span>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <strong className="block text-sm font-extrabold truncate" style={{ color: '#fff', lineHeight: 1.3 }}>
+                            {h.name}
+                          </strong>
+                          <span className="block text-xs mt-0.5" style={{ color: '#c2dcf3' }}>
+                            {h.area} · {h.icuBeds} ICU beds · {h.distance}
+                          </span>
+                        </div>
+
+                        {/* Wait badge */}
+                        <span
+                          className="shrink-0 text-xs font-bold px-2.5 py-1 rounded-full"
+                          style={{
+                            background: h.waitColor === 'green' ? 'rgba(74,222,128,0.2)' : 'rgba(251,191,36,0.2)',
+                            color: h.waitColor === 'green' ? '#86efac' : '#fde68a',
+                            border: h.waitColor === 'green' ? '1px solid rgba(74,222,128,0.35)' : '1px solid rgba(251,191,36,0.35)',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          ~{h.waitMins}m wait
+                        </span>
+
+                        {/* Selected check */}
+                        {isActive && (
+                          <CheckCircle2 size={16} style={{ color: '#86efac', flexShrink: 0 }} />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Panel footer — selected hospital + Book Visit */}
                 <div
-                  className="mini-map relative overflow-hidden"
-                  role="img"
-                  aria-label="Illustrated map showing your location and nearby hospitals"
-                  style={{
-                    minHeight: 285,
-                    borderRadius: '1rem',
-                    background: '#e5f1fc',
-                  }}
+                  className="care-panel-foot flex items-center justify-between gap-3 mt-3"
+                  style={{ borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: '0.9rem' }}
                 >
-                  {/* Dashed arc — old .mini-route: border dashed arc via CSS border-radius trick */}
-                  <span
-                    className="mini-route absolute z-10"
-                    aria-hidden="true"
+                  <div style={{ minWidth: 0 }}>
+                    <small style={{ color: '#b8daf5', fontSize: '.67rem', display: 'block', textTransform: 'uppercase', letterSpacing: '.1em', fontWeight: 700 }}>Selected hospital</small>
+                    <strong className="block truncate" style={{ color: '#fff', fontSize: '.82rem', maxWidth: 200 }}>
+                      {selectedHospital}
+                    </strong>
+                    <span className="flex items-center gap-1 mt-0.5" style={{ color: '#b8daf5', fontSize: '.67rem' }}>
+                      <Clock size={10} /> ~{selectedHosp.waitMins} min wait · {selectedHosp.icuBeds} ICU beds · {selectedHosp.distance}
+                    </span>
+                  </div>
+                  <Link
+                    href={bookHref}
+                    className="shrink-0 inline-flex items-center gap-1.5 font-extrabold no-underline"
                     style={{
-                      left: '18%', bottom: '23%',
-                      width: '66%', height: '54%',
-                      border: '3px dashed rgba(23,104,178,.45)',
-                      borderRightColor: 'transparent',
-                      borderBottomColor: 'transparent',
-                      borderRadius: '50%',
-                      transform: 'rotate(18deg)',
-                    }}
-                  />
-
-                  {/* User pin — old: left 28%, top 45%, bg #76b6e9 */}
-                  <span
-                    className="mini-pin user absolute z-20 flex items-center justify-center"
-                    aria-hidden="true"
-                    style={{
-                      left: '28%', top: '45%',
-                      width: '1.7rem', height: '1.7rem',
-                      background: '#76b6e9',
-                      border: '4px solid #fff',
-                      borderRadius: '50% 50% 50% 0',
-                      boxShadow: '0 7px 16px rgba(10,59,105,.22)',
-                      transform: 'rotate(-45deg)',
-                    }}
-                  >
-                    <span style={{ width: '.35rem', height: '.35rem', borderRadius: '50%', background: '#fff', display: 'block' }} />
-                  </span>
-
-                  {/* Hospital pin 1 — old: right 23%, top 22%, bg var(--teal) */}
-                  <span
-                    className="mini-pin hospital-1 absolute z-20 flex items-center justify-center"
-                    aria-hidden="true"
-                    style={{
-                      right: '23%', top: '22%',
-                      width: '1.7rem', height: '1.7rem',
-                      background: 'var(--teal)',
-                      border: '4px solid #fff',
-                      borderRadius: '50% 50% 50% 0',
-                      boxShadow: '0 7px 16px rgba(10,59,105,.22)',
-                      transform: 'rotate(-45deg)',
-                    }}
-                  >
-                    <span style={{ width: '.35rem', height: '.35rem', borderRadius: '50%', background: '#fff', display: 'block' }} />
-                  </span>
-
-                  {/* Hospital pin 2 — old: right 34%, bottom 16% */}
-                  <span
-                    className="mini-pin hospital-2 absolute z-20 flex items-center justify-center"
-                    aria-hidden="true"
-                    style={{
-                      right: '34%', bottom: '16%',
-                      width: '1.7rem', height: '1.7rem',
-                      background: 'var(--teal)',
-                      border: '4px solid #fff',
-                      borderRadius: '50% 50% 50% 0',
-                      boxShadow: '0 7px 16px rgba(10,59,105,.22)',
-                      transform: 'rotate(-45deg)',
-                    }}
-                  >
-                    <span style={{ width: '.35rem', height: '.35rem', borderRadius: '50%', background: '#fff', display: 'block' }} />
-                  </span>
-
-                  {/* Map label */}
-                  <span
-                    className="mini-map-label absolute z-30"
-                    style={{
-                      left: '1rem', bottom: '1rem',
-                      padding: '.55rem .7rem',
-                      border: '1px solid rgba(255,255,255,.7)',
-                      borderRadius: '.7rem',
-                      color: 'var(--teal-dark)',
-                      background: 'rgba(255,255,255,.82)',
-                      fontSize: '.7rem',
+                      background: '#fff',
+                      color: '#0a3b69',
+                      fontSize: '.78rem',
                       fontWeight: 800,
+                      padding: '.5rem .9rem',
+                      borderRadius: '.55rem',
+                      whiteSpace: 'nowrap',
+                      boxShadow: '0 3px 10px rgba(0,0,0,0.15)',
+                      minHeight: '2.4rem',
                     }}
                   >
-                    2 centres within 5 km
-                  </span>
-                </div>
-
-                {/* Panel foot */}
-                <div className="care-panel-foot flex items-center justify-between gap-3" style={{ padding: '1rem .25rem .1rem' }}>
-                  <small style={{ color: '#c2dcf3' }}>Illustrative queue window</small>
-                  <strong style={{ color: '#fff', fontSize: '.82rem' }}>15–25 minutes &#8594;</strong>
+                    Book Visit <ArrowRight size={14} />
+                  </Link>
                 </div>
               </div>
             </div>
@@ -289,8 +315,8 @@ export function LandingPage() {
         <section
           aria-label="SmartCare programme facts"
           data-section="programme-facts"
-          className="max-w-[1240px] mx-auto mt-4 grid grid-cols-3 border-t border-b border-[var(--line)] bg-white"
-          style={{ borderLeft: '1px solid var(--line)', borderRight: '1px solid var(--line)' }}
+          className="max-w-[1240px] mx-auto mt-4 grid grid-cols-3 border-t border-b border-[var(--line)]"
+          style={{ borderLeft: '1px solid var(--line)', borderRight: '1px solid var(--line)', background: 'var(--surface)' }}
         >
           {[
             { num: '01', text: 'Use your location or search manually' },
@@ -312,8 +338,8 @@ export function LandingPage() {
         <section
           id="how-it-works"
           data-section="how-it-works"
-          className="max-w-[1240px] mx-auto mt-4 border border-[var(--line)] bg-white"
-          style={{ padding: 'clamp(1.5rem, 4vw, 3rem)' }}
+          className="max-w-[1240px] mx-auto mt-4 border border-[var(--line)]"
+          style={{ padding: 'clamp(1.5rem, 4vw, 3rem)', background: 'var(--surface)' }}
         >
           <div className="section-heading mb-8">
             <div className="eyebrow-dark flex items-center gap-2"
@@ -335,7 +361,7 @@ export function LandingPage() {
               { num: '02', Icon: ListChecks, title: 'Apply', desc: 'Share only the details your care team needs before you arrive.', href: '/dashboard/patient/apply/1', cta: 'Start simply' },
               { num: '03', Icon: Activity, title: 'Follow through', desc: 'Keep your reservation reference, queue window, and centre details visible.', href: '/login?role=patient', cta: 'See the portal' },
             ].map((item) => (
-              <article key={item.num} className="border border-[var(--line)] rounded-xl p-6 relative hover:shadow-lg transition-shadow" style={{ background: '#fff' }}>
+              <article key={item.num} className="border border-[var(--line)] rounded-xl p-6 relative hover:shadow-lg transition-shadow" style={{ background: 'var(--surface)' }}>
                 <span className="journey-number absolute top-4 right-5 text-5xl font-black opacity-[0.07]" style={{ color: 'var(--teal-dark)' }}>{item.num}</span>
                 <span className="journey-icon mb-4 w-10 h-10 flex items-center justify-center rounded-xl" style={{ background: 'var(--mint)', color: 'var(--teal)' }}>
                   <item.Icon size={20} />
@@ -359,7 +385,7 @@ export function LandingPage() {
           className="portal-split max-w-[1240px] mx-auto mt-4 grid grid-cols-1 md:grid-cols-2 gap-4"
         >
           {/* Doctor */}
-          <article className="portal-panel border border-[var(--line)] rounded-xl p-8 flex flex-col gap-5 bg-white hover:shadow-xl transition-shadow">
+          <article className="portal-panel border border-[var(--line)] rounded-xl p-8 flex flex-col gap-5 hover:shadow-xl transition-shadow" style={{ background: 'var(--surface)' }}>
             <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: 'var(--mint)', color: 'var(--teal)' }}>
               <Stethoscope size={22} />
             </div>
@@ -387,14 +413,14 @@ export function LandingPage() {
           </article>
 
           {/* Ops */}
-          <article className="portal-panel border border-[var(--line)] rounded-xl p-8 flex flex-col gap-5 bg-white hover:shadow-xl transition-shadow">
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: '#fff8ed', color: '#b45309' }}>
+          <article className="portal-panel border border-[var(--line)] rounded-xl p-8 flex flex-col gap-5 hover:shadow-xl transition-shadow" style={{ background: 'var(--surface)' }}>
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: 'var(--saffron-bg)', color: 'var(--saffron)' }}>
               <Building2 size={22} />
             </div>
             <div>
               <div className="flex items-center gap-2 mb-2"
-                style={{ color: '#b45309', textTransform: 'uppercase', letterSpacing: '.14em', fontSize: '.7rem', fontWeight: 800 }}>
-                <span style={{ width: '.45rem', height: '.45rem', borderRadius: '50%', background: '#b45309', display: 'inline-block' }} />
+                style={{ color: 'var(--saffron)', textTransform: 'uppercase', letterSpacing: '.14em', fontSize: '.7rem', fontWeight: 800 }}>
+                <span style={{ width: '.45rem', height: '.45rem', borderRadius: '50%', background: 'var(--saffron)', display: 'inline-block' }} />
                 Hospital Operations
               </div>
               <h2 style={{ maxWidth: '12ch', margin: '.7rem 0 .75rem', color: 'var(--teal-dark)', fontSize: 'clamp(1.6rem, 3vw, 2.5rem)', lineHeight: 1.02, letterSpacing: '-.055em', fontWeight: 800 }}>
@@ -408,7 +434,7 @@ export function LandingPage() {
               id="open-ops-portal"
               href="/login?role=staff"
               className="btn-secondary mt-auto inline-flex items-center gap-2 font-extrabold text-sm no-underline"
-              style={{ minHeight: '2.8rem', padding: '.76rem 1.1rem', borderRadius: '.65rem', color: 'var(--teal-dark)', background: '#fff', border: '1px solid #8bbbe2', boxShadow: '0 2px 8px rgba(15,92,168,.10)', cursor: 'pointer' }}
+              style={{ minHeight: '2.8rem', padding: '.76rem 1.1rem', borderRadius: '.65rem', color: 'var(--teal-dark)', background: 'var(--surface)', border: '1px solid var(--line-strong)', boxShadow: '0 2px 8px rgba(15,92,168,.10)', cursor: 'pointer' }}
             >
               Open operations sign-in <ArrowRight size={16} />
             </Link>
@@ -421,7 +447,8 @@ export function LandingPage() {
           id="trust"
           aria-label="Why SmartCare"
           data-section="trust"
-          className="trust-row max-w-[1240px] mx-auto mt-4 grid grid-cols-1 sm:grid-cols-3 bg-white border-t border-b border-[var(--line)]"
+          className="trust-row max-w-[1240px] mx-auto mt-4 grid grid-cols-1 sm:grid-cols-3 border-t border-b border-[var(--line)]"
+          style={{ background: 'var(--surface)' }}
         >
           {[
             { Icon: ShieldCheck, title: 'Clear by design', desc: 'Readable states and calm next actions.' },

@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { PharmacyPage } from '@/features/pharmacy/PharmacyPage';
 
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <PharmacyPage />;
+  return (
+    <Suspense fallback={<div className="min-h-dvh flex items-center justify-center text-sm text-[var(--text-muted)]">Loading pharmacy…</div>}>
+      <PharmacyPage />
+    </Suspense>
+  );
 }

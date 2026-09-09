@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession, usePatient, useAppStore } from '@/lib/store/app-store';
 import { PatientShell } from '@/components/layout/Shell';
 import { DemoDB } from '@/lib/db/demo-db';
@@ -21,6 +22,9 @@ import {
   Info,
   Layers,
   ClipboardList,
+  Printer,
+  X,
+  ShieldCheck,
 } from 'lucide-react';
 import type { DonationPost } from '@smartcare/types';
 
@@ -53,8 +57,32 @@ export function PatientDonationsFinder() {
 
   const patientName = patientData.name || (email === 'patient@smartcare.demo' ? 'Asha Rao' : email.split('@')[0].replace(/[._-]/g, ' '));
 
-  const [donationType, setDonationType] = useState<'blood' | 'organ'>('blood');
-  const [mode, setMode] = useState<'give' | 'receive'>('give');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const typeParam = searchParams.get('type') || searchParams.get('tab');
+  const modeParam = searchParams.get('mode');
+
+  const [donationType, setDonationType] = useState<'blood' | 'organ'>(
+    typeParam === 'organ' ? 'organ' : 'blood'
+  );
+  const [mode, setMode] = useState<'give' | 'receive'>(
+    modeParam === 'receive' ? 'receive' : 'give'
+  );
+
+  const handleTypeChange = (newType: 'blood' | 'organ') => {
+    setDonationType(newType);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('type', newType);
+    router.replace(`/dashboard/patient/donations?${params.toString()}`, { scroll: false });
+  };
+
+  const handleModeChange = (newMode: 'give' | 'receive') => {
+    setMode(newMode);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('mode', newMode);
+    router.replace(`/dashboard/patient/donations?${params.toString()}`, { scroll: false });
+  };
+
   const [selectedGroup, setSelectedGroup] = useState<string>('B+');
   const [cityInput, setCityInput] = useState<string>(patientData.city || 'Hyderabad');
   const [searchExecuted, setSearchExecuted] = useState<boolean>(true);
@@ -75,6 +103,29 @@ export function PatientDonationsFinder() {
 
   // Registrations state
   const [myRegistrations, setMyRegistrations] = useState<DonationPost[]>([]);
+
+  // Donor Honor Roll Card Modal state
+  const [donorCardModal, setDonorCardModal] = useState<{
+    name: string;
+    type: 'blood' | 'organ';
+    group: string;
+    city: string;
+    donorId: string;
+    dateStr: string;
+  } | null>(null);
+
+  const openDonorHonorCard = (pledge: { name: string; type: 'blood' | 'organ'; group: string; city: string }) => {
+    const donorId = 'SCD-' + Math.floor(1000 + Math.random() * 9000);
+    const dateStr = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    setDonorCardModal({
+      name: pledge.name || patientName,
+      type: pledge.type,
+      group: pledge.group,
+      city: pledge.city || cityInput || 'Hyderabad',
+      donorId,
+      dateStr,
+    });
+  };
 
   // Leaflet map container ref
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -254,6 +305,14 @@ export function PatientDonationsFinder() {
     DemoDB.addPatientPost(newPost);
     setMyRegistrations((prev) => [newPost, ...prev]);
     showToast(mode === 'give' ? 'Donor registration saved to your profile' : 'Blood request published to community', 'success');
+    if (mode === 'give') {
+      openDonorHonorCard({
+        name: donorName,
+        type: 'blood',
+        group: donorGroup,
+        city: cityInput || 'Hyderabad',
+      });
+    }
   };
 
   const handleOrganSubmit = (e: React.FormEvent) => {
@@ -273,6 +332,14 @@ export function PatientDonationsFinder() {
     DemoDB.addPatientPost(newPost);
     setMyRegistrations((prev) => [newPost, ...prev]);
     showToast(mode === 'give' ? 'Organ donation interest noted' : 'Organ guidance request submitted', 'success');
+    if (mode === 'give') {
+      openDonorHonorCard({
+        name: organName,
+        type: 'organ',
+        group: organChosen,
+        city: organCity || 'Hyderabad',
+      });
+    }
   };
 
   return (
@@ -291,29 +358,29 @@ export function PatientDonationsFinder() {
             </h1>
 
             {/* Type Switch (Blood / Organ) */}
-            <div className="nd-type-switch mt-3" role="tablist" aria-label="Donation type">
+            <div className="nd-type-switch mt-3 grid grid-cols-2 gap-1.5" role="tablist" aria-label="Donation type">
               <button
                 type="button"
-                className={`nd-type-btn ${donationType === 'blood' ? 'active' : ''}`}
-                onClick={() => setDonationType('blood')}
+                className={`nd-type-btn min-h-[44px] cursor-pointer ${donationType === 'blood' ? 'active' : ''}`}
+                onClick={() => handleTypeChange('blood')}
               >
                 <Droplets size={15} /> Blood
               </button>
               <button
                 type="button"
-                className={`nd-type-btn ${donationType === 'organ' ? 'active' : ''}`}
-                onClick={() => setDonationType('organ')}
+                className={`nd-type-btn min-h-[44px] cursor-pointer ${donationType === 'organ' ? 'active' : ''}`}
+                onClick={() => handleTypeChange('organ')}
               >
                 <HeartHandshake size={15} /> Organ
               </button>
             </div>
 
             {/* Mode tabs (Give / Receive) */}
-            <div className="pd-mode-tabs flex gap-2 mt-2" role="tablist" aria-label="Give or receive">
+            <div className="pd-mode-tabs grid grid-cols-2 gap-2 mt-2" role="tablist" aria-label="Give or receive">
               <button
                 type="button"
-                onClick={() => setMode('give')}
-                className={`flex-1 flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-bold transition-all ${
+                onClick={() => handleModeChange('give')}
+                className={`flex items-center justify-center gap-1.5 min-h-[44px] px-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   mode === 'give'
                     ? 'bg-[#0f5ca8] text-white shadow-sm'
                     : 'bg-[var(--mint)] text-[#0a3b69] hover:bg-[#cbe3f7]'
@@ -323,8 +390,8 @@ export function PatientDonationsFinder() {
               </button>
               <button
                 type="button"
-                onClick={() => setMode('receive')}
-                className={`flex-1 flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-bold transition-all ${
+                onClick={() => handleModeChange('receive')}
+                className={`flex items-center justify-center gap-1.5 min-h-[44px] px-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   mode === 'receive'
                     ? 'bg-[#0f5ca8] text-white shadow-sm'
                     : 'bg-[var(--mint)] text-[#0a3b69] hover:bg-[#cbe3f7]'
@@ -433,7 +500,19 @@ export function PatientDonationsFinder() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => showToast(`Demo request recorded for ${c.name}.`, 'info')}
+                      onClick={() => {
+                        if (mode === 'give') {
+                          openDonorHonorCard({
+                            name: patientName,
+                            type: donationType,
+                            group: donationType === 'blood' ? selectedGroup : 'All Tissues & Organs',
+                            city: c.name,
+                          });
+                          showToast(`Pledged donation to ${c.name}. Recognition certificate generated!`, 'success');
+                        } else {
+                          showToast(`Demo request recorded for ${c.name}.`, 'info');
+                        }
+                      }}
                       className="nd-request-btn mt-2 flex items-center gap-1 text-[0.72rem] font-bold text-[#0f5ca8] hover:underline"
                     >
                       {mode === 'give' ? 'Pledge donation' : 'Request units'} <ChevronRight size={12} />
@@ -605,6 +684,105 @@ export function PatientDonationsFinder() {
           </div>
         </div>
       </div>
+
+      {/* ── Digital Donor Honor Roll Card Modal ── */}
+      {donorCardModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs transition-opacity"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setDonorCardModal(null)}
+        >
+          <div
+            className="w-full sm:max-w-[480px] bg-[var(--surface)] rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl border border-[var(--line)] animate-in fade-in max-h-[92vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Card Hero Graphic */}
+            <div className="bg-gradient-to-br from-teal-900 via-teal-800 to-teal-600 text-white p-6 relative">
+              <button
+                type="button"
+                onClick={() => setDonorCardModal(null)}
+                aria-label="Close card"
+                className="absolute top-4 right-4 flex items-center justify-center min-w-[36px] min-h-[36px] rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+              >
+                <X size={18} />
+              </button>
+
+              <div className="flex items-center gap-3 mb-4">
+                <span className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white shrink-0">
+                  {donorCardModal.type === 'blood' ? <Droplets size={22} /> : <HeartHandshake size={22} />}
+                </span>
+                <div>
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-teal-200 block">
+                    Official Donor Recognition Card
+                  </span>
+                  <h3 className="text-lg font-bold text-white leading-tight">
+                    SmartCare Donor Honor Roll
+                  </h3>
+                </div>
+              </div>
+
+              {/* Certificate Inner Frame */}
+              <div className="bg-black/20 p-4 rounded-xl border border-white/15 backdrop-blur-xs space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <small className="text-[10px] text-teal-200 uppercase font-bold block">
+                      Honorary Donor
+                    </small>
+                    <strong className="text-base sm:text-lg font-extrabold text-white tracking-wide block">
+                      {donorCardModal.name}
+                    </strong>
+                  </div>
+                  <div className="text-right">
+                    <small className="text-[10px] text-teal-200 uppercase font-bold block">
+                      {donorCardModal.type === 'blood' ? 'Blood Group' : 'Pledged'}
+                    </small>
+                    <strong className="text-lg sm:text-xl font-black text-amber-300 block">
+                      {donorCardModal.group}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-teal-100 border-t border-white/15 pt-2.5 flex-wrap gap-2">
+                  <span>Ref: <strong className="font-mono text-white">{donorCardModal.donorId}</strong></span>
+                  <span>City: <strong className="text-white">{donorCardModal.city}</strong></span>
+                  <span>Date: <strong className="text-white">{donorCardModal.dateStr}</strong></span>
+                </div>
+              </div>
+            </div>
+
+            {/* Card Body & Notice */}
+            <div className="p-5 space-y-4 bg-[var(--surface)]">
+              <div className="flex items-start gap-3 p-3.5 bg-[var(--surface-sunken)] rounded-xl border border-[var(--line)] text-xs text-[var(--muted)] leading-relaxed">
+                <ShieldCheck size={20} className="text-teal-600 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-[var(--ink)] block font-bold mb-0.5">
+                    Thank you for pledging care to our community!
+                  </strong>
+                  Registered in the SmartCare Community Donor Pool. You may show this digital recognition certificate at any partner hospital blood bank or coordination desk.
+                </div>
+              </div>
+
+              <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface-sunken)] text-xs font-bold text-[var(--ink)] transition-colors min-h-[44px]"
+                >
+                  <Printer size={15} /> Print Card
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDonorCardModal(null)}
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-colors min-h-[44px] shadow-sm"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </PatientShell>
   );
 }

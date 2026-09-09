@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { usePatient, useSession, useAppStore } from '@/lib/store/app-store';
 import { PatientShell } from '@/components/layout/Shell';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
@@ -10,12 +11,18 @@ import { cn } from '@/lib/utils';
 import type { PatientVisit } from '@smartcare/types';
 
 export function PatientVisitsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { role } = useAuthGuard(['patient']);
   const { patientVisits, patientData } = usePatient();
   const { email } = useSession();
   const showToast = useAppStore((s) => s.showToast);
 
-  const [activePrintVisit, setActivePrintVisit] = useState<PatientVisit | null>(null);
+  const visitIdParam = searchParams.get('visit');
+  const [activePrintVisit, setActivePrintVisit] = useState<PatientVisit | null>(() => {
+    if (!visitIdParam) return null;
+    return patientVisits.find((v) => v.id === visitIdParam || v.reference === visitIdParam) || null;
+  });
 
   if (!role) return null;
 
@@ -23,6 +30,12 @@ export function PatientVisitsPage() {
 
   const handlePrint = (visit: PatientVisit) => {
     setActivePrintVisit(visit);
+    router.replace(`/dashboard/patient/visits?visit=${visit.reference || visit.id}`, { scroll: false });
+  };
+
+  const handleCloseModal = () => {
+    setActivePrintVisit(null);
+    router.replace('/dashboard/patient/visits', { scroll: false });
   };
 
   const executePrint = () => {
@@ -61,10 +74,10 @@ export function PatientVisitsPage() {
                       <button
                         type="button"
                         onClick={() => handlePrint(visit)}
-                        className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-md bg-[var(--mint)] text-[var(--teal)] hover:bg-[var(--teal)] hover:text-white transition-colors cursor-pointer"
+                        className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-[var(--mint)] text-[var(--teal)] hover:bg-[var(--teal)] hover:text-white transition-colors cursor-pointer min-h-[44px]"
                         title="Download / Print Visit Slip"
                       >
-                        <FileDown size={14} />
+                        <FileDown size={15} />
                         <span>Print Slip</span>
                       </button>
                     </div>
@@ -95,12 +108,18 @@ export function PatientVisitsPage() {
 
       {/* Printable Visit Slip Modal Dialog */}
       {activePrintVisit && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="bg-white text-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 relative my-8">
+        <div 
+          className="fixed inset-0 z-[600] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs p-0 sm:p-4 overflow-y-auto"
+          onClick={handleCloseModal}
+        >
+          <div 
+            className="bg-white text-slate-900 rounded-t-3xl sm:rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 relative max-h-[88vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               type="button"
-              onClick={() => setActivePrintVisit(null)}
-              className="absolute right-4 top-4 p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              onClick={handleCloseModal}
+              className="absolute right-4 top-4 p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
             >
               <X size={18} />
             </button>
@@ -157,18 +176,18 @@ export function PatientVisitsPage() {
             </div>
 
             {/* Modal Actions */}
-            <div className="mt-6 pt-4 border-t border-slate-200 flex items-center justify-end gap-2">
+            <div className="mt-6 pt-4 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5">
               <button
                 type="button"
-                onClick={() => setActivePrintVisit(null)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors"
+                onClick={handleCloseModal}
+                className="w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center"
               >
                 Close
               </button>
               <button
                 type="button"
                 onClick={executePrint}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-[#0f5ca8] text-white hover:bg-[#0a3b69] transition-colors shadow-sm"
+                className="w-full sm:w-auto min-h-[44px] flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-[#0f5ca8] text-white hover:bg-[#0a3b69] transition-colors shadow-sm cursor-pointer"
               >
                 <Printer size={14} />
                 <span>Print / Save PDF</span>

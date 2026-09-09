@@ -32,6 +32,10 @@ import {
   Ban,
   ShieldCheck,
   ExternalLink,
+  FileText,
+  Activity,
+  CheckCheck,
+  Thermometer,
 } from 'lucide-react';
 import type { QueueItem, Prescription, QueueStatus, PatientMedicalHistory } from '@smartcare/types';
 import { useAmbulance } from '@/lib/store/app-store';
@@ -53,6 +57,17 @@ export function HospitalWorkspacePage() {
     history: PatientMedicalHistory;
   } | null>(null);
 
+  // Trauma bay prepped state
+  const [traumaBayPrepped, setTraumaBayPrepped] = useState(false);
+
+  // Vitals capture modal state
+  const [showVitalsModal, setShowVitalsModal] = useState(false);
+  const [vitalsPatient, setVitalsPatient] = useState<QueueItem | null>(null);
+  const [vitalsBp, setVitalsBp] = useState('120/80');
+  const [vitalsPulse, setVitalsPulse] = useState('76');
+  const [vitalsSpo2, setVitalsSpo2] = useState('99');
+  const [vitalsTemp, setVitalsTemp] = useState('98.4');
+
   // Cancellation modal state
   const [cancellingPatient, setCancellingPatient] = useState<QueueItem | null>(null);
   const [cancelReason, setCancelReason] = useState('Doctor summoned for emergency trauma surgery');
@@ -69,6 +84,76 @@ export function HospitalWorkspacePage() {
   const [rxBp, setRxBp] = useState('120/80 mmHg');
   const [rxPulse, setRxPulse] = useState('72 bpm');
   const [rxSpo2, setRxSpo2] = useState('99%');
+
+  const handleOpenVitalsModal = (patient: QueueItem) => {
+    setVitalsPatient(patient);
+    const existing = DemoDB.getPrescription(patient.id);
+    if (existing?.vitals) {
+      setVitalsBp(existing.vitals.bp?.replace(' mmHg', '') || '120/80');
+      setVitalsPulse(existing.vitals.pulse?.replace(' bpm', '') || '76');
+      setVitalsSpo2(existing.vitals.spo2?.replace('%', '') || '99');
+      setVitalsTemp(existing.vitals.temp?.replace(' °F', '') || '98.4');
+    } else {
+      setVitalsBp('120/80');
+      setVitalsPulse('76');
+      setVitalsSpo2('99');
+      setVitalsTemp('98.4');
+    }
+    setShowVitalsModal(true);
+  };
+
+  const handleSaveVitals = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!vitalsPatient) return;
+    const existing = DemoDB.getPrescription(vitalsPatient.id) || {
+      rxId: `RX-${Date.now().toString().slice(-6)}`,
+      visitId: vitalsPatient.id,
+      patientName: vitalsPatient.name,
+      doctorName: vitalsPatient.doctorName || 'Dr Meera Shah',
+      hospital: hospital || 'SmartCare Community Hospital',
+      assessment: 'Clinical examination and vitals recorded on arrival.',
+      medicines: [],
+      issuedAt: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+    };
+
+    DemoDB.savePrescription(vitalsPatient.id, {
+      ...existing,
+      vitals: {
+        bp: `${vitalsBp} mmHg`,
+        pulse: `${vitalsPulse} bpm`,
+        spo2: `${vitalsSpo2}%`,
+        temp: `${vitalsTemp} °F`,
+      },
+    });
+
+    setRxBp(`${vitalsBp} mmHg`);
+    setRxPulse(`${vitalsPulse} bpm`);
+    setRxSpo2(`${vitalsSpo2}%`);
+
+    setShowVitalsModal(false);
+    showToast(`Vitals saved for ${vitalsPatient.name} (BP: ${vitalsBp}, SpO2: ${vitalsSpo2}%).`, 'success');
+  };
+
+  const handleOpenMedicalPassport = (patient: QueueItem) => {
+    let passport = DemoDB.getMedicalPassport('SC-PASSPORT-8924', 'doctor');
+    if (passport) {
+      if (patient.name && patient.name !== 'Asha Rao') {
+        passport = {
+          ...passport,
+          profile: {
+            ...passport.profile,
+            name: patient.name,
+            age: patient.age ? String(patient.age) : '32',
+            gender: patient.gender || 'Not specified',
+          },
+        };
+      }
+      setPassportModalData(passport);
+      showToast(`Medical Passport opened for ${patient.name}`, 'info');
+    } else {
+      showToast('No verified medical passport on file.', 'info');
+    }
+  };
 
   if (!role) return null;
 
@@ -219,10 +304,28 @@ export function HospitalWorkspacePage() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 flex-wrap">
               <span className="px-3 py-1.5 rounded-xl bg-white border border-red-200 text-xs font-bold text-red-700 shadow-2xs">
-                Trauma Team Standby
+                {traumaBayPrepped ? 'Bay 01 Ready · Team Standby' : 'ICU Bed #03 Held'}
               </span>
+              <button
+                type="button"
+                id="ack-trauma-btn"
+                disabled={traumaBayPrepped}
+                onClick={() => {
+                  setTraumaBayPrepped(true);
+                  showToast('Trauma Bay 01 prepped and resuscitation team on immediate standby.', 'success');
+                }}
+                className={cn(
+                  'flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm',
+                  traumaBayPrepped
+                    ? 'bg-emerald-600 text-white cursor-default'
+                    : 'bg-red-600 hover:bg-red-700 text-white cursor-pointer active:scale-95'
+                )}
+              >
+                {traumaBayPrepped ? <CheckCheck size={14} /> : <Check size={14} />}
+                <span>{traumaBayPrepped ? 'Trauma Bay 01 Ready' : 'Prep Trauma Bay 01'}</span>
+              </button>
             </div>
           </div>
         )}
@@ -277,6 +380,23 @@ export function HospitalWorkspacePage() {
                   <span className={cn('px-2.5 py-1 rounded-full text-xs font-bold', getTriageColor(current.triage))}>
                     {current.triage || 'Unassessed'} priority
                   </span>
+                  {/* Dynamic Triage Adjuster */}
+                  <select
+                    id="hero-change-triage"
+                    value={current.triage || 'Green'}
+                    onChange={async (e) => {
+                      const newTriage = e.target.value as 'Red' | 'Yellow' | 'Green';
+                      updateQueueItem(current.id, { triage: newTriage });
+                      await DemoDB.updatePatient(current.id, { triage: newTriage });
+                      showToast(`Triage updated to ${newTriage} priority`, 'info');
+                    }}
+                    className="text-xs px-2.5 py-1 rounded-lg bg-white/15 border border-white/25 text-white font-semibold cursor-pointer focus:outline-none focus:bg-white focus:text-[#0a3b69] transition-all"
+                    title="Quick adjust triage priority"
+                  >
+                    <option value="Green" className="text-slate-900">Green (Standard)</option>
+                    <option value="Yellow" className="text-slate-900">Yellow (Urgent)</option>
+                    <option value="Red" className="text-slate-900">Red (Emergency)</option>
+                  </select>
                   <span className="flex items-center gap-1">
                     <Stethoscope size={14} />
                     {current.doctorName || 'General care'}
@@ -308,6 +428,26 @@ export function HospitalWorkspacePage() {
 
               {current && (
                 <>
+                  <button
+                    id="btn-view-passport"
+                    type="button"
+                    onClick={() => handleOpenMedicalPassport(current)}
+                    title="View Patient Medical Passport & Verified Allergies"
+                    className="btn-secondary flex items-center gap-1.5 h-10 px-4 rounded-xl text-xs font-bold text-white border border-white/25 bg-transparent hover:bg-white hover:text-[#0a3b69] transition-all"
+                  >
+                    <FileText size={15} /> Medical Passport
+                  </button>
+
+                  <button
+                    id="btn-record-vitals"
+                    type="button"
+                    onClick={() => handleOpenVitalsModal(current)}
+                    title="Record Clinical Vitals"
+                    className="btn-secondary flex items-center gap-1.5 h-10 px-4 rounded-xl text-xs font-bold text-white border border-white/25 bg-transparent hover:bg-white hover:text-[#0a3b69] transition-all"
+                  >
+                    <Activity size={15} /> Record Vitals
+                  </button>
+
                   <button
                     id="issue-prescription"
                     type="button"
@@ -616,6 +756,116 @@ export function HospitalWorkspacePage() {
           </section>
         )}
       </div>
+
+      {/* ── On-Duty Vitals Capture Modal ── */}
+      {showVitalsModal && vitalsPatient && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 max-h-[88vh] overflow-y-auto animate-in fade-in">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-teal-600" />
+                  Record Clinical Vitals
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Patient: <strong>{vitalsPatient.name}</strong> · {vitalsPatient.age ? `${vitalsPatient.age}Y` : '32Y'} / {vitalsPatient.gender || 'F'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowVitalsModal(false)}
+                className="flex items-center justify-center min-w-[44px] min-h-[44px] rounded-xl text-slate-400 hover:text-slate-600 active:scale-95 transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveVitals} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Blood Pressure (mmHg)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={vitalsBp}
+                    onChange={(e) => setVitalsBp(e.target.value)}
+                    placeholder="120/80"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                    style={{ fontSize: '16px' }}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Pulse Rate (bpm)
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    value={vitalsPulse}
+                    onChange={(e) => setVitalsPulse(e.target.value)}
+                    placeholder="76"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                    style={{ fontSize: '16px' }}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Oxygen SpO2 (%)
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    value={vitalsSpo2}
+                    onChange={(e) => setVitalsSpo2(e.target.value)}
+                    placeholder="99"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                    style={{ fontSize: '16px' }}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Body Temp (°F)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={vitalsTemp}
+                    onChange={(e) => setVitalsTemp(e.target.value)}
+                    placeholder="98.4"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                    style={{ fontSize: '16px' }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowVitalsModal(false)}
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 min-h-[44px]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 min-h-[44px] shadow-sm"
+                >
+                  <Check size={16} /> Save Vitals
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ── Doctor Cancellation Modal ── */}
       {cancellingPatient && (

@@ -623,7 +623,7 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
 
           {/* STEP 1: Profile */}
           {currentStep === 1 && (
-            <form onSubmit={handleProfileSubmit} noValidate>
+            <form onSubmit={handleProfileSubmit} noValidate className="space-y-4">
               <div className="form-grid profile-grid">
                 <div className="field">
                   <label htmlFor="patient-name">
@@ -671,31 +671,44 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
                   </legend>
                   <div className="choice-grid compact-choice-grid">
                     {[
-                      { label: 'General consultation', icon: Stethoscope },
-                      { label: "Women's health", icon: Heart },
-                      { label: 'Child care', icon: Baby },
-                    ].map(({ label, icon: IconComponent }, idx) => (
-                      <div className="choice" key={label}>
-                        <input
-                          id={`pref-${idx}`}
-                          type="radio"
-                          name="pref"
-                          value={label}
-                          checked={(patientData.doctorPref || 'General consultation') === label}
-                          onChange={(e) => {
-                            setValidationError('');
-                            updatePatientData('doctorPref', e.target.value);
-                            markDraft();
-                          }}
-                        />
-                        <label htmlFor={`pref-${idx}`}>
-                          <span className="choice-icon">
-                            <IconComponent size={16} />
-                          </span>
-                          <span className="choice-label-text">{label}</span>
-                        </label>
-                      </div>
-                    ))}
+                      { label: 'General consultation', icon: Stethoscope, desc: 'Primary & family care' },
+                      { label: "Women's health", icon: Heart, desc: 'OB/GYN & maternal' },
+                      { label: 'Child care', icon: Baby, desc: 'Paediatrics & infants' },
+                    ].map(({ label, icon: IconComponent, desc }, idx) => {
+                      const isChecked = (patientData.doctorPref || 'General consultation') === label;
+                      return (
+                        <div className="choice" key={label}>
+                          <input
+                            id={`pref-${idx}`}
+                            type="radio"
+                            name="pref"
+                            value={label}
+                            checked={isChecked}
+                            onChange={(e) => {
+                              setValidationError('');
+                              updatePatientData('doctorPref', e.target.value);
+                              markDraft();
+                            }}
+                          />
+                          <label htmlFor={`pref-${idx}`} className="flex items-center justify-between">
+                            <span className="flex items-center gap-2.5">
+                              <span className="choice-icon">
+                                <IconComponent size={18} />
+                              </span>
+                              <span className="flex flex-col">
+                                <span className="choice-label-text">{label}</span>
+                                <span className="text-[11px] text-[var(--text-muted)] font-normal hidden sm:block">{desc}</span>
+                              </span>
+                            </span>
+                            {isChecked && (
+                              <span className="w-5 h-5 rounded-full bg-[var(--teal)] text-white flex items-center justify-center shrink-0 ml-1 shadow-xs">
+                                <Check size={12} strokeWidth={3} />
+                              </span>
+                            )}
+                          </label>
+                        </div>
+                      );
+                    })}
                   </div>
                   <span className="hint">Select care category. You can modify this at the care centre.</span>
                 </fieldset>

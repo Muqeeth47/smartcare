@@ -219,7 +219,7 @@ export function AmbulancePage() {
                 <div className="h-full bg-gradient-to-r from-rose-500 to-amber-500 rounded-full w-[65%] animate-pulse" />
               </div>
 
-              <div className="flex items-center justify-between text-[11px] text-[var(--muted)] font-medium">
+              <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 text-[11px] text-[var(--muted)] font-medium">
                 <span>Trauma Team Pre-Alerted</span>
                 <span>Distance: ~3.2 km</span>
                 <span className="text-emerald-600 font-bold">● Trauma Bed Reserved</span>

@@ -5,44 +5,59 @@ import { HeartPulse } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function SplashScreen() {
-  const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
   const [fading, setFading] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    // If already displayed in this browser session, skip immediately
     try {
-      if (typeof window !== 'undefined' && sessionStorage.getItem('smartcare_splash_shown')) {
+      if (typeof window !== 'undefined' && sessionStorage.getItem('smartcare_splash_shown') === 'true') {
         return;
       }
-      setVisible(true);
-      sessionStorage.setItem('smartcare_splash_shown', 'true');
+    } catch {}
 
-      // Fast, smooth boot: 400ms display, 220ms fade
-      const fadeTimer = setTimeout(() => {
-        setFading(true);
-      }, 400);
+    // First visit in session: show briefly
+    setVisible(true);
 
-      const hideTimer = setTimeout(() => {
-        setVisible(false);
-      }, 620);
+    const fadeTimer = setTimeout(() => {
+      setFading(true);
+    }, 450);
 
-      return () => {
-        clearTimeout(fadeTimer);
-        clearTimeout(hideTimer);
-      };
-    } catch {
-      // Ignore if sessionStorage is restricted
-    }
+    const hideTimer = setTimeout(() => {
+      setVisible(false);
+      try {
+        sessionStorage.setItem('smartcare_splash_shown', 'true');
+      } catch {}
+    }, 700);
+
+    // Hard safety timer: guarantee dismissal even under React StrictMode dev cycles
+    const safetyTimer = setTimeout(() => {
+      setVisible(false);
+      try {
+        sessionStorage.setItem('smartcare_splash_shown', 'true');
+      } catch {}
+    }, 1100);
+
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(hideTimer);
+      clearTimeout(safetyTimer);
+    };
   }, []);
 
-  if (!mounted || !visible) return null;
+  if (!visible) return null;
 
   return (
-    <main
+    <div
       id="splash-screen"
+      role="status"
       aria-label="Loading SmartCare"
-      onClick={() => setVisible(false)}
+      onClick={() => {
+        setVisible(false);
+        try {
+          sessionStorage.setItem('smartcare_splash_shown', 'true');
+        } catch {}
+      }}
       className={cn(
         'splash-screen cursor-pointer select-none',
         fading && 'opacity-0 pointer-events-none'
@@ -56,6 +71,6 @@ export function SplashScreen() {
         <p>Care access, clearly organized.</p>
         <div className="splash-progress" aria-hidden="true" />
       </div>
-    </main>
+    </div>
   );
 }

@@ -181,7 +181,7 @@ export function InfoPage({ page: initialPage }: InfoPageProps) {
           </Link>
 
           {/* Tab switch */}
-          <div className="inline-flex bg-white border border-[var(--line)] rounded-full p-1 gap-1 shadow-sm">
+          <div className="flex flex-wrap sm:inline-flex bg-white border border-[var(--line)] rounded-2xl sm:rounded-full p-1 gap-1 shadow-sm w-full sm:w-auto">
             {(['about', 'terms', 'privacy'] as const).map((p) => {
               const labels = { about: 'About SmartCare', terms: 'Terms of Use', privacy: 'Privacy Notice' };
               return (
@@ -189,7 +189,7 @@ export function InfoPage({ page: initialPage }: InfoPageProps) {
                   key={p}
                   type="button"
                   onClick={() => handleTabSwitch(p)}
-                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                  className={`flex-1 sm:flex-initial px-3 sm:px-4 py-1.5 rounded-xl sm:rounded-full text-xs font-bold transition-all text-center ${
                     currentPage === p ? 'bg-[#0a3b69] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[#0a3b69]'
                   }`}
                 >

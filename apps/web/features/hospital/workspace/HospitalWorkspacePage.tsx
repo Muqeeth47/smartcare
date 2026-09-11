@@ -39,6 +39,8 @@ import {
 } from 'lucide-react';
 import type { QueueItem, Prescription, QueueStatus, PatientMedicalHistory } from '@smartcare/types';
 import { useAmbulance } from '@/lib/store/app-store';
+import { ERxStudioModal } from './ERxStudioModal';
+import { LiveQueueTriageVisualizer } from './LiveQueueTriageVisualizer';
 
 export function HospitalWorkspacePage() {
   const { role } = useAuthGuard(['doctor', 'staff']);
@@ -451,10 +453,10 @@ export function HospitalWorkspacePage() {
                   <button
                     id="issue-prescription"
                     type="button"
-                    onClick={() => handleOpenPrescriptionModal(current)}
-                    className="btn-secondary flex items-center gap-1.5 h-10 px-4 rounded-xl text-xs font-bold text-white border border-white/25 bg-transparent hover:bg-white hover:text-[#0a3b69] transition-all"
+                    onClick={() => setEditingPatient(current)}
+                    className="btn-secondary flex items-center gap-1.5 h-10 px-4 rounded-xl text-xs font-bold text-white border border-white/25 bg-transparent hover:bg-white hover:text-[#0a3b69] transition-all cursor-pointer"
                   >
-                    <NotebookPen size={16} /> {currentPrescription ? 'Edit' : 'Create'} demo Rx
+                    <Stethoscope size={16} /> {currentPrescription ? 'Edit' : 'Launch'} e-Rx Studio
                   </button>
 
                   <button
@@ -552,8 +554,26 @@ export function HospitalWorkspacePage() {
           </div>
         </section>
 
+        {/* Live Queue & Triage Visualizer Component */}
+        <LiveQueueTriageVisualizer
+          queue={sorted}
+          currentPatient={current}
+          onAdvanceCurrent={handleAdvanceCurrent}
+          onCallPatient={(p) => {
+            updateQueueItem(p.id, { status: 'called' });
+            showToast(`Called ${p.name}`, 'success');
+          }}
+          onStartConsultation={(p) => {
+            updateQueueItem(p.id, { status: 'in_progress' });
+            showToast(`Started consultation for ${p.name}`, 'success');
+          }}
+          onOpenERxStudio={(p) => setEditingPatient(p)}
+          onOpenVitals={(p) => handleOpenVitalsModal(p)}
+          onOpenPassport={(p) => handleOpenMedicalPassport(p)}
+        />
+
         {/* Full Patient Queue Table matching original doctor view */}
-        <section className="bg-white border border-[var(--line)] rounded-2xl p-5 shadow-sm">
+        <section className="bg-white dark:bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-5 shadow-sm transition-colors">
           <div className="flex items-center justify-between pb-4 border-b border-[var(--line)] mb-4">
             <div>
               <h2 className="text-base font-bold text-[#0a3b69]">Patient queue</h2>
@@ -957,204 +977,17 @@ export function HospitalWorkspacePage() {
         </div>
       )}
 
-      {/* ── Prescription Editor Modal ── */}
+      {/* ── Interactive e-Rx Studio with Safety Guards ── */}
       {editingPatient && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs transition-opacity"
-          role="dialog"
-          aria-modal="true"
-          onClick={() => setEditingPatient(null)}
-        >
-          <div
-            className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-w-xl w-full max-h-[85vh] sm:max-h-[90vh] overflow-y-auto flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[var(--line)] shrink-0">
-              <div className="flex items-center gap-2.5">
-                <span className="w-9 h-9 rounded-xl bg-[#0a3b69] text-white flex items-center justify-center shrink-0">
-                  <NotebookPen size={18} />
-                </span>
-                <div>
-                  <h3 className="text-sm sm:text-base font-bold text-[#0a3b69]">Digital E-Prescription Pad</h3>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[10px] sm:text-[11px] font-mono font-bold bg-teal-50 text-teal-800 border border-teal-200 px-1.5 py-0.5 rounded">
-                      Doctor NMC: NMC-2018-94821
-                    </span>
-                    <span className="text-xs text-slate-500 truncate hidden sm:inline">· {hospital || 'SmartCare Hospital'}</span>
-                  </div>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setEditingPatient(null)}
-                className="flex items-center justify-center min-w-[44px] min-h-[44px] rounded-xl text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] active:scale-95 transition-all"
-                aria-label="Close prescription"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Modal Form */}
-            <form onSubmit={handleSavePrescription}>
-              <div className="p-6 space-y-4">
-                <div className="p-3 bg-[#f4f8fc] rounded-lg border border-[#e0ecf7] flex items-center justify-between">
-                  <div>
-                    <strong className="text-sm text-[#0a3b69] block font-bold">{editingPatient.name}</strong>
-                    <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                      {editingPatient.symptoms || 'General consultation'} · Visit Ref: {editingPatient.id}
-                    </p>
-                  </div>
-                  <a
-                    href={`/verify-rx?id=${editingPatient.rxId || 'RX-2026-DEMO01'}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-teal-700 bg-white border border-teal-200 px-2.5 py-1 rounded-lg hover:bg-teal-50"
-                  >
-                    <QrCode size={13} />
-                    Verify Public Rx
-                    <ExternalLink size={11} />
-                  </a>
-                </div>
-
-                {/* Recorded Vitals Row */}
-                <div className="grid grid-cols-3 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Blood Pressure</label>
-                    <input
-                      type="text"
-                      value={rxBp}
-                      onChange={(e) => setRxBp(e.target.value)}
-                      placeholder="120/80 mmHg"
-                      className="w-full p-2 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Pulse Rate</label>
-                    <input
-                      type="text"
-                      value={rxPulse}
-                      onChange={(e) => setRxPulse(e.target.value)}
-                      placeholder="72 bpm"
-                      className="w-full p-2 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">SpO2 Oxygen</label>
-                    <input
-                      type="text"
-                      value={rxSpo2}
-                      onChange={(e) => setRxSpo2(e.target.value)}
-                      placeholder="99%"
-                      className="w-full p-2 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[var(--text)] mb-1">
-                    Clinical assessment / Diagnosis <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    rows={3}
-                    required
-                    value={rxAssessment}
-                    onChange={(e) => setRxAssessment(e.target.value)}
-                    placeholder="Record clinical diagnosis and assessment notes"
-                    className="w-full p-2.5 rounded-lg border border-[var(--line)] text-xs text-[var(--text)] bg-[var(--surface)] focus:border-[#0f5ca8] focus:outline-none"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-[var(--text)] mb-1">
-                      Medicine name <small className="text-[var(--text-dim)]">(optional)</small>
-                    </label>
-                    <input
-                      type="text"
-                      value={rxMedName}
-                      onChange={(e) => setRxMedName(e.target.value)}
-                      placeholder="e.g. Paracetamol"
-                      className="w-full p-2 rounded-lg border border-[var(--line)] text-xs text-[var(--text)] bg-[var(--surface)] focus:border-[#0f5ca8] focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[var(--text)] mb-1">Strength</label>
-                    <input
-                      type="text"
-                      value={rxStrength}
-                      onChange={(e) => setRxStrength(e.target.value)}
-                      placeholder="e.g. 500 mg"
-                      className="w-full p-2 rounded-lg border border-[var(--line)] text-xs text-[var(--text)] bg-[var(--surface)] focus:border-[#0f5ca8] focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[var(--text)] mb-1">Dosage (e.g. 1-0-1)</label>
-                    <input
-                      type="text"
-                      value={rxDosage}
-                      onChange={(e) => setRxDosage(e.target.value)}
-                      placeholder="e.g. 1-0-1 (After Food)"
-                      className="w-full p-2 rounded-lg border border-[var(--line)] text-xs text-[var(--text)] bg-[var(--surface)] focus:border-[#0f5ca8] focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[var(--text)] mb-1">Duration</label>
-                    <input
-                      type="text"
-                      value={rxDuration}
-                      onChange={(e) => setRxDuration(e.target.value)}
-                      placeholder="e.g. 5 days"
-                      className="w-full p-2 rounded-lg border border-[var(--line)] text-xs text-[var(--text)] bg-[var(--surface)] focus:border-[#0f5ca8] focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[var(--text)] mb-1">Medicine instructions</label>
-                  <input
-                    type="text"
-                    value={rxInstructions}
-                    onChange={(e) => setRxInstructions(e.target.value)}
-                    placeholder="Food, timing, or safety guidance"
-                    className="w-full p-2 rounded-lg border border-[var(--line)] text-xs text-[var(--text)] bg-[var(--surface)] focus:border-[#0f5ca8] focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[var(--text)] mb-1">
-                    Lab summary or follow-up notes <small className="text-[var(--text-dim)]">(optional)</small>
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={rxLabSummary}
-                    onChange={(e) => setRxLabSummary(e.target.value)}
-                    placeholder="Only include results or advice actually recorded"
-                    className="w-full p-2.5 rounded-lg border border-[var(--line)] text-xs text-[var(--text)] bg-[var(--surface)] focus:border-[#0f5ca8] focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Modal Actions */}
-              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 p-4 border-t border-[var(--line)] bg-[var(--surface-sunken)] shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setEditingPatient(null)}
-                  className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-xl border border-[var(--line)] text-xs font-semibold hover:bg-white active:scale-95 transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-xl text-xs font-bold text-white shadow-sm active:scale-95 transition-all"
-                  style={{ background: 'var(--teal)' }}
-                >
-                  <Save size={15} /> Save demo record
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <ERxStudioModal
+          patient={editingPatient}
+          hospitalName={hospital}
+          onClose={() => setEditingPatient(null)}
+          onSuccess={(rx) => {
+            setEditingPatient(null);
+            showToast(`Prescription ${rx.rxId} digitally signed & issued!`, 'success');
+          }}
+        />
       )}
 
       {/* QR Scanner Modal */}

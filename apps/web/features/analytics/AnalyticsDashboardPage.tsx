@@ -267,17 +267,17 @@ export function AnalyticsDashboardPage() {
         {/* Status breakdown */}
         <div className="bg-white border border-[var(--line)] rounded-2xl p-5 shadow-sm">
           <h2 className="text-base font-bold text-[#0a3b69] mb-4">Patient Visit Status Breakdown</h2>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
             {[
               ['Waiting', statusCounts.waiting, '#0a3b69'],
               ['Called', statusCounts.called, '#d97706'],
               ['In progress', statusCounts.in_progress, '#16a34a'],
             ].map(([label, count, color]) => (
-              <div key={label as string} className="text-center p-4 bg-[#f8fafc] border border-[var(--line)] rounded-xl">
-                <p className="text-3xl font-extrabold" style={{ color: color as string }}>
+              <div key={label as string} className="text-center p-3 sm:p-4 bg-[#f8fafc] border border-[var(--line)] rounded-xl">
+                <p className="text-2xl sm:text-3xl font-extrabold" style={{ color: color as string }}>
                   {count as number}
                 </p>
-                <p className="text-xs font-semibold text-[var(--text-muted)] mt-1 uppercase tracking-wider">{label as string}</p>
+                <p className="text-[0.7rem] sm:text-xs font-semibold text-[var(--text-muted)] mt-1 uppercase tracking-wider">{label as string}</p>
               </div>
             ))}
           </div>

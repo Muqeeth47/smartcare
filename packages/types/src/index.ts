@@ -76,6 +76,12 @@ export interface AppointmentBooking {
   country: string;
   state: string;
   city: string;
+  phone?: string;
+  bloodGroup?: string;
+  emergencyContact?: string;
+  emergencyPhone?: string;
+  allergies?: string;
+  isDonor?: boolean;
   lastBookingId?: string;
   status?: string;
   cancelledBy?: 'patient' | 'doctor';
@@ -307,6 +313,11 @@ export interface PatientDonationPost {
   name: string;
   group: string;
   city: string;
+  phone?: string;
+  email?: string;
+  notes?: string;
+  lat?: number;
+  lng?: number;
   urgency?: string;
   status: string;
   date?: string;

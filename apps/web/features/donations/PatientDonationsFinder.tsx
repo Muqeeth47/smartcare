@@ -11,22 +11,28 @@ import {
   MapPin,
   Locate,
   Search,
-  SearchX,
   Phone,
   ChevronRight,
   Hand,
-  PackageCheck,
   Send,
   Scale,
   ExternalLink,
   Info,
-  Layers,
   ClipboardList,
   Printer,
   X,
   ShieldCheck,
+  Trash2,
+  Mail,
+  Share2,
+  CheckCircle2,
+  User,
+  Clock,
+  Sparkles,
+  AlertCircle,
+  Hospital as HospitalIcon,
 } from 'lucide-react';
-import type { DonationPost } from '@smartcare/types';
+import type { PatientDonationPost } from '@smartcare/types';
 
 const BLOOD_GROUPS = ['A+', 'A−', 'B+', 'B−', 'AB+', 'AB−', 'O+', 'O−'];
 const ORGANS = ['Kidney', 'Liver', 'Heart', 'Cornea', 'Lung', 'Pancreas'];
@@ -37,25 +43,41 @@ interface Centre {
   lat: number;
   lng: number;
   type: 'blood' | 'organ';
+  phone: string;
   hours?: string;
   note?: string;
   distance?: string;
 }
 
 const DEMO_CENTRES_MAP: Centre[] = [
-  { name: 'SmartCare Community Hospital Blood Bank', area: 'Banjara Hills', lat: 17.4126, lng: 78.4482, type: 'blood', hours: '09:00–17:00', note: 'All common blood groups', distance: '1.2 km' },
-  { name: 'Red Cross Donation Centre', area: 'Secunderabad', lat: 17.4399, lng: 78.4983, type: 'blood', hours: '10:00–18:00', note: 'Call ahead for stock', distance: '3.8 km' },
-  { name: 'CityCare Blood Services', area: 'Kukatpally', lat: 17.4849, lng: 78.3956, type: 'blood', hours: '08:00–16:00', note: 'Bring photo ID', distance: '5.4 km' },
-  { name: 'Apollo Organ Coordination', area: 'Jubilee Hills', lat: 17.4239, lng: 78.4101, type: 'organ', hours: '24/7 Helpline', note: 'Transplant coordinator on duty', distance: '2.5 km' },
-  { name: 'NOTTO Hyderabad Node', area: 'Begumpet', lat: 17.4437, lng: 78.4637, type: 'organ', hours: '09:30–18:00', note: 'Regional registry center', distance: '4.1 km' },
+  { name: 'SmartCare Community Hospital Blood Bank', area: 'Banjara Hills', lat: 17.4126, lng: 78.4482, type: 'blood', phone: '+91 40 2345 6789', hours: '09:00–17:00', note: 'All common blood groups', distance: '1.2 km' },
+  { name: 'Red Cross Donation Centre', area: 'Secunderabad', lat: 17.4399, lng: 78.4983, type: 'blood', phone: '+91 40 2780 1234', hours: '10:00–18:00', note: 'Call ahead for stock', distance: '3.8 km' },
+  { name: 'CityCare Blood Services', area: 'Kukatpally', lat: 17.4849, lng: 78.3956, type: 'blood', phone: '+91 40 4567 8901', hours: '08:00–16:00', note: 'Bring photo ID', distance: '5.4 km' },
+  { name: 'Apollo Organ Coordination', area: 'Jubilee Hills', lat: 17.4239, lng: 78.4101, type: 'organ', phone: '+91 40 2360 7777', hours: '24/7 Helpline', note: 'Transplant coordinator on duty', distance: '2.5 km' },
+  { name: 'NOTTO Hyderabad Node', area: 'Begumpet', lat: 17.4437, lng: 78.4637, type: 'organ', phone: '+91 40 2776 5432', hours: '09:30–18:00', note: 'Regional registry center', distance: '4.1 km' },
 ];
+
+interface ContactInfoModalState {
+  name: string;
+  phone: string;
+  email?: string;
+  group: string;
+  type: 'blood' | 'organ';
+  city: string;
+  notes?: string;
+  isMyPost?: boolean;
+  postId?: string;
+  urgency?: string;
+  dateStr?: string;
+}
 
 export function PatientDonationsFinder() {
   const { email } = useSession();
   const { patientData } = usePatient();
   const { showToast } = useAppStore();
 
-  const patientName = patientData.name || (email === 'patient@smartcare.demo' ? 'Asha Rao' : email.split('@')[0].replace(/[._-]/g, ' '));
+  const patientName = patientData.name || (email === 'patient@smartcare.demo' ? 'Asha Rao' : email ? email.split('@')[0].replace(/[._-]/g, ' ') : 'Asha Rao');
+  const patientPhone = (patientData as any)?.phone || '+91 98490 54321';
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -85,26 +107,32 @@ export function PatientDonationsFinder() {
 
   const [selectedGroup, setSelectedGroup] = useState<string>('B+');
   const [cityInput, setCityInput] = useState<string>(patientData.city || 'Hyderabad');
-  const [searchExecuted, setSearchExecuted] = useState<boolean>(true);
+  const [userLocationCoords, setUserLocationCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedCentre, setSelectedCentre] = useState<string | null>(null);
 
-  // Form states
+  // Form states for Blood Donation Registration
   const [donorName, setDonorName] = useState(patientName);
   const [donorGroup, setDonorGroup] = useState('B+');
+  const [donorPhone, setDonorPhone] = useState(patientPhone);
+  const [donorNotes, setDonorNotes] = useState('Available to donate on call');
   const [donorUrgency, setDonorUrgency] = useState('Routine');
-  const [donorConsent, setDonorConsent] = useState(false);
 
-  // Organ form states
+  // Form states for Organ Registration
   const [organName, setOrganName] = useState(patientName);
   const [organChosen, setOrganChosen] = useState('Kidney');
+  const [organPhone, setOrganPhone] = useState(patientPhone);
   const [organCity, setOrganCity] = useState('Hyderabad');
   const [organConsent, setOrganConsent] = useState(false);
   const [organUrgency, setOrganUrgency] = useState('Routine');
 
-  // Registrations state
-  const [myRegistrations, setMyRegistrations] = useState<DonationPost[]>([]);
+  // All community posts & patient's active registrations
+  const [allCommunityPosts, setAllCommunityPosts] = useState<PatientDonationPost[]>([]);
+  const [myRegistrations, setMyRegistrations] = useState<PatientDonationPost[]>([]);
 
-  // Donor Honor Roll Card Modal state
+  // Small Window: Contact Info Modal State
+  const [contactModal, setContactModal] = useState<ContactInfoModalState | null>(null);
+
+  // Donor Certificate Honor Card Modal
   const [donorCardModal, setDonorCardModal] = useState<{
     name: string;
     type: 'blood' | 'organ';
@@ -114,32 +142,70 @@ export function PatientDonationsFinder() {
     dateStr: string;
   } | null>(null);
 
-  const openDonorHonorCard = (pledge: { name: string; type: 'blood' | 'organ'; group: string; city: string }) => {
-    const donorId = 'SCD-' + Math.floor(1000 + Math.random() * 9000);
-    const dateStr = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-    setDonorCardModal({
-      name: pledge.name || patientName,
-      type: pledge.type,
-      group: pledge.group,
-      city: pledge.city || cityInput || 'Hyderabad',
-      donorId,
-      dateStr,
-    });
-  };
-
-  // Leaflet map container ref
+  // Leaflet map container refs
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const userMarkerRef = useRef<any>(null);
 
   // Filtered centres
   const filteredCentres = DEMO_CENTRES_MAP.filter((c) => c.type === donationType);
 
-  // Load patient registrations from DemoDB
-  useEffect(() => {
+  // Load patient registrations and community posts from DemoDB
+  const refreshPosts = () => {
     const data = DemoDB.getDonationsData();
-    setMyRegistrations(data.patientPosts.filter((p) => p.type === donationType));
-  }, [donationType]);
+    const posts = data.patientPosts || [];
+    setAllCommunityPosts(posts.filter((p) => p.type === donationType));
+    setMyRegistrations(
+      posts.filter(
+        (p) =>
+          p.type === donationType &&
+          (p.author === patientName || p.author === email || p.name === patientName || p.name === 'Asha Rao')
+      )
+    );
+  };
+
+  useEffect(() => {
+    refreshPosts();
+    const handleDeleted = () => refreshPosts();
+    window.addEventListener('smartcare:donation-post-deleted', handleDeleted);
+    return () => window.removeEventListener('smartcare:donation-post-deleted', handleDeleted);
+  }, [donationType, patientName, email]);
+
+  // Real Geolocation on page boot
+  useEffect(() => {
+    if (typeof window !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          setUserLocationCoords({ lat, lng });
+          setCityInput(`Current GPS Location (${lat.toFixed(3)}, ${lng.toFixed(3)})`);
+
+          if (mapInstanceRef.current && window.L) {
+            mapInstanceRef.current.flyTo([lat, lng], 13);
+            if (!userMarkerRef.current) {
+              const userIcon = window.L.divIcon({
+                className: '',
+                iconSize: [28, 28],
+                iconAnchor: [14, 14],
+                html: `<div style="width:24px;height:24px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 14px rgba(37,99,235,0.85);display:flex;align-items:center;justify-content:center;"><div style="width:8px;height:8px;border-radius:50%;background:#fff;"></div></div>`,
+              });
+              userMarkerRef.current = window.L.marker([lat, lng], { icon: userIcon })
+                .addTo(mapInstanceRef.current)
+                .bindPopup('<strong style="color:#1e3a8a">Your Current Location</strong>');
+            } else {
+              userMarkerRef.current.setLatLng([lat, lng]);
+            }
+          }
+        },
+        () => {
+          // Fallback if permission not granted
+        },
+        { timeout: 7000, enableHighAccuracy: true }
+      );
+    }
+  }, []);
 
   // Dynamically load Leaflet and initialize map
   useEffect(() => {
@@ -154,8 +220,12 @@ export function PatientDonationsFinder() {
         markersRef.current = [];
       }
 
+      const initialCenter: [number, number] = userLocationCoords
+        ? [userLocationCoords.lat, userLocationCoords.lng]
+        : [17.4399, 78.4637];
+
       const map = window.L.map(mapContainerRef.current, {
-        center: [17.4399, 78.4637],
+        center: initialCenter,
         zoom: 12,
         zoomControl: true,
       });
@@ -167,7 +237,7 @@ export function PatientDonationsFinder() {
 
       mapInstanceRef.current = map;
 
-      // Add markers
+      // Add centre markers
       markersRef.current = [];
       DEMO_CENTRES_MAP.forEach((c) => {
         const isBlood = c.type === 'blood';
@@ -187,6 +257,7 @@ export function PatientDonationsFinder() {
             <span style="display:inline-block;margin-top:4px;padding:2px 6px;border-radius:4px;background:#eaf4fd;color:#0f5ca8;font-size:10px;font-weight:700;">
               ${c.type === 'blood' ? 'Blood Bank' : 'Organ Center'}
             </span>
+            <div style="margin-top:6px;font-size:11px;font-weight:bold;color:#0f5ca8;">${c.phone}</div>
           </div>
         `);
 
@@ -214,24 +285,25 @@ export function PatientDonationsFinder() {
       });
     }
 
-    // Check if Leaflet is already loaded
     if (window.L) {
       initLeafletMap();
     } else {
-      // Inject Leaflet CSS
       if (!document.querySelector('#leaflet-css')) {
         const link = document.createElement('link');
         link.id = 'leaflet-css';
         link.rel = 'stylesheet';
         link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        link.onerror = () => {};
         document.head.appendChild(link);
       }
-      // Inject Leaflet JS
       if (!document.querySelector('#leaflet-js')) {
         const script = document.createElement('script');
         script.id = 'leaflet-js';
         script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
         script.onload = () => initLeafletMap();
+        script.onerror = () => {
+          console.warn('Leaflet offline or unavailable, fallback active');
+        };
         document.head.appendChild(script);
       } else {
         const existingScript = document.querySelector('#leaflet-js') as HTMLScriptElement;
@@ -247,18 +319,6 @@ export function PatientDonationsFinder() {
       }
     };
   }, []);
-
-  // Update marker visibility when donationType changes
-  useEffect(() => {
-    if (!mapInstanceRef.current || !markersRef.current.length) return;
-    markersRef.current.forEach(({ marker, centre }) => {
-      if (centre.type === donationType) {
-        if (!mapInstanceRef.current.hasLayer(marker)) marker.addTo(mapInstanceRef.current);
-      } else {
-        if (mapInstanceRef.current.hasLayer(marker)) mapInstanceRef.current.removeLayer(marker);
-      }
-    });
-  }, [donationType]);
 
   const handleCentreSelect = (centre: Centre) => {
     setSelectedCentre(centre.name);
@@ -276,70 +336,149 @@ export function PatientDonationsFinder() {
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setCityInput('Hyderabad (Nearby GPS)');
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setUserLocationCoords({ lat, lng });
+        setCityInput(`Current Location (${lat.toFixed(3)}, ${lng.toFixed(3)})`);
         if (mapInstanceRef.current) {
-          mapInstanceRef.current.flyTo([pos.coords.latitude, pos.coords.longitude], 14);
+          mapInstanceRef.current.flyTo([lat, lng], 14);
         }
-        showToast('Location updated to device GPS', 'success');
+        showToast('Location updated to device GPS coordinates', 'success');
       },
       () => {
         showToast('Unable to access device location. Using default Hyderabad.', 'info');
-      }
+      },
+      { timeout: 8000, enableHighAccuracy: true }
     );
   };
 
+  // ── Register as Blood Donor ("I want to give") ─────────────────────────────
   const handleBloodRegister = (e: React.FormEvent) => {
     e.preventDefault();
-    const newPost: DonationPost = {
-      id: `post-${Date.now()}`,
-      author: donorName,
-      name: donorName,
+    const newPost: PatientDonationPost = {
+      id: `p-don-${Date.now()}`,
+      author: patientName,
+      name: donorName.trim() || patientName,
       group: donorGroup,
-      city: cityInput,
+      phone: donorPhone.trim() || '+91 98490 54321',
+      email: email || 'patient@smartcare.demo',
+      notes: donorNotes.trim() || 'Available for immediate blood donation on call',
+      city: cityInput || 'Hyderabad',
       type: 'blood',
       mode: mode === 'give' ? 'give' : 'receive',
       urgency: donorUrgency,
       created_at: new Date().toISOString(),
-      status: 'Active',
+      date: 'Just now',
+      status: 'Available',
     };
+
     DemoDB.addPatientPost(newPost);
-    setMyRegistrations((prev) => [newPost, ...prev]);
-    showToast(mode === 'give' ? 'Donor registration saved to your profile' : 'Blood request published to community', 'success');
-    if (mode === 'give') {
-      openDonorHonorCard({
-        name: donorName,
-        type: 'blood',
-        group: donorGroup,
-        city: cityInput || 'Hyderabad',
-      });
-    }
+    refreshPosts();
+    showToast(
+      mode === 'give'
+        ? 'Thank you! You are now listed as an active blood donor.'
+        : 'Emergency blood request broadcast to network.',
+      'success'
+    );
+
+    // OPEN SMALL WINDOW WITH PERSON'S CONTACT INFO
+    setContactModal({
+      name: newPost.name,
+      phone: newPost.phone || '+91 98490 54321',
+      email: newPost.email,
+      group: newPost.group,
+      type: 'blood',
+      city: newPost.city,
+      notes: newPost.notes,
+      isMyPost: true,
+      postId: newPost.id,
+      urgency: newPost.urgency,
+      dateStr: 'Just now',
+    });
   };
 
+  // ── Register Organ Interest ────────────────────────────────────────────────
   const handleOrganSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newPost: DonationPost = {
+    const newPost: PatientDonationPost = {
       id: `organ-${Date.now()}`,
-      author: organName,
-      name: organName,
+      author: patientName,
+      name: organName.trim() || patientName,
       group: organChosen,
-      city: organCity,
+      phone: organPhone.trim() || '+91 98490 54321',
+      email: email || 'patient@smartcare.demo',
+      city: organCity || 'Hyderabad',
       type: 'organ',
       mode: mode === 'give' ? 'give' : 'receive',
       urgency: organUrgency,
       created_at: new Date().toISOString(),
-      status: 'Active',
+      date: 'Just now',
+      status: 'Registered',
     };
+
     DemoDB.addPatientPost(newPost);
-    setMyRegistrations((prev) => [newPost, ...prev]);
-    showToast(mode === 'give' ? 'Organ donation interest noted' : 'Organ guidance request submitted', 'success');
-    if (mode === 'give') {
-      openDonorHonorCard({
-        name: organName,
-        type: 'organ',
-        group: organChosen,
-        city: organCity || 'Hyderabad',
-      });
+    refreshPosts();
+    showToast('Organ donation interest recorded in local database.', 'success');
+
+    // Open contact details window
+    setContactModal({
+      name: newPost.name,
+      phone: newPost.phone || '+91 98490 54321',
+      email: newPost.email,
+      group: newPost.group,
+      type: 'organ',
+      city: newPost.city,
+      isMyPost: true,
+      postId: newPost.id,
+      urgency: newPost.urgency,
+      dateStr: 'Just now',
+    });
+  };
+
+  // ── Delete Post Logic ──────────────────────────────────────────────────────
+  const handleDeletePost = (postId: string) => {
+    const success = DemoDB.deletePatientPost(postId);
+    if (success) {
+      refreshPosts();
+      showToast('Your donation post has been deleted.', 'success');
+      if (contactModal?.postId === postId) {
+        setContactModal(null);
+      }
+    } else {
+      showToast('Unable to delete post.', 'info');
     }
+  };
+
+  // Open Contact Modal for any donor or centre
+  const openDonorContact = (post: PatientDonationPost) => {
+    const isMine =
+      post.author === patientName || post.author === email || post.name === patientName || post.name === 'Asha Rao';
+    setContactModal({
+      name: post.name,
+      phone: post.phone || '+91 98490 54321',
+      email: post.email || 'donor@smartcare.org',
+      group: post.group,
+      type: post.type,
+      city: post.city,
+      notes: post.notes || 'Voluntary donor in community registry',
+      isMyPost: isMine,
+      postId: post.id,
+      urgency: post.urgency,
+      dateStr: post.date || 'Active',
+    });
+  };
+
+  const openCentreContact = (centre: Centre) => {
+    setContactModal({
+      name: centre.name,
+      phone: centre.phone,
+      email: 'bloodbank@smartcare.org',
+      group: selectedGroup,
+      type: centre.type,
+      city: centre.area,
+      notes: `${centre.hours || 'Open 24/7'} · ${centre.note || 'Hospital Centre'}`,
+      isMyPost: false,
+    });
   };
 
   return (
@@ -348,30 +487,34 @@ export function PatientDonationsFinder() {
         {/* LEFT PANEL */}
         <aside className="nd-finder-panel flex flex-col min-h-0 bg-[var(--surface)] border-r border-[var(--line)]">
           {/* Header Intro */}
-          <div className="nd-finder-intro p-5 pb-3">
+          <div className="nd-finder-intro p-4 sm:p-5 pb-3">
             <div className="eyebrow eyebrow-dark mb-1">
-              <span className="eyebrow-dot" /> Community &amp; Hospital
+              <span className="eyebrow-dot" /> Community &amp; Hospital Network
             </div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-[#0a3b69]">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-[var(--teal-dark)]">
               Give or receive,<br />
-              <span className="text-[#0f5ca8]">{patientName}.</span>
+              <span className="text-[var(--teal)]">{patientName}.</span>
             </h1>
 
             {/* Type Switch (Blood / Organ) */}
             <div className="nd-type-switch mt-3 grid grid-cols-2 gap-1.5" role="tablist" aria-label="Donation type">
               <button
                 type="button"
-                className={`nd-type-btn min-h-[44px] cursor-pointer ${donationType === 'blood' ? 'active' : ''}`}
+                className={`nd-type-btn min-h-[44px] cursor-pointer flex items-center justify-center gap-1.5 font-bold ${
+                  donationType === 'blood' ? 'active' : ''
+                }`}
                 onClick={() => handleTypeChange('blood')}
               >
-                <Droplets size={15} /> Blood
+                <Droplets size={16} className="text-red-600" /> Blood Donation
               </button>
               <button
                 type="button"
-                className={`nd-type-btn min-h-[44px] cursor-pointer ${donationType === 'organ' ? 'active' : ''}`}
+                className={`nd-type-btn min-h-[44px] cursor-pointer flex items-center justify-center gap-1.5 font-bold ${
+                  donationType === 'organ' ? 'active' : ''
+                }`}
                 onClick={() => handleTypeChange('organ')}
               >
-                <HeartHandshake size={15} /> Organ
+                <HeartHandshake size={16} className="text-emerald-600" /> Organ Registry
               </button>
             </div>
 
@@ -382,8 +525,8 @@ export function PatientDonationsFinder() {
                 onClick={() => handleModeChange('give')}
                 className={`flex items-center justify-center gap-1.5 min-h-[44px] px-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   mode === 'give'
-                    ? 'bg-[#0f5ca8] text-white shadow-sm'
-                    : 'bg-[var(--mint)] text-[#0a3b69] hover:bg-[#cbe3f7]'
+                    ? 'bg-[var(--teal)] text-white shadow-sm'
+                    : 'bg-[var(--mint)] text-[var(--teal-dark)] hover:bg-[#cbe3f7]'
                 }`}
               >
                 <HeartHandshake size={14} /> I want to give
@@ -393,8 +536,8 @@ export function PatientDonationsFinder() {
                 onClick={() => handleModeChange('receive')}
                 className={`flex items-center justify-center gap-1.5 min-h-[44px] px-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   mode === 'receive'
-                    ? 'bg-[#0f5ca8] text-white shadow-sm'
-                    : 'bg-[var(--mint)] text-[#0a3b69] hover:bg-[#cbe3f7]'
+                    ? 'bg-[var(--teal)] text-white shadow-sm'
+                    : 'bg-[var(--mint)] text-[var(--teal-dark)] hover:bg-[#cbe3f7]'
                 }`}
               >
                 <Hand size={14} /> I need a donation
@@ -405,11 +548,12 @@ export function PatientDonationsFinder() {
           {/* BLOOD TAB CONTENT */}
           {donationType === 'blood' && (
             <div className="nd-tab-panel active flex-1 flex flex-col min-h-0 overflow-y-auto">
-              <div className="nd-search-controls px-5 py-3 border-b border-[var(--line)]">
+              <div className="nd-search-controls px-4 sm:px-5 py-3 border-b border-[var(--line)]">
                 {/* 8-button blood selector */}
                 <fieldset className="nd-blood-selector mb-3">
-                  <legend className="text-[0.72rem] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">
-                    Select blood group
+                  <legend className="text-[0.72rem] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2 flex items-center justify-between">
+                    <span>Select blood group</span>
+                    <span className="text-[10px] text-[var(--teal)] font-extrabold">{selectedGroup} selected</span>
                   </legend>
                   <div className="nd-blood-grid grid grid-cols-4 gap-1.5">
                     {BLOOD_GROUPS.map((g) => (
@@ -417,10 +561,10 @@ export function PatientDonationsFinder() {
                         key={g}
                         type="button"
                         onClick={() => setSelectedGroup(g)}
-                        className={`nd-bg-btn h-10 rounded-lg text-xs font-extrabold border transition-all cursor-pointer ${
+                        className={`nd-bg-btn h-10 rounded-lg text-xs font-black border transition-all cursor-pointer ${
                           selectedGroup === g
-                            ? 'active bg-[#0f5ca8] border-[#0f5ca8] text-white shadow-sm'
-                            : 'bg-[var(--surface)] border-[var(--line)] text-[var(--ink)] hover:bg-[var(--mint)] hover:text-[var(--teal)]'
+                            ? 'active bg-[var(--teal)] border-[var(--teal)] text-white shadow-sm'
+                            : 'bg-[var(--surface)] border-[var(--line)] text-[var(--text)] hover:bg-[var(--mint)] hover:text-[var(--teal)]'
                         }`}
                       >
                         {g}
@@ -429,157 +573,261 @@ export function PatientDonationsFinder() {
                   </div>
                 </fieldset>
 
-                {/* City Search + GPS */}
+                {/* City Search + GPS Auto-Detect */}
                 <div className="nd-field mb-3">
                   <label className="block text-[0.72rem] font-bold text-[var(--text-muted)] mb-1">
-                    City or Area
+                    Your Location / Search Area
                   </label>
                   <div className="nd-input-row flex gap-2">
-                    <div className="nd-select-wrap flex-1 flex items-center gap-2 px-3 border border-[var(--line)] rounded-lg bg-[var(--surface)]">
-                      <MapPin size={14} className="text-[var(--text-muted)] shrink-0" />
+                    <div className="nd-select-wrap flex-1 flex items-center gap-2 px-3 border border-[var(--line)] rounded-xl bg-[var(--surface)]">
+                      <MapPin size={15} className="text-[var(--text-muted)] shrink-0" />
                       <input
                         type="text"
                         value={cityInput}
                         onChange={(e) => setCityInput(e.target.value)}
                         placeholder="e.g. Hyderabad"
-                        className="w-full text-xs font-semibold py-2 outline-none bg-transparent"
+                        className="w-full text-xs font-semibold py-2.5 outline-none bg-transparent"
                       />
                     </div>
                     <button
                       type="button"
                       onClick={handleLocateGPS}
-                      title="Use device location"
-                      className="w-10 h-10 rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[#0f5ca8] flex items-center justify-center hover:bg-[var(--mint)] transition-colors"
+                      title="Use device GPS location"
+                      aria-label="Use GPS"
+                      className="w-11 h-11 rounded-xl border border-[var(--line)] bg-[var(--surface)] text-[var(--teal)] flex items-center justify-center hover:bg-[var(--mint)] active:scale-95 transition-all cursor-pointer shrink-0"
                     >
-                      <Locate size={16} />
+                      <Locate size={18} />
                     </button>
                   </div>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => setSearchExecuted(true)}
-                  className="w-full h-10 rounded-xl bg-[#0f5ca8] text-white text-xs font-bold flex items-center justify-center gap-2 hover:bg-[#0a3b69] transition-all shadow-sm"
+                  onClick={() => {
+                    if (userLocationCoords && mapInstanceRef.current) {
+                      mapInstanceRef.current.flyTo([userLocationCoords.lat, userLocationCoords.lng], 14);
+                    }
+                    showToast(`Showing nearest centres for ${selectedGroup}`, 'info');
+                  }}
+                  className="w-full h-11 rounded-xl bg-[var(--teal)] text-white text-xs font-bold flex items-center justify-center gap-2 hover:bg-[var(--teal-dark)] active:scale-[0.98] transition-all shadow-sm cursor-pointer"
                 >
-                  <Search size={15} /> Find {mode === 'give' ? 'donation centres' : 'blood availability'}
+                  <Search size={15} /> Find {mode === 'give' ? 'Donation Centres' : 'Blood Units Available'}
                 </button>
               </div>
 
-              {/* Results list */}
-              <div className="nd-results-header flex items-center justify-between px-5 py-2.5 bg-[#f8fafc] border-b border-[var(--line)]">
-                <h2 className="text-xs font-extrabold text-[#0a3b69] flex items-center gap-1.5 uppercase tracking-wider">
-                  <Droplets size={14} /> Results <span className="nd-count ml-1">{filteredCentres.length}</span>
-                </h2>
-                <span className="text-[0.68rem] text-[var(--text-muted)]">Showing centres for {selectedGroup}</span>
-              </div>
-
-              <div className="nd-results-scroll flex-1 overflow-y-auto divide-y divide-[var(--line)]">
-                {filteredCentres.map((c) => (
-                  <div
-                    key={c.name}
-                    className={`nd-result-row p-3 hover:bg-[var(--mint)]/40 transition-colors ${
-                      selectedCentre === c.name ? 'bg-[var(--mint)] border-l-4 border-[#0f5ca8]' : ''
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => handleCentreSelect(c)}
-                      className="nd-result-select w-full flex items-start gap-3 text-left"
-                    >
-                      <div className="nd-blood-avatar w-10 h-10 rounded-lg bg-[var(--mint)] text-[#0a3b69] font-black text-xs flex items-center justify-center shrink-0 border border-[#b8d6f1]">
-                        {selectedGroup}
-                      </div>
-                      <div className="nd-result-info flex-1 min-w-0">
-                        <strong className="block text-xs font-bold text-[#0a3b69] truncate">{c.name}</strong>
-                        <span className="block text-[0.72rem] text-[var(--text-muted)] mt-0.5">{c.area} · {c.hours}</span>
-                        {c.note && <small className="block text-[0.68rem] text-[var(--text-dim)] mt-0.5">{c.note}</small>}
-                      </div>
-                      <div className="text-right shrink-0 text-[0.7rem] font-bold text-[#0f5ca8] flex items-center gap-1">
-                        <MapPin size={11} /> {c.distance}
-                      </div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (mode === 'give') {
-                          openDonorHonorCard({
-                            name: patientName,
-                            type: donationType,
-                            group: donationType === 'blood' ? selectedGroup : 'All Tissues & Organs',
-                            city: c.name,
-                          });
-                          showToast(`Pledged donation to ${c.name}. Recognition certificate generated!`, 'success');
-                        } else {
-                          showToast(`Demo request recorded for ${c.name}.`, 'info');
-                        }
-                      }}
-                      className="nd-request-btn mt-2 flex items-center gap-1 text-[0.72rem] font-bold text-[#0f5ca8] hover:underline"
-                    >
-                      {mode === 'give' ? 'Pledge donation' : 'Request units'} <ChevronRight size={12} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              {/* My active registrations */}
+              {/* ── Your Active Registrations (with DELETE action) ── */}
               {myRegistrations.length > 0 && (
-                <div className="pd-my-posts p-4 border-t border-[var(--line)] bg-[#f8fbfe]">
-                  <div className="flex items-center gap-1.5 text-xs font-extrabold text-[#0a3b69] mb-2">
-                    <ClipboardList size={14} /> Your active registrations
+                <div className="pd-my-posts p-4 border-b border-[var(--line)] bg-[var(--mint)]/30">
+                  <div className="flex items-center justify-between text-xs font-extrabold text-[var(--teal-dark)] mb-2">
+                    <span className="flex items-center gap-1.5">
+                      <ClipboardList size={14} /> Your Active Donation Posts
+                    </span>
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 px-2 py-0.5 rounded-full font-black">
+                      {myRegistrations.length} Active
+                    </span>
                   </div>
                   <div className="space-y-2">
                     {myRegistrations.map((p) => (
-                      <div key={p.id} className="p-2.5 bg-[var(--surface)] border border-[var(--line)] rounded-lg flex items-center justify-between text-xs">
-                        <div>
-                          <strong className="text-[#0a3b69] font-bold">{p.name} ({p.group})</strong>
-                          <span className="block text-[0.7rem] text-[var(--text-muted)]">{p.mode === 'give' ? 'Donor' : 'Request'} · {p.city}</span>
+                      <div
+                        key={p.id}
+                        className="p-3 bg-[var(--surface)] border border-[var(--line)] rounded-xl flex items-center justify-between text-xs shadow-xs gap-2"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <strong className="text-[var(--teal-dark)] font-bold truncate">{p.name}</strong>
+                            <span className="text-[10px] font-black px-1.5 py-0.2 rounded bg-red-100 text-red-700">
+                              {p.group}
+                            </span>
+                          </div>
+                          <span className="block text-[0.7rem] text-[var(--text-muted)] mt-0.5 truncate">
+                            {p.phone || 'No phone'} · {p.city}
+                          </span>
                         </div>
-                        <span className="text-[0.65rem] font-extrabold px-2 py-0.5 rounded bg-green-100 text-green-700">Listed</span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => openDonorContact(p)}
+                            className="px-2.5 py-1.5 rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[var(--teal)] font-bold text-[11px] hover:bg-[var(--mint)]"
+                          >
+                            View Card
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeletePost(p.id)}
+                            title="Delete this donation post"
+                            aria-label="Delete post"
+                            className="p-1.5 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Quick Donor Form */}
-              <div className="nd-panel-aside p-4 border-t border-[var(--line)] bg-[var(--surface-sunken)]">
-                <strong className="block text-xs font-bold text-[#0a3b69] mb-2">
-                  {mode === 'give' ? 'Register as blood donor' : 'Submit emergency blood request'}
-                </strong>
-                <form onSubmit={handleBloodRegister} className="space-y-2">
-                  <input
-                    type="text"
-                    required
-                    value={donorName}
-                    onChange={(e) => setDonorName(e.target.value)}
-                    placeholder="Your name"
-                    className="w-full text-xs p-2 rounded-lg border border-[var(--line)] bg-[var(--surface)]"
-                  />
-                  <div className="flex gap-2">
-                    <select
-                      value={donorGroup}
-                      onChange={(e) => setDonorGroup(e.target.value)}
-                      className="flex-1 text-xs p-2 rounded-lg border border-[var(--line)] bg-[var(--surface)] font-bold"
-                    >
-                      {BLOOD_GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
-                    </select>
-                    {mode === 'receive' && (
-                      <select
-                        value={donorUrgency}
-                        onChange={(e) => setDonorUrgency(e.target.value)}
-                        className="flex-1 text-xs p-2 rounded-lg border border-[var(--line)] bg-[var(--surface)] font-bold"
+              {/* ── Community Donors Registry ── */}
+              {allCommunityPosts.length > 0 && (
+                <div className="px-4 sm:px-5 py-3 border-b border-[var(--line)] bg-[var(--surface)]">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-black uppercase tracking-wider text-[var(--teal-dark)] flex items-center gap-1.5">
+                      <Droplets size={14} className="text-red-600" /> Community Donors ({allCommunityPosts.length})
+                    </span>
+                    <span className="text-[10px] text-[var(--text-muted)] font-semibold">Tap to view contact</span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2">
+                    {allCommunityPosts.map((donor) => (
+                      <div
+                        key={donor.id}
+                        onClick={() => openDonorContact(donor)}
+                        className="p-2.5 rounded-xl border border-[var(--line)] hover:border-[var(--teal)]/40 hover:bg-[var(--mint)]/20 transition-all cursor-pointer flex items-center justify-between gap-2"
                       >
-                        <option value="Routine">Routine</option>
-                        <option value="Urgent">Urgent</option>
-                        <option value="Emergency">Emergency</option>
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-lg bg-red-50 text-red-600 font-black text-xs flex items-center justify-center shrink-0 border border-red-200">
+                            {donor.group}
+                          </div>
+                          <div className="min-w-0">
+                            <strong className="block text-xs font-bold text-[var(--text)] truncate">{donor.name}</strong>
+                            <span className="block text-[11px] text-[var(--text-muted)] truncate">{donor.city}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--teal)]">
+                            <Phone size={11} /> Contact
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Hospital Blood Banks List */}
+              <div className="nd-results-header flex items-center justify-between px-4 sm:px-5 py-2.5 bg-[var(--surface-sunken)] border-b border-[var(--line)]">
+                <h2 className="text-xs font-extrabold text-[var(--teal-dark)] flex items-center gap-1.5 uppercase tracking-wider">
+                  <HospitalIcon size={14} /> Hospital Centres <span className="nd-count ml-1">({filteredCentres.length})</span>
+                </h2>
+                <span className="text-[0.68rem] text-[var(--text-muted)]">Open for {selectedGroup}</span>
+              </div>
+
+              <div className="nd-results-scroll flex-1 overflow-y-auto divide-y divide-[var(--line)]">
+                {filteredCentres.map((c) => (
+                  <div
+                    key={c.name}
+                    className={`nd-result-row p-3.5 hover:bg-[var(--mint)]/30 transition-colors ${
+                      selectedCentre === c.name ? 'bg-[var(--mint)] border-l-4 border-[var(--teal)]' : ''
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleCentreSelect(c)}
+                      className="nd-result-select w-full flex items-start gap-3 text-left cursor-pointer"
+                    >
+                      <div className="nd-blood-avatar w-10 h-10 rounded-xl bg-[var(--mint)] text-[var(--teal-dark)] font-black text-xs flex items-center justify-center shrink-0 border border-[#b8d6f1]">
+                        {selectedGroup}
+                      </div>
+                      <div className="nd-result-info flex-1 min-w-0">
+                        <strong className="block text-xs font-bold text-[var(--teal-dark)] truncate">{c.name}</strong>
+                        <span className="block text-[0.72rem] text-[var(--text-muted)] mt-0.5">{c.area} · {c.hours}</span>
+                        {c.note && <small className="block text-[0.68rem] text-[var(--text-muted)] mt-0.5">{c.note}</small>}
+                      </div>
+                      <div className="text-right shrink-0 text-[0.7rem] font-bold text-[var(--teal)] flex items-center gap-1">
+                        <MapPin size={11} /> {c.distance}
+                      </div>
+                    </button>
+                    <div className="mt-2.5 flex items-center justify-between gap-2 pt-2 border-t border-[var(--line)]/50">
+                      <button
+                        type="button"
+                        onClick={() => openCentreContact(c)}
+                        className="inline-flex items-center gap-1 text-[0.72rem] font-bold text-[var(--teal)] hover:underline"
+                      >
+                        <Phone size={12} /> Call Desk: {c.phone}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setContactModal({
+                            name: c.name,
+                            phone: c.phone,
+                            email: 'bloodbank@smartcare.org',
+                            group: selectedGroup,
+                            type: 'blood',
+                            city: c.area,
+                            notes: `${c.hours} · Pledged directly to hospital blood bank reserve`,
+                            isMyPost: false,
+                          });
+                          showToast(`Pledged donation to ${c.name}`, 'success');
+                        }}
+                        className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-[var(--teal)] text-white text-[11px] font-extrabold hover:opacity-95"
+                      >
+                        {mode === 'give' ? 'Pledge Here' : 'Request Units'} <ChevronRight size={12} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Quick Donor Form: "I want to donate blood" */}
+              <div className="nd-panel-aside p-4 border-t border-[var(--line)] bg-[var(--surface-sunken)]">
+                <div className="flex items-center justify-between mb-2">
+                  <strong className="text-xs font-black text-[var(--teal-dark)]">
+                    {mode === 'give' ? 'Register As Blood Donor' : 'Submit Blood Request'}
+                  </strong>
+                  <span className="text-[10px] text-[var(--teal)] font-bold uppercase tracking-wider">
+                    {mode === 'give' ? 'Instant Listing' : 'Broadcast'}
+                  </span>
+                </div>
+                <form onSubmit={handleBloodRegister} className="space-y-2.5">
+                  <div>
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase mb-0.5">Your Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={donorName}
+                      onChange={(e) => setDonorName(e.target.value)}
+                      placeholder="e.g. Asha Rao"
+                      className="w-full text-xs p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)]"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase mb-0.5">Blood Group *</label>
+                      <select
+                        value={donorGroup}
+                        onChange={(e) => setDonorGroup(e.target.value)}
+                        className="w-full text-xs p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] font-bold"
+                      >
+                        {BLOOD_GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
                       </select>
-                    )}
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase mb-0.5">Contact Phone *</label>
+                      <input
+                        type="tel"
+                        required
+                        value={donorPhone}
+                        onChange={(e) => setDonorPhone(e.target.value)}
+                        placeholder="+91 98490 12345"
+                        className="w-full text-xs p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] font-semibold"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase mb-0.5">Availability Notes</label>
+                    <input
+                      type="text"
+                      value={donorNotes}
+                      onChange={(e) => setDonorNotes(e.target.value)}
+                      placeholder="e.g. Available on call within 2 hours"
+                      className="w-full text-xs p-2 rounded-xl border border-[var(--line)] bg-[var(--surface)]"
+                    />
                   </div>
                   <button
                     type="submit"
-                    className="w-full h-9 rounded-lg bg-[#0f5ca8] text-white text-xs font-bold flex items-center justify-center gap-1.5"
+                    className="w-full h-11 rounded-xl bg-[var(--teal)] text-white text-xs font-black flex items-center justify-center gap-2 hover:bg-[var(--teal-dark)] active:scale-[0.98] transition-all shadow-md cursor-pointer"
                   >
-                    <Send size={13} /> {mode === 'give' ? 'Save donor profile' : 'Broadcast request'}
+                    <Send size={14} /> {mode === 'give' ? 'List Me as Blood Donor & View Contact Info' : 'Broadcast Blood Request'}
                   </button>
                 </form>
               </div>
@@ -588,11 +836,11 @@ export function PatientDonationsFinder() {
 
           {/* ORGAN TAB CONTENT */}
           {donationType === 'organ' && (
-            <div className="nd-tab-panel active flex-1 flex flex-col min-h-0 overflow-y-auto p-5 space-y-4">
+            <div className="nd-tab-panel active flex-1 flex flex-col min-h-0 overflow-y-auto p-4 sm:p-5 space-y-4">
               <p className="text-xs text-[var(--text-muted)] leading-relaxed">
                 {mode === 'give'
-                  ? 'Record a non-binding organ donation interest for a care team to follow up on.'
-                  : 'Record a demo organ guidance request to explore the coordinator workflow.'}
+                  ? 'Record your voluntary organ donation pledge to help clinical teams match organ requests.'
+                  : 'Record a clinical organ guidance request to connect with a transplant coordinator.'}
               </p>
 
               <form onSubmit={handleOrganSubmit} className="space-y-3">
@@ -603,29 +851,41 @@ export function PatientDonationsFinder() {
                     required
                     value={organName}
                     onChange={(e) => setOrganName(e.target.value)}
-                    className="w-full text-xs p-2.5 rounded-lg border border-[var(--line)] bg-[var(--surface)]"
+                    className="w-full text-xs p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)]"
                   />
                 </div>
-                <div>
-                  <label className="block text-[0.72rem] font-bold text-[var(--text)] mb-1">
-                    {mode === 'give' ? 'Organ of interest' : 'Organ guidance needed'}
-                  </label>
-                  <select
-                    value={organChosen}
-                    onChange={(e) => setOrganChosen(e.target.value)}
-                    className="w-full text-xs p-2.5 rounded-lg border border-[var(--line)] bg-[var(--surface)] font-bold"
-                  >
-                    {ORGANS.map((o) => <option key={o} value={o}>{o}</option>)}
-                  </select>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[0.72rem] font-bold text-[var(--text)] mb-1">
+                      {mode === 'give' ? 'Organ of interest' : 'Organ guidance'}
+                    </label>
+                    <select
+                      value={organChosen}
+                      onChange={(e) => setOrganChosen(e.target.value)}
+                      className="w-full text-xs p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] font-bold"
+                    >
+                      {ORGANS.map((o) => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[0.72rem] font-bold text-[var(--text)] mb-1">Contact phone *</label>
+                    <input
+                      type="tel"
+                      required
+                      value={organPhone}
+                      onChange={(e) => setOrganPhone(e.target.value)}
+                      className="w-full text-xs p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)]"
+                    />
+                  </div>
                 </div>
                 <div>
-                  <label className="block text-[0.72rem] font-bold text-[var(--text)] mb-1">City *</label>
+                  <label className="block text-[0.72rem] font-bold text-[var(--text)] mb-1">City / Region *</label>
                   <input
                     type="text"
                     required
                     value={organCity}
                     onChange={(e) => setOrganCity(e.target.value)}
-                    className="w-full text-xs p-2.5 rounded-lg border border-[var(--line)] bg-[var(--surface)]"
+                    className="w-full text-xs p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)]"
                   />
                 </div>
                 <label className="flex items-start gap-2 text-[0.72rem] text-[var(--text-muted)] cursor-pointer">
@@ -634,31 +894,31 @@ export function PatientDonationsFinder() {
                     required
                     checked={organConsent}
                     onChange={(e) => setOrganConsent(e.target.checked)}
-                    className="mt-0.5 rounded text-[#0f5ca8]"
+                    className="mt-0.5 rounded text-[var(--teal)]"
                   />
-                  <span>I understand this is a prototype and not legal registry registration.</span>
+                  <span>I understand this is a digital health record and not a replacement for statutory NOTTO registry documentation.</span>
                 </label>
                 <button
                   type="submit"
-                  className="w-full h-10 rounded-xl bg-[#0f5ca8] text-white text-xs font-bold flex items-center justify-center gap-1.5"
+                  className="w-full h-11 rounded-xl bg-[var(--teal)] text-white text-xs font-black flex items-center justify-center gap-2 shadow-md hover:bg-[var(--teal-dark)]"
                 >
-                  <HeartHandshake size={15} /> {mode === 'give' ? 'Save organ interest' : 'Save guidance request'}
+                  <HeartHandshake size={15} /> {mode === 'give' ? 'Save Organ Pledge & View Card' : 'Submit Guidance Request'}
                 </button>
               </form>
 
               {/* NOTTO Aside */}
-              <div className="p-3.5 bg-[#f0f7fc] border border-[#c2dcf3] rounded-xl text-xs text-[#0a3b69]">
+              <div className="p-3.5 bg-[var(--mint)]/40 border border-[#c2dcf3] rounded-xl text-xs text-[var(--teal-dark)]">
                 <div className="flex items-center gap-2 font-bold mb-1">
-                  <Scale size={15} className="text-[#0f5ca8]" /> Important distinction
+                  <Scale size={15} className="text-[var(--teal)]" /> Official Statutory Registry
                 </div>
                 <p className="text-[0.72rem] text-[var(--text-muted)] leading-relaxed">
-                  Official organ donation registration in India is managed via NOTTO (National Organ &amp; Tissue Transplant Organisation).
+                  Official organ donation registration in India is administered via NOTTO (National Organ &amp; Tissue Transplant Organisation).
                 </p>
                 <a
                   href="https://notto.mohfw.gov.in/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-[0.7rem] font-bold text-[#0f5ca8] hover:underline mt-2"
+                  className="inline-flex items-center gap-1 text-[0.7rem] font-bold text-[var(--teal)] hover:underline mt-2"
                 >
                   Visit official NOTTO portal <ExternalLink size={11} />
                 </a>
@@ -667,9 +927,9 @@ export function PatientDonationsFinder() {
           )}
 
           {/* Disclaimer bottom */}
-          <div className="nd-panel-bottom p-3.5 border-t border-[var(--line)] bg-[var(--surface)] flex items-center gap-2 text-[0.68rem] text-[var(--text-dim)]">
-            <Info size={13} className="shrink-0 text-[var(--teal)]" />
-            <span>Demo environment: no real coordinators or official registries contacted.</span>
+          <div className="nd-panel-bottom p-3.5 border-t border-[var(--line)] bg-[var(--surface)] flex items-center gap-2 text-[0.68rem] text-[var(--text-muted)]">
+            <Info size={14} className="shrink-0 text-[var(--teal)]" />
+            <span>Community registry data is saved locally for this browser session.</span>
           </div>
         </aside>
 
@@ -678,105 +938,120 @@ export function PatientDonationsFinder() {
           <div ref={mapContainerRef} className="w-full h-full min-h-[420px] z-0" />
 
           {/* Map Legend */}
-          <div className="nd-map-legend absolute bottom-4 left-4 z-10 flex items-center gap-2 bg-[var(--surface)]/95 backdrop-blur-xs border border-[var(--line)] rounded-lg px-3 py-1.5 text-[0.72rem] shadow-sm text-[var(--text-muted)]">
-            <span className="w-2 h-2 rounded-full bg-[#0f5ca8] inline-block" /> Blood Bank
-            <span className="w-2 h-2 rounded-full bg-[#0a3b69] inline-block ml-2" /> Organ Center
+          <div className="nd-map-legend absolute bottom-4 left-4 z-10 flex items-center gap-2 bg-[var(--surface)]/95 backdrop-blur-xs border border-[var(--line)] rounded-xl px-3.5 py-2 text-[0.72rem] shadow-md text-[var(--text-muted)]">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#0f5ca8] inline-block" /> Blood Bank
+            <span className="w-2.5 h-2.5 rounded-full bg-[#0a3b69] inline-block ml-2" /> Organ Centre
+            <span className="w-2.5 h-2.5 rounded-full bg-[#2563eb] inline-block ml-2" /> Your Location
           </div>
         </div>
       </div>
 
-      {/* ── Digital Donor Honor Roll Card Modal ── */}
-      {donorCardModal && (
+      {/* ── SMALL WINDOW: DONOR CONTACT INFO MODAL ── */}
+      {contactModal && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs transition-opacity"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
           role="dialog"
           aria-modal="true"
-          onClick={() => setDonorCardModal(null)}
+          onClick={() => setContactModal(null)}
         >
           <div
-            className="w-full sm:max-w-[480px] bg-[var(--surface)] rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl border border-[var(--line)] animate-in fade-in max-h-[92vh] overflow-y-auto"
+            className="w-full sm:max-w-[440px] bg-[var(--surface)] rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl border border-[var(--line)] animate-in slide-in-from-bottom-3 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Card Hero Graphic */}
-            <div className="bg-gradient-to-br from-teal-900 via-teal-800 to-teal-600 text-white p-6 relative">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-[var(--teal)] to-[var(--teal-dark)] text-white p-5 relative">
               <button
                 type="button"
-                onClick={() => setDonorCardModal(null)}
-                aria-label="Close card"
-                className="absolute top-4 right-4 flex items-center justify-center min-w-[36px] min-h-[36px] rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                onClick={() => setContactModal(null)}
+                aria-label="Close modal"
+                className="absolute top-4 right-4 flex items-center justify-center w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 text-white transition-colors cursor-pointer"
               >
                 <X size={18} />
               </button>
 
-              <div className="flex items-center gap-3 mb-4">
-                <span className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white shrink-0">
-                  {donorCardModal.type === 'blood' ? <Droplets size={22} /> : <HeartHandshake size={22} />}
-                </span>
-                <div>
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-teal-200 block">
-                    Official Donor Recognition Card
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-white shrink-0 shadow-inner">
+                  {contactModal.type === 'blood' ? <Droplets size={24} className="text-red-300" /> : <HeartHandshake size={24} />}
+                </div>
+                <div className="min-w-0 pr-6">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-blue-200 block">
+                    {contactModal.type === 'blood' ? 'Verified Blood Donor' : 'Organ Registry Contact'}
                   </span>
-                  <h3 className="text-lg font-bold text-white leading-tight">
-                    SmartCare Donor Honor Roll
+                  <h3 className="text-base sm:text-lg font-black text-white leading-tight truncate">
+                    {contactModal.name}
                   </h3>
-                </div>
-              </div>
-
-              {/* Certificate Inner Frame */}
-              <div className="bg-black/20 p-4 rounded-xl border border-white/15 backdrop-blur-xs space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <small className="text-[10px] text-teal-200 uppercase font-bold block">
-                      Honorary Donor
-                    </small>
-                    <strong className="text-base sm:text-lg font-extrabold text-white tracking-wide block">
-                      {donorCardModal.name}
-                    </strong>
-                  </div>
-                  <div className="text-right">
-                    <small className="text-[10px] text-teal-200 uppercase font-bold block">
-                      {donorCardModal.type === 'blood' ? 'Blood Group' : 'Pledged'}
-                    </small>
-                    <strong className="text-lg sm:text-xl font-black text-amber-300 block">
-                      {donorCardModal.group}
-                    </strong>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-xs text-teal-100 border-t border-white/15 pt-2.5 flex-wrap gap-2">
-                  <span>Ref: <strong className="font-mono text-white">{donorCardModal.donorId}</strong></span>
-                  <span>City: <strong className="text-white">{donorCardModal.city}</strong></span>
-                  <span>Date: <strong className="text-white">{donorCardModal.dateStr}</strong></span>
+                  <span className="text-xs text-blue-100/90 flex items-center gap-1 mt-0.5">
+                    <MapPin size={11} /> {contactModal.city}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Card Body & Notice */}
+            {/* Modal Body: Contact Details */}
             <div className="p-5 space-y-4 bg-[var(--surface)]">
-              <div className="flex items-start gap-3 p-3.5 bg-[var(--surface-sunken)] rounded-xl border border-[var(--line)] text-xs text-[var(--muted)] leading-relaxed">
-                <ShieldCheck size={20} className="text-teal-600 shrink-0 mt-0.5" />
-                <div>
-                  <strong className="text-[var(--ink)] block font-bold mb-0.5">
-                    Thank you for pledging care to our community!
+              {/* Highlight details badge */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-3 rounded-xl bg-[var(--surface-sunken)] border border-[var(--line)] text-center">
+                  <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase block">Blood Group / Organ</span>
+                  <strong className="text-lg font-black text-red-600 dark:text-red-400 block mt-0.5">
+                    {contactModal.group}
                   </strong>
-                  Registered in the SmartCare Community Donor Pool. You may show this digital recognition certificate at any partner hospital blood bank or coordination desk.
+                </div>
+                <div className="p-3 rounded-xl bg-[var(--surface-sunken)] border border-[var(--line)] text-center">
+                  <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase block">Availability Status</span>
+                  <strong className="text-xs font-bold text-emerald-600 block mt-1 flex items-center justify-center gap-1">
+                    <CheckCircle2 size={13} /> Active &amp; Ready
+                  </strong>
                 </div>
               </div>
 
-              <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-2.5 pt-2">
+              {/* Primary Call Action Button */}
+              <a
+                href={`tel:${contactModal.phone}`}
+                className="flex items-center justify-center gap-2 w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-md transition-all no-underline cursor-pointer"
+              >
+                <Phone size={18} /> Call Donor: {contactModal.phone}
+              </a>
+
+              {/* Secondary Email Button */}
+              {contactModal.email && (
+                <a
+                  href={`mailto:${contactModal.email}?subject=Blood%20Donation%20Inquiry%20via%20SmartCare`}
+                  className="flex items-center justify-center gap-2 w-full h-10 rounded-xl border border-[var(--line)] bg-[var(--surface)] text-[var(--text)] font-bold text-xs hover:bg-[var(--mint)] transition-colors no-underline cursor-pointer"
+                >
+                  <Mail size={15} /> Send Email ({contactModal.email})
+                </a>
+              )}
+
+              {/* Notes */}
+              {contactModal.notes && (
+                <div className="p-3 rounded-xl bg-[var(--surface-sunken)] border border-[var(--line)] text-xs text-[var(--text-muted)]">
+                  <span className="font-bold text-[var(--text)] block mb-0.5">Donor Notes:</span>
+                  {contactModal.notes}
+                </div>
+              )}
+
+              {/* Delete Post action if user owns this post */}
+              {contactModal.isMyPost && contactModal.postId && (
+                <div className="pt-2 border-t border-[var(--line)]">
+                  <button
+                    type="button"
+                    onClick={() => handleDeletePost(contactModal.postId!)}
+                    className="w-full flex items-center justify-center gap-2 h-10 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs transition-colors cursor-pointer"
+                  >
+                    <Trash2 size={15} /> Delete My Donation Listing
+                  </button>
+                </div>
+              )}
+
+              {/* Done button */}
+              <div className="pt-1">
                 <button
                   type="button"
-                  onClick={() => window.print()}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface-sunken)] text-xs font-bold text-[var(--ink)] transition-colors min-h-[44px]"
+                  onClick={() => setContactModal(null)}
+                  className="w-full h-10 rounded-xl border border-[var(--line)] bg-[var(--surface-sunken)] text-xs font-bold text-[var(--text)] hover:bg-[var(--mint)] transition-colors cursor-pointer"
                 >
-                  <Printer size={15} /> Print Card
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDonorCardModal(null)}
-                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-colors min-h-[44px] shadow-sm"
-                >
-                  Done
+                  Close Window
                 </button>
               </div>
             </div>

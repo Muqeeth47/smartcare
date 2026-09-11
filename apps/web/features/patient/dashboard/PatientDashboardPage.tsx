@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useSession, usePatient, useAppStore, sortQueue, queueStatus, getAppointmentSlots } from '@/lib/store/app-store';
 import { PatientShell } from '@/components/layout/Shell';
 import { DemoDB } from '@/lib/db/demo-db';
 import { cn, estimatedWait } from '@/lib/utils';
+import { PatientProfileSection } from './PatientProfileSection';
 import {
   CalendarClock,
   CalendarPlus,
@@ -34,13 +35,15 @@ import type { Prescription, PatientVisit } from '@smartcare/types';
 import { EmptyState } from '@/components/ui/EmptyState';
 
 
-export function PatientDashboardPage() {
+export function PatientDashboardPage({ initialTab }: { initialTab?: string } = {}) {
   const { role } = useAuthGuard(['patient']);
   const { email } = useSession();
   const { patientData, patientVisits } = usePatient();
   const queue = useAppStore((s) => s.queue);
   const { cancelAppointment, claimRefund, showToast, recordPatientVisit, updateQueueItem } = useAppStore();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const currentTab = initialTab || searchParams?.get('tab') || 'overview';
 
   // Selected visit for Prescription modal
   const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
@@ -123,6 +126,38 @@ export function PatientDashboardPage() {
     setPrescription(rx);
     setSelectedVisitId(visitId);
   };
+
+  // Dedicated Patient Profile Tab View
+  if (currentTab === 'profile') {
+    return (
+      <PatientShell subtitle="Patient portal" backHref="/dashboard/patient" backLabel="Back to overview">
+        <div className="max-w-4xl mx-auto py-6 space-y-6">
+          <header className="provider-header flex items-end justify-between gap-4 border-b-2 border-[#0a3b69] pb-3 mb-5">
+            <div>
+              <div className="eyebrow eyebrow-dark mb-1">
+                <span className="eyebrow-dot" />
+                Account &amp; Health Profile
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0a3b69]">
+                My Profile &amp; Preferences
+              </h1>
+              <p className="text-sm text-[var(--text-muted)] mt-1">
+                Update personal particulars, emergency contacts, and clinical preferences.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/patient"
+              className="btn-secondary btn-compact flex items-center gap-1.5 text-xs no-underline"
+            >
+              ← Back to Overview
+            </Link>
+          </header>
+
+          <PatientProfileSection />
+        </div>
+      </PatientShell>
+    );
+  }
 
   return (
     <PatientShell subtitle="Patient portal" backHref="/" backLabel="Back to home">
@@ -341,18 +376,18 @@ export function PatientDashboardPage() {
                 </p>
 
                 {/* Telemetry */}
-                <div className="grid grid-cols-3 gap-2 mt-3" aria-live="polite">
-                  <div className="p-2 border border-[#c5ddf1] bg-[#f4f9fd] rounded-lg">
-                    <small className="text-[0.6rem] uppercase tracking-wider font-extrabold text-[var(--text-muted)] block">Live position</small>
-                    <strong className="text-sm font-bold text-[#0a3b69]">{queuePosition}</strong>
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mt-3 text-center sm:text-left" aria-live="polite">
+                  <div className="p-1.5 sm:p-2 border border-[#c5ddf1] bg-[#f4f9fd] rounded-lg min-w-0">
+                    <small className="text-[0.56rem] sm:text-[0.6rem] uppercase tracking-wider font-extrabold text-[var(--text-muted)] block truncate">Live pos</small>
+                    <strong className="text-xs sm:text-sm font-bold text-[#0a3b69] truncate block">{queuePosition}</strong>
                   </div>
-                  <div className="p-2 border border-[#c5ddf1] bg-[#f4f9fd] rounded-lg">
-                    <small className="text-[0.6rem] uppercase tracking-wider font-extrabold text-[var(--text-muted)] block">Patients ahead</small>
-                    <strong className="text-sm font-bold text-[#0a3b69]">{patientsAhead === null ? '—' : patientsAhead}</strong>
+                  <div className="p-1.5 sm:p-2 border border-[#c5ddf1] bg-[#f4f9fd] rounded-lg min-w-0">
+                    <small className="text-[0.56rem] sm:text-[0.6rem] uppercase tracking-wider font-extrabold text-[var(--text-muted)] block truncate">Ahead</small>
+                    <strong className="text-xs sm:text-sm font-bold text-[#0a3b69] truncate block">{patientsAhead === null ? '—' : patientsAhead}</strong>
                   </div>
-                  <div className="p-2 border border-[#c5ddf1] bg-[#f4f9fd] rounded-lg">
-                    <small className="text-[0.6rem] uppercase tracking-wider font-extrabold text-[var(--text-muted)] block">Estimated window</small>
-                    <strong className="text-sm font-bold text-[#0a3b69]">{queueEstimate}</strong>
+                  <div className="p-1.5 sm:p-2 border border-[#c5ddf1] bg-[#f4f9fd] rounded-lg min-w-0">
+                    <small className="text-[0.56rem] sm:text-[0.6rem] uppercase tracking-wider font-extrabold text-[var(--text-muted)] block truncate">Est. wait</small>
+                    <strong className="text-xs sm:text-sm font-bold text-[#0a3b69] truncate block">{queueEstimate}</strong>
                   </div>
                 </div>
               </div>
@@ -582,28 +617,30 @@ export function PatientDashboardPage() {
                       <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#0f5ca8] mb-1.5 border-b border-[#e0ecf7] pb-1">
                         Prescribed Medication
                       </h4>
-                      <table className="w-full text-xs border-collapse">
-                        <thead>
-                          <tr className="bg-[#f0f6fc] text-left text-[#0a3b69]">
-                            <th className="p-2 border-b border-[var(--line)] font-bold">Medicine</th>
-                            <th className="p-2 border-b border-[var(--line)] font-bold">Strength</th>
-                            <th className="p-2 border-b border-[var(--line)] font-bold">Dosage</th>
-                            <th className="p-2 border-b border-[var(--line)] font-bold">Duration</th>
-                            <th className="p-2 border-b border-[var(--line)] font-bold">Instructions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {prescription.medicines.map((m, idx) => (
-                            <tr key={idx} className="border-b border-[var(--line)]">
-                              <td className="p-2 font-bold text-[#0a3b69]">{m.name}</td>
-                              <td className="p-2 text-[var(--text-muted)]">{m.strength || '—'}</td>
-                              <td className="p-2 text-[var(--text)]">{m.dosage || '—'}</td>
-                              <td className="p-2 text-[var(--text-muted)]">{m.duration || '—'}</td>
-                              <td className="p-2 text-[var(--text)]">{m.instructions || '—'}</td>
+                      <div className="overflow-x-auto w-full border border-[var(--line)] rounded-lg">
+                        <table className="w-full min-w-[420px] text-xs border-collapse">
+                          <thead>
+                            <tr className="bg-[#f0f6fc] text-left text-[#0a3b69]">
+                              <th className="p-2 border-b border-[var(--line)] font-bold">Medicine</th>
+                              <th className="p-2 border-b border-[var(--line)] font-bold">Strength</th>
+                              <th className="p-2 border-b border-[var(--line)] font-bold">Dosage</th>
+                              <th className="p-2 border-b border-[var(--line)] font-bold">Duration</th>
+                              <th className="p-2 border-b border-[var(--line)] font-bold">Instructions</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {prescription.medicines.map((m, idx) => (
+                              <tr key={idx} className="border-b border-[var(--line)] last:border-b-0">
+                                <td className="p-2 font-bold text-[#0a3b69]">{m.name}</td>
+                                <td className="p-2 text-[var(--text-muted)]">{m.strength || '—'}</td>
+                                <td className="p-2 text-[var(--text)]">{m.dosage || '—'}</td>
+                                <td className="p-2 text-[var(--text-muted)]">{m.duration || '—'}</td>
+                                <td className="p-2 text-[var(--text)]">{m.instructions || '—'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   )}
 

@@ -33,13 +33,13 @@ const ROLE_NAV_TABS: Record<string, NavTab[]> = {
     { label: 'Overview', href: '/dashboard/hospital', icon: LayoutDashboard, exact: true },
     { label: 'Queue', href: '/dashboard/queue', icon: ListOrdered },
     { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-    { label: 'Donations', href: '/dashboard/hospital/donations', icon: HeartHandshake },
+    { label: 'Donate', href: '/dashboard/hospital/donations', icon: HeartHandshake },
   ],
   staff: [
     { label: 'Ops', href: '/dashboard/admin', icon: LayoutDashboard, exact: true },
     { label: 'Queue', href: '/dashboard/queue', icon: ListOrdered },
     { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-    { label: 'Donations', href: '/dashboard/admin/donations', icon: HeartHandshake },
+    { label: 'Donate', href: '/dashboard/admin/donations', icon: HeartHandshake },
   ],
 };
 

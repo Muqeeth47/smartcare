@@ -2,7 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { HeartPulse, Globe, ChevronDown, Sun, Moon } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import {
+  HeartPulse,
+  Globe,
+  ChevronDown,
+  Sun,
+  Moon,
+  Siren,
+  Menu,
+  X,
+} from 'lucide-react';
 import { useAppStore } from '@/lib/store/app-store';
 import { useShallow } from 'zustand/react/shallow';
 import { cn } from '@/lib/utils';
@@ -27,9 +37,6 @@ interface TopbarProps {
   subtitle?: string;
 }
 
-import { usePathname } from 'next/navigation';
-import { Siren } from 'lucide-react';
-
 export function Topbar({
   variant = 'landing',
   onMenuClick,
@@ -41,9 +48,21 @@ export function Topbar({
 }: TopbarProps) {
   const pathname = usePathname() || '';
   const isAmbulancePage = pathname.startsWith('/ambulance');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  // Close mobile drawer on route navigation
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
 
   const { theme, setTheme, showToast, fontScale, setFontScale } = useAppStore(
-    useShallow((s) => ({ theme: s.theme, setTheme: s.setTheme, showToast: s.showToast, fontScale: s.fontScale, setFontScale: s.setFontScale }))
+    useShallow((s) => ({
+      theme: s.theme,
+      setTheme: s.setTheme,
+      showToast: s.showToast,
+      fontScale: s.fontScale,
+      setFontScale: s.setFontScale,
+    }))
   );
   const [lang, setLang] = useState('en');
 
@@ -86,28 +105,31 @@ export function Topbar({
       id="global-sos-ambulance-btn"
       href="/ambulance"
       className={cn(
-        "items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-black text-white bg-red-600 hover:bg-red-700 transition shadow-md shrink-0 no-underline",
+        "items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black text-white bg-red-600 hover:bg-red-700 transition shadow-md shrink-0 no-underline",
         variant === 'landing' ? "inline-flex" : "hidden sm:inline-flex"
       )}
       style={{
         boxShadow: '0 0 12px rgba(229, 62, 62, 0.65)',
-        minHeight: '36px',
+        minHeight: '34px',
       }}
       title="Emergency Ambulance Dispatch"
     >
       <Siren className="w-3.5 h-3.5 animate-pulse text-white" />
-      <span className="tracking-wide uppercase text-[10px] sm:text-xs font-black">SOS Ambulance</span>
+      <span className="tracking-wide uppercase text-[11px] font-black">SOS Ambulance</span>
     </Link>
   ) : null;
 
   // ── Topbar controls shared across variants ─────────────────────────────────
   const Controls = (
-    <div className="topbar-control-group flex items-center gap-1 sm:gap-1.5">
+    <div className="topbar-control-group flex items-center gap-1 sm:gap-1.5 shrink-0">
       {/* Persistent SOS Button */}
       {SosBeaconButton}
 
-      {/* Font size controls: A- A A+ */}
-      <div className="font-scale-controls flex items-center border border-[var(--line)] rounded-[var(--radius)] overflow-hidden bg-[var(--surface)] divide-x divide-[var(--line)] shrink-0" aria-label="Font size controls">
+      {/* Font size controls: A- A A+ (Desktop/tablet only to ensure mobile controls fit in 320px) */}
+      <div
+        className="font-scale-controls hidden sm:flex items-center border border-[var(--line)] rounded-[var(--radius)] overflow-hidden bg-[var(--surface)] divide-x divide-[var(--line)] shrink-0"
+        aria-label="Font size controls"
+      >
         <button
           id="font-scale-decrease"
           type="button"
@@ -143,38 +165,21 @@ export function Topbar({
         </button>
       </div>
 
-      {/* Workspace & Patient navigation toggle (collapses on desktop, opens drawer on mobile) */}
-      {(variant === 'workspace' || variant === 'patient') && onMenuClick && (
-        <button
-          type="button"
-          id="sidebar-toggle-btn"
-          onClick={onMenuClick}
-          aria-label={isSidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
-          aria-expanded={!isSidebarCollapsed}
-          title={isSidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
-          className="topbar-control-btn mobile-menu-btn flex items-center justify-center min-w-[38px] min-h-[38px] w-9 h-9 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-[var(--teal)] hover:bg-[var(--mint)] active:scale-95 transition-all cursor-pointer shrink-0"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
-          </svg>
-        </button>
-      )}
-
       {/* Language selector */}
-      <div className="lang-dropdown-wrapper relative flex items-center gap-1 h-9 px-2 sm:px-2.5 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--mint)] transition-colors shrink-0">
-        <Globe size={13} className="lang-globe-icon text-[var(--text-muted)] shrink-0 pointer-events-none" />
+      <div className="lang-dropdown-wrapper">
+        <Globe size={13} className="lang-globe-icon" />
         <select
           id="global-lang-select"
           value={lang}
           onChange={handleLangChange}
           aria-label="Select language"
-          className="lang-select-native appearance-none bg-transparent text-[var(--text)] text-xs font-semibold border-none outline-none cursor-pointer pr-3.5 max-w-[3.4rem] sm:max-w-[5rem]"
+          className="lang-select-native"
         >
           {LANGUAGES.map((l) => (
             <option key={l.code} value={l.code}>{l.label}</option>
           ))}
         </select>
-        <ChevronDown size={10} className="lang-dropdown-icon text-[var(--text-muted)] shrink-0 pointer-events-none absolute right-1 sm:right-1.5" />
+        <ChevronDown size={11} className="lang-dropdown-icon" />
       </div>
 
       {/* Theme toggle */}
@@ -186,7 +191,7 @@ export function Topbar({
         className="topbar-control-btn flex items-center justify-center gap-1.5 min-w-[38px] min-h-[38px] h-9 px-2 sm:px-2.5 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-xs font-bold hover:bg-[var(--mint)] active:scale-95 transition-all shrink-0"
       >
         <ThemeIcon size={14} />
-        <span className="hidden md:inline">{themeLabel}</span>
+        <span className="hidden xl:inline">{themeLabel}</span>
       </button>
     </div>
   );
@@ -202,9 +207,26 @@ export function Topbar({
           paddingRight: 'max(1.15rem, calc(0.85rem + env(safe-area-inset-right, 0px)))',
         }}
       >
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+          {/* Sidebar toggle button positioned on top-left BEFORE the logo */}
+          {onMenuClick && (
+            <button
+              type="button"
+              id="sidebar-toggle-btn"
+              onClick={onMenuClick}
+              aria-label={isSidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
+              aria-expanded={!isSidebarCollapsed}
+              title={isSidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
+              className="topbar-control-btn flex items-center justify-center min-w-[38px] min-h-[38px] w-9 h-9 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-[var(--teal)] hover:bg-[var(--mint)] active:scale-95 transition-all cursor-pointer shrink-0"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
+          )}
+
           <Link href="/" className="brand-lockup flex items-center gap-2.5 no-underline shrink-0">
-            <span className="brand-mark w-10 h-10 rounded-[0.9rem] flex items-center justify-center text-white" style={{ background: 'var(--teal-dark)', boxShadow: '0 8px 18px rgba(18,61,53,.20)' }}>
+            <span className="brand-mark w-9 h-9 rounded-[0.8rem] flex items-center justify-center text-white shrink-0" style={{ background: 'var(--teal-dark)', boxShadow: '0 8px 18px rgba(18,61,53,.20)' }}>
               <HeartPulse size={19} />
             </span>
             <span className="hidden sm:flex flex-col">
@@ -227,61 +249,240 @@ export function Topbar({
     );
   }
 
-  // ── Landing topbar ─────────────────────────────────────────────────────────
+  // ── Landing topbar (Sleek, slim single-row navigation) ──────────────────────
   return (
-    <header
-      data-section="site-header"
-      className="shell-nav sticky top-0 z-[100] bg-[var(--surface)] border-b border-[var(--line)]"
-    >
-      <div className="max-w-[1240px] mx-auto px-4 sm:px-6 py-2.5 sm:py-0 min-h-[70px] flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+    <header data-section="site-header" className="site-header">
+      <div className="site-nav-container">
 
-        {/* Brand lockup */}
-        <Link href="/" aria-label="SmartCare home" className="brand-lockup flex items-center gap-2.5 sm:gap-3 no-underline shrink-0">
+        {/* 1. Left: Brand lockup */}
+        <Link href="/" aria-label="SmartCare home" className="flex items-center gap-2.5 sm:gap-3 no-underline shrink-0">
           <span
-            className="brand-mark w-9 h-9 sm:w-[2.7rem] sm:h-[2.7rem] rounded-[0.8rem] sm:rounded-[0.9rem] flex items-center justify-center text-white shrink-0"
-            style={{ background: 'var(--teal-dark)', boxShadow: '0 8px 18px rgba(18,61,53,.20)' }}
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm"
+            style={{ background: 'var(--teal-dark)' }}
           >
-            <HeartPulse size={19} className="sm:w-[21px] sm:h-[21px]" />
+            <HeartPulse size={20} />
           </span>
           <span className="flex flex-col">
-            <span className="brand-name text-[0.9rem] sm:text-[0.95rem] font-extrabold text-[var(--text)] leading-none">SmartCare</span>
-            <span className="brand-caption text-[0.58rem] sm:text-[0.6rem] text-[var(--text-muted)] leading-none mt-0.5 uppercase tracking-widest">Care access, simplified</span>
+            <span className="text-sm sm:text-base font-black text-[var(--text)] leading-none tracking-tight">SmartCare</span>
+            <span className="text-[0.58rem] sm:text-[0.62rem] font-bold text-[var(--text-muted)] leading-none mt-0.5 tracking-wider uppercase hidden sm:block">
+              Care access, simplified
+            </span>
           </span>
         </Link>
 
-        {/* Primary nav links — Desktop row, Mobile touch-scrollable horizontal pill bar */}
-        <nav className="nav-links flex items-center" aria-label="Primary navigation">
+        {/* 2. Middle: Desktop Navigation Links (Clean single line, hidden on mobile) */}
+        <nav className="hidden lg:flex items-center gap-1.5" aria-label="Main navigation">
           <a href="/#how-it-works" className="nav-link-item">How it works</a>
-          <Link href="/ambulance" className="nav-link-item nav-link-highlight text-red-600 font-extrabold flex items-center gap-1">
-            <Siren className="w-3.5 h-3.5 text-red-600" />
-            Ambulance
-          </Link>
           <Link href="/pharmacy" className="nav-link-item">Pharmacy</Link>
           <Link href="/verify-rx" className="nav-link-item">Verify Rx</Link>
           <Link href="/donate" className="nav-link-item">Donation</Link>
           <a href="/#for-providers" className="nav-link-item">For hospitals</a>
         </nav>
 
-        {/* Actions: lang + theme + sign in + sign up */}
-        <div className="nav-actions flex items-center gap-2">
+        {/* 3. Right: Desktop Controls & Auth (Hidden on mobile) */}
+        <div className="hidden lg:flex items-center gap-2 shrink-0">
           {Controls}
           <Link
             id="nav-login"
             href="/login"
-            className="btn-ghost hidden sm:flex items-center justify-center h-[2.75rem] px-3 rounded-[0.65rem] text-[0.84rem] font-extrabold text-[var(--text-muted)] hover:bg-[var(--mint)] transition-colors border border-transparent no-underline"
+            className="px-3 py-1.5 rounded-lg text-xs font-bold text-[var(--text-muted)] hover:text-[var(--teal)] hover:bg-[var(--mint)] transition-colors no-underline"
           >
             Sign in
           </Link>
           <Link
             id="nav-signup"
             href="/login?mode=signup"
-            className="btn-primary flex items-center justify-center h-[2.4rem] sm:h-[2.75rem] px-3 sm:px-4 rounded-[0.65rem] text-xs sm:text-[0.84rem] font-extrabold text-white transition-all no-underline"
-            style={{ background: 'var(--teal)', boxShadow: '0 4px 12px rgba(15,92,168,.28)' }}
+            className="px-3.5 py-1.5 rounded-lg text-xs font-bold text-white transition-all shadow-sm no-underline"
+            style={{ background: 'var(--teal)' }}
           >
             Sign up
           </Link>
         </div>
+
+        {/* 4. Mobile Quick Actions & Hamburger (Visible only on < 1024px) */}
+        <div className="flex lg:hidden items-center gap-1.5 shrink-0">
+          {/* Mobile SOS Pill */}
+          {!isAmbulancePage && (
+            <Link
+              href="/ambulance"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black text-white bg-red-600 hover:bg-red-700 transition shadow-sm no-underline shrink-0"
+              style={{ minHeight: '32px' }}
+              title="Emergency Ambulance"
+            >
+              <Siren className="w-3 h-3 animate-pulse text-white" />
+              <span className="tracking-wide uppercase">SOS</span>
+            </Link>
+          )}
+
+          {/* Mobile Theme Toggle */}
+          <button
+            type="button"
+            onClick={handleThemeToggle}
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+            className="flex items-center justify-center w-8 h-8 rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[var(--text)] active:scale-95 transition-all"
+          >
+            <ThemeIcon size={14} />
+          </button>
+
+          {/* Mobile Hamburger Toggle Button with enhanced touch ergonomics & active morph */}
+          <button
+            type="button"
+            id="landing-mobile-menu-toggle"
+            onClick={() => setMobileNavOpen(!mobileNavOpen)}
+            aria-label={mobileNavOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={mobileNavOpen}
+            aria-controls="landing-mobile-menu-sheet"
+            aria-haspopup="true"
+            className={cn(
+              "flex items-center justify-center min-w-[42px] min-h-[42px] w-10 h-10 rounded-xl border transition-all duration-200 cursor-pointer shrink-0 active:scale-90",
+              mobileNavOpen
+                ? "bg-[var(--teal)] text-white border-[var(--teal)] shadow-sm ring-2 ring-[var(--teal)]/30"
+                : "bg-[var(--surface)] border-[var(--line)] text-[var(--text)] hover:bg-[var(--mint)] hover:text-[var(--teal)]"
+            )}
+          >
+            <span className={cn("transition-transform duration-200 flex items-center justify-center", mobileNavOpen && "rotate-90")}>
+              {mobileNavOpen ? <X size={20} /> : <Menu size={20} />}
+            </span>
+          </button>
+        </div>
       </div>
+
+      {/* 5. Mobile Flyout Sheet Dropdown */}
+      {mobileNavOpen && (
+        <div className="lg:hidden border-t border-[var(--line)] bg-[var(--surface)] shadow-2xl animate-in slide-in-from-top-2 duration-150">
+          <div className="px-4 py-4 space-y-3 max-h-[calc(100dvh-4rem)] overflow-y-auto">
+            {/* Nav Links */}
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)] px-2 mb-0.5">
+                Navigation
+              </span>
+              <a
+                href="/#how-it-works"
+                onClick={() => setMobileNavOpen(false)}
+                className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold text-[var(--text)] hover:bg-[var(--mint)] transition-colors no-underline"
+              >
+                <span>How it works</span>
+              </a>
+              <Link
+                href="/ambulance"
+                onClick={() => setMobileNavOpen(false)}
+                className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-bold text-red-600 bg-red-50 dark:bg-red-950/30 hover:bg-red-100 transition-colors no-underline"
+              >
+                <span className="flex items-center gap-2">
+                  <Siren className="w-4 h-4 text-red-600" />
+                  Ambulance Emergency
+                </span>
+                <span className="text-[10px] uppercase font-black bg-red-600 text-white px-2 py-0.5 rounded-full">
+                  24/7
+                </span>
+              </Link>
+              <Link
+                href="/pharmacy"
+                onClick={() => setMobileNavOpen(false)}
+                className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold text-[var(--text)] hover:bg-[var(--mint)] transition-colors no-underline"
+              >
+                <span>Pharmacy</span>
+              </Link>
+              <Link
+                href="/verify-rx"
+                onClick={() => setMobileNavOpen(false)}
+                className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold text-[var(--text)] hover:bg-[var(--mint)] transition-colors no-underline"
+              >
+                <span>Verify Prescription</span>
+              </Link>
+              <Link
+                href="/donate"
+                onClick={() => setMobileNavOpen(false)}
+                className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold text-[var(--text)] hover:bg-[var(--mint)] transition-colors no-underline"
+              >
+                <span>Donation</span>
+              </Link>
+              <a
+                href="/#for-providers"
+                onClick={() => setMobileNavOpen(false)}
+                className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold text-[var(--text)] hover:bg-[var(--mint)] transition-colors no-underline"
+              >
+                <span>For hospitals</span>
+              </a>
+            </div>
+
+            <div className="h-px bg-[var(--line)] my-1" />
+
+            {/* Accessibility & Preferences */}
+            <div className="flex flex-col gap-2">
+              <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)] px-2">
+                Preferences
+              </span>
+              <div className="flex items-center justify-between px-2">
+                <span className="text-xs text-[var(--text-muted)] font-medium">Text Size</span>
+                <div className="flex items-center border border-[var(--line)] rounded-lg overflow-hidden bg-[var(--surface)] divide-x divide-[var(--line)]">
+                  <button
+                    type="button"
+                    onClick={() => setFontScale(fontScale - 1)}
+                    disabled={fontScale <= -2}
+                    className="w-8 h-8 flex items-center justify-center text-xs font-bold text-[var(--text-muted)] hover:bg-[var(--mint)] disabled:opacity-30"
+                  >
+                    A-
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFontScale(0)}
+                    className="w-8 h-8 flex items-center justify-center text-xs font-black text-[var(--teal)] hover:bg-[var(--mint)]"
+                  >
+                    A
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFontScale(fontScale + 1)}
+                    disabled={fontScale >= 2}
+                    className="w-8 h-8 flex items-center justify-center text-xs font-bold text-[var(--text-muted)] hover:bg-[var(--mint)] disabled:opacity-30"
+                  >
+                    A+
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between px-2">
+                <span className="text-xs text-[var(--text-muted)] font-medium">Language</span>
+                <div className="lang-dropdown-wrapper">
+                  <Globe size={13} className="lang-globe-icon" />
+                  <select
+                    value={lang}
+                    onChange={handleLangChange}
+                    aria-label="Select language"
+                    className="lang-select-native"
+                  >
+                    {LANGUAGES.map((l) => (
+                      <option key={l.code} value={l.code}>{l.label}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={11} className="lang-dropdown-icon" />
+                </div>
+              </div>
+            </div>
+
+            <div className="h-px bg-[var(--line)] my-1" />
+
+            {/* Auth CTA Buttons */}
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <Link
+                href="/login"
+                onClick={() => setMobileNavOpen(false)}
+                className="flex items-center justify-center h-10 px-4 rounded-xl border border-[var(--line)] text-xs font-bold text-[var(--text)] hover:bg-[var(--mint)] transition-colors no-underline"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/login?mode=signup"
+                onClick={() => setMobileNavOpen(false)}
+                className="flex items-center justify-center h-10 px-4 rounded-xl text-xs font-bold text-white bg-[var(--teal)] shadow-sm hover:opacity-95 transition-all no-underline"
+              >
+                Sign up
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

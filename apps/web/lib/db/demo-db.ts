@@ -134,12 +134,12 @@ const DEFAULT_DONATIONS: DonationsData = {
     { id: 'h-don-4', type: 'organ', mode: 'offer', group: 'Cornea', units: 2, hospital: 'Apollo Care Centre', city: 'Hyderabad', urgency: 'Planned', notes: 'Preserved in Eye Bank', date: '2 days ago' },
   ],
   patientPosts: [
-    { id: 'p-don-1', type: 'blood', mode: 'give', name: 'Ravi Kumar', group: 'O+', city: 'Hyderabad', status: 'Available', date: 'Today' },
-    { id: 'p-don-2', type: 'blood', mode: 'give', name: 'Priya M.', group: 'AB−', city: 'Secunderabad', status: 'Available', date: 'Yesterday' },
-    { id: 'p-don-3', type: 'blood', mode: 'receive', name: 'Arun V.', group: 'B+', city: 'Hyderabad', urgency: 'Urgent', status: 'Pending', date: 'Today' },
-    { id: 'p-don-4', type: 'organ', mode: 'give', name: 'K. Sharma (Pledged)', group: 'Kidney', city: 'Hyderabad', status: 'Registered', date: '3 days ago' },
-    { id: 'p-don-5', type: 'organ', mode: 'give', name: 'Anita D. (Pledged)', group: 'Cornea', city: 'Hyderabad', status: 'Registered', date: '1 week ago' },
-    { id: 'p-don-6', type: 'organ', mode: 'receive', name: 'Mohan R.', group: 'Liver', city: 'Secunderabad', urgency: 'Urgent', status: 'Pending', date: 'Yesterday' },
+    { id: 'p-don-1', type: 'blood', mode: 'give', name: 'Ravi Kumar', group: 'O+', city: 'Hyderabad', phone: '+91 98490 12345', email: 'ravi.kumar@example.com', notes: 'Available on weekends, Banjara Hills', status: 'Available', date: 'Today' },
+    { id: 'p-don-2', type: 'blood', mode: 'give', name: 'Priya Mukherjee', group: 'AB−', city: 'Secunderabad', phone: '+91 94401 98765', email: 'priya.m@example.com', notes: 'Regular donor, voluntary', status: 'Available', date: 'Yesterday' },
+    { id: 'p-don-3', type: 'blood', mode: 'receive', name: 'Arun Varma', group: 'B+', city: 'Hyderabad', phone: '+91 80081 23456', email: 'arun.v@example.com', urgency: 'Urgent', status: 'Pending', date: 'Today' },
+    { id: 'p-don-4', type: 'organ', mode: 'give', name: 'K. Sharma (Pledged)', group: 'Kidney', city: 'Hyderabad', phone: '+91 97000 11223', email: 'k.sharma@example.com', status: 'Registered', date: '3 days ago' },
+    { id: 'p-don-5', type: 'organ', mode: 'give', name: 'Anita Desai (Pledged)', group: 'Cornea', city: 'Hyderabad', phone: '+91 91234 56789', email: 'anita.d@example.com', status: 'Registered', date: '1 week ago' },
+    { id: 'p-don-6', type: 'organ', mode: 'receive', name: 'Mohan Reddy', group: 'Liver', city: 'Secunderabad', phone: '+91 99887 66554', email: 'mohan.r@example.com', urgency: 'Urgent', status: 'Pending', date: 'Yesterday' },
   ],
 };
 
@@ -686,6 +686,20 @@ export const DemoDB = {
 
   addPatientPost: (item: Omit<PatientDonationPost, 'id' | 'date' | 'status'>): PatientDonationPost => {
     return DemoDB.addPatientDonation(item);
+  },
+
+  deletePatientPost: (postId: string): boolean => {
+    const data = DemoDB.getDonationsData();
+    const initialLen = data.patientPosts.length;
+    data.patientPosts = data.patientPosts.filter((p) => p.id !== postId);
+    if (data.patientPosts.length !== initialLen) {
+      DemoDB.saveDonationsData(data);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('smartcare:donation-post-deleted', { detail: { id: postId } }));
+      }
+      return true;
+    }
+    return false;
   },
 
   // Medical History

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   X,
@@ -18,6 +18,9 @@ import {
   ListOrdered,
   BarChart3,
   DoorOpen,
+  Pill,
+  Siren,
+  ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSession, useAppStore } from '@/lib/store/app-store';
@@ -38,6 +41,8 @@ const SIDEBAR_ITEMS: Record<string, { main: SidebarItem[]; secondary: SidebarIte
       { label: 'Profile', href: '/dashboard/patient?tab=profile', icon: UserRound },
     ],
     secondary: [
+      { label: 'Pharmacy & Orders', href: '/dashboard/patient/pharmacy', icon: Pill },
+      { label: 'Ambulance (SOS)', href: '/ambulance', icon: Siren },
       { label: 'Donations', href: '/dashboard/patient/donations', icon: HeartHandshake },
       { label: 'Help', href: '/about', icon: CircleHelp },
     ],
@@ -47,8 +52,11 @@ const SIDEBAR_ITEMS: Record<string, { main: SidebarItem[]; secondary: SidebarIte
       { label: 'Overview', href: '/dashboard/hospital', icon: LayoutDashboard },
       { label: 'Queue', href: '/dashboard/queue', icon: ListOrdered },
       { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+      { label: 'Verify Rx', href: '/verify-rx', icon: ShieldCheck },
     ],
     secondary: [
+      { label: 'Pharmacy', href: '/pharmacy', icon: Pill },
+      { label: 'Ambulance (Emergency)', href: '/ambulance', icon: Siren },
       { label: 'Donations', href: '/dashboard/hospital/donations', icon: HeartHandshake },
       { label: 'Help', href: '/about', icon: CircleHelp },
     ],
@@ -59,8 +67,11 @@ const SIDEBAR_ITEMS: Record<string, { main: SidebarItem[]; secondary: SidebarIte
       { label: 'Rooms', href: '/dashboard/admin?tab=rooms', icon: DoorOpen },
       { label: 'Queue', href: '/dashboard/queue', icon: ListOrdered },
       { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+      { label: 'Verify Rx', href: '/verify-rx', icon: ShieldCheck },
     ],
     secondary: [
+      { label: 'Pharmacy', href: '/pharmacy', icon: Pill },
+      { label: 'Ambulance Dispatch', href: '/ambulance', icon: Siren },
       { label: 'Donations', href: '/dashboard/admin/donations', icon: HeartHandshake },
       { label: 'Help', href: '/about', icon: CircleHelp },
     ],
@@ -75,11 +86,13 @@ function getRoleFromPath(pathname: string, sessionRole?: string): string {
   return 'patient';
 }
 
-function checkActive(itemHref: string, pathname: string): boolean {
+function checkActive(itemHref: string, pathname: string, currentTab?: string): boolean {
   if (itemHref.includes('?tab=')) {
-    return false;
+    const [base, tabParam] = itemHref.split('?tab=');
+    return pathname === base && currentTab === tabParam;
   }
   if (itemHref === '/dashboard/patient' || itemHref === '/dashboard/hospital' || itemHref === '/dashboard/admin') {
+    if (currentTab) return false;
     return pathname === itemHref;
   }
   return pathname.startsWith(itemHref);
@@ -91,10 +104,12 @@ function checkActive(itemHref: string, pathname: string): boolean {
  */
 export function DesktopSidebar({ onToggleCollapse }: { onToggleCollapse?: () => void }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { role: sessionRole } = useSession();
   const logout = useAppStore((s) => s.logout);
 
+  const currentTab = searchParams?.get('tab') || undefined;
   const role = getRoleFromPath(pathname, sessionRole);
   const items = SIDEBAR_ITEMS[role] || SIDEBAR_ITEMS.patient;
 
@@ -121,7 +136,7 @@ export function DesktopSidebar({ onToggleCollapse }: { onToggleCollapse?: () => 
       </div>
       {items.main.map((item) => {
         const Icon = item.icon;
-        const active = checkActive(item.href, pathname);
+        const active = checkActive(item.href, pathname, currentTab);
         return (
           <Link
             key={item.label}
@@ -140,7 +155,7 @@ export function DesktopSidebar({ onToggleCollapse }: { onToggleCollapse?: () => 
 
       {items.secondary.map((item) => {
         const Icon = item.icon;
-        const active = checkActive(item.href, pathname);
+        const active = checkActive(item.href, pathname, currentTab);
         return (
           <Link
             key={item.label}
@@ -174,11 +189,13 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { role: sessionRole } = useSession();
   const logout = useAppStore((s) => s.logout);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
 
+  const currentTab = searchParams?.get('tab') || undefined;
   const role = getRoleFromPath(pathname, sessionRole);
   const items = SIDEBAR_ITEMS[role] || SIDEBAR_ITEMS.patient;
 
@@ -242,7 +259,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="flex flex-col gap-1 py-1">
           {items.main.map((item) => {
             const Icon = item.icon;
-            const active = checkActive(item.href, pathname);
+            const active = checkActive(item.href, pathname, currentTab);
             return (
               <Link
                 key={item.label}
@@ -268,7 +285,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="flex flex-col gap-1 py-1">
           {items.secondary.map((item) => {
             const Icon = item.icon;
-            const active = checkActive(item.href, pathname);
+            const active = checkActive(item.href, pathname, currentTab);
             return (
               <Link
                 key={item.label}

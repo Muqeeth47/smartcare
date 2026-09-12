@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Topbar } from '@/components/layout/Topbar';
-import { Footer } from '@/components/layout/Shell';
+import { Footer, WorkspaceShell } from '@/components/layout/Shell';
 import { useSession, useAppStore } from '@/lib/store/app-store';
 import { DemoDB } from '@/lib/db/demo-db';
 import { cn } from '@/lib/utils';
@@ -58,7 +58,7 @@ const VEHICLE_TIERS = [
   },
 ];
 
-export function AmbulancePage() {
+export function AmbulancePage({ embedded = false }: { embedded?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { email } = useSession();
@@ -156,23 +156,20 @@ export function AmbulancePage() {
     }
   };
 
-  return (
-    <div className="min-h-dvh flex flex-col bg-[var(--surface-sunken)]">
-      <Topbar variant="landing" />
-
-      <main className="flex-1 max-w-5xl mx-auto w-full py-6 sm:py-10 px-4 sm:px-6 space-y-6">
-        {/* Headline */}
-        <div className="text-center space-y-2 max-w-2xl mx-auto">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-rose-50 text-rose-600 border border-rose-200">
-            <Zap size={14} className="animate-pulse" /> 24/7 SmartCare Emergency Trauma Fleet
-          </span>
-          <h1 className="text-2xl sm:text-4xl font-extrabold text-[var(--ink)] tracking-tight">
-            Book an Emergency Ambulance
-          </h1>
-          <p className="text-xs sm:text-sm text-[var(--muted)]">
-            Instant GPS dispatch. Paramedic-equipped vehicles matched with nearest emergency hospital trauma units.
-          </p>
-        </div>
+  const pageContent = (
+    <div className={cn('max-w-5xl mx-auto w-full space-y-6', embedded ? 'py-4 sm:py-6 px-3 sm:px-4' : 'py-6 sm:py-10 px-4 sm:px-6')}>
+      {/* Headline */}
+      <div className="text-center space-y-2 max-w-2xl mx-auto">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50">
+          <Zap size={14} className="animate-pulse" /> 24/7 SmartCare Emergency Trauma Fleet
+        </span>
+        <h1 className="text-2xl sm:text-4xl font-extrabold text-[var(--ink)] tracking-tight">
+          Book an Emergency Ambulance
+        </h1>
+        <p className="text-xs sm:text-sm text-[var(--muted)]">
+          Instant GPS dispatch. Paramedic-equipped vehicles matched with nearest emergency hospital trauma units.
+        </p>
+      </div>
 
         {activeBooking && activeBooking.status === 'dispatched' ? (
           /* Live Dispatch Tracking View */
@@ -471,8 +468,26 @@ export function AmbulancePage() {
             </div>
           </div>
         )}
-      </main>
+    </div>
+  );
 
+  if (embedded) {
+    return (
+      <WorkspaceShell
+        title="Emergency Ambulance Dispatch"
+        subtitle="24/7 GPS trauma fleet dispatch & ICU trauma unit pre-alert"
+      >
+        {pageContent}
+      </WorkspaceShell>
+    );
+  }
+
+  return (
+    <div className="min-h-dvh flex flex-col bg-[var(--surface-sunken)]">
+      <Topbar variant="landing" />
+      <main className="flex-1">
+        {pageContent}
+      </main>
       <Footer />
     </div>
   );

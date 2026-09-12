@@ -259,7 +259,7 @@ export function DonationFinderPage() {
                   type="button"
                   onClick={() => handleTabChange('blood')}
                   className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all min-h-[44px] cursor-pointer ${
-                    activeTab === 'blood' ? 'bg-[#0a3b69] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[#0a3b69]'
+                    activeTab === 'blood' ? 'bg-[var(--teal)] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--teal)]'
                   }`}
                 >
                   <Droplets size={14} /> Blood
@@ -268,18 +268,18 @@ export function DonationFinderPage() {
                   type="button"
                   onClick={() => handleTabChange('organ')}
                   className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all min-h-[44px] cursor-pointer ${
-                    activeTab === 'organ' ? 'bg-[#0a3b69] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[#0a3b69]'
+                    activeTab === 'organ' ? 'bg-[var(--teal)] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--teal)]'
                   }`}
                 >
                   <HeartHandshake size={14} /> Organ
                 </button>
               </div>
 
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0a3b69] tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--text)] tracking-tight">
                 {activeTab === 'blood' ? (
-                  <>Find blood <span className="text-[#0f5ca8]">donation support.</span></>
+                  <>Find blood <span className="text-[var(--teal)]">donation support.</span></>
                 ) : (
-                  <>Organ donation <span className="text-[#0f5ca8]">interest.</span></>
+                  <>Organ donation <span className="text-[var(--teal)]">interest.</span></>
                 )}
               </h1>
             </div>
@@ -300,7 +300,7 @@ export function DonationFinderPage() {
                         onClick={() => setSelectedGroup(g)}
                         className={`nd-bg-btn h-11 rounded-xl text-sm font-extrabold border transition-all cursor-pointer ${
                           selectedGroup === g
-                            ? 'active bg-[#0a3b69] text-white border-[#0a3b69] shadow-sm'
+                            ? 'active bg-[var(--teal)] text-white border-[var(--teal)] shadow-sm'
                             : 'bg-[var(--surface)] border-[var(--line)] text-[var(--ink)] hover:bg-[var(--mint)] hover:text-[var(--teal)]'
                         }`}
                       >
@@ -332,13 +332,13 @@ export function DonationFinderPage() {
                       onClick={handleLocate}
                       disabled={locating}
                       title="Use my location"
-                      className="w-10 h-10 rounded-xl border border-[var(--line)] bg-white flex items-center justify-center text-[#0a3b69] hover:bg-[#f0f7fc] transition-colors shrink-0"
+                      className="w-10 h-10 rounded-xl border border-[var(--line)] bg-[var(--surface)] flex items-center justify-center text-[var(--text)] hover:bg-[var(--surface-sunken)] transition-colors shrink-0"
                     >
                       {locating ? <Loader2 size={16} className="animate-spin" /> : <Locate size={16} />}
                     </button>
                   </div>
                   {locationLabel && (
-                    <div className="flex items-center gap-1 text-[0.7rem] text-[#0f5ca8] mt-1 font-semibold">
+                    <div className="flex items-center gap-1 text-[0.7rem] text-[var(--teal)] mt-1 font-semibold">
                       <Navigation size={10} />
                       <span>{locationLabel}</span>
                       <button
@@ -365,7 +365,7 @@ export function DonationFinderPage() {
 
                 {/* Results Header */}
                 <div className="flex items-center justify-between pt-3 border-t border-[var(--line)]">
-                  <h2 className="text-xs font-extrabold text-[#0a3b69] flex items-center gap-1.5 uppercase tracking-wider">
+                  <h2 className="text-xs font-extrabold text-[var(--text)] flex items-center gap-1.5 uppercase tracking-wider">
                     <Droplets size={14} /> Results ({centres.length})
                   </h2>
                   <span className="text-[0.7rem] text-[var(--text-muted)]">Showing demo results for {cityInput}</span>
@@ -374,27 +374,27 @@ export function DonationFinderPage() {
                 {/* Results scroll list */}
                 <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
                   {centres.length === 0 ? (
-                    <div className="text-center py-8 p-4 bg-[#f8fafc] border border-[var(--line)] rounded-xl text-[var(--text-muted)]">
+                    <div className="text-center py-8 p-4 bg-[var(--surface-sunken)] border border-[var(--line)] rounded-xl text-[var(--text-muted)]">
                       <SearchX size={28} className="mx-auto mb-2 text-[var(--text-dim)]" />
                       <h3 className="text-xs font-bold text-[var(--text)]">No centres found</h3>
                       <p className="text-[0.75rem] mt-1">No demo centre matched "{cityInput}" for group {selectedGroup}. Try a nearby city or different blood group.</p>
                     </div>
                   ) : (
                     centres.map((c) => (
-                      <div key={c.id} className="p-3.5 bg-white border border-[var(--line)] rounded-xl hover:border-[#0f5ca8]/40 transition-colors">
+                      <div key={c.id} className="p-3.5 bg-[var(--surface)] border border-[var(--line)] rounded-xl hover:border-[var(--teal)]/40 transition-colors">
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-red-100 text-red-700 font-extrabold text-xs flex items-center justify-center shrink-0">
+                            <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 font-extrabold text-xs flex items-center justify-center shrink-0">
                               {selectedGroup}
                             </div>
                             <div>
-                              <strong className="text-xs font-bold text-[#0a3b69] block">{c.name}</strong>
+                              <strong className="text-xs font-bold text-[var(--text)] block">{c.name}</strong>
                               <span className="text-[0.75rem] text-[var(--text-muted)] block mt-0.5">{c.area} · {c.hours}</span>
                               <small className="text-[0.7rem] text-[var(--text-dim)] block mt-0.5">{c.note}</small>
                             </div>
                           </div>
                           <div className="text-right shrink-0">
-                            <span className="text-[0.7rem] font-bold text-[#0f5ca8] flex items-center gap-1 justify-end">
+                            <span className="text-[0.7rem] font-bold text-[var(--teal)] flex items-center gap-1 justify-end">
                               <MapPin size={11} /> {c.distance}
                             </span>
                           </div>
@@ -510,8 +510,8 @@ export function DonationFinderPage() {
                 )}
 
                 {/* Organ aside */}
-                <div className="p-4 bg-[#f0f7fc] border border-[#c2dcf3] rounded-xl flex items-start gap-3 text-xs text-[#0a3b69]">
-                  <Scale size={18} className="shrink-0 mt-0.5 text-[#0f5ca8]" />
+                <div className="p-4 bg-[var(--surface-sunken)] border border-[var(--line)] rounded-xl flex items-start gap-3 text-xs text-[var(--text)]">
+                  <Scale size={18} className="shrink-0 mt-0.5 text-[var(--teal)]" />
                   <div>
                     <strong className="block font-bold">Important distinction</strong>
                     <p className="text-[0.75rem] text-[var(--text-muted)] mt-0.5 leading-relaxed">
@@ -521,7 +521,7 @@ export function DonationFinderPage() {
                       href="https://notto.mohfw.gov.in/"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[0.7rem] font-bold text-[#0f5ca8] hover:underline mt-1"
+                      className="inline-flex items-center gap-1 text-[0.7rem] font-bold text-[var(--teal)] hover:underline mt-1"
                     >
                       Visit India's official NOTTO site <ExternalLink size={11} />
                     </a>
@@ -542,11 +542,11 @@ export function DonationFinderPage() {
         <section className="lg:col-span-5 flex flex-col rounded-2xl border border-[var(--line)] bg-[var(--surface)] shadow-md overflow-hidden min-h-[480px]">
           {/* Map Top Bar */}
           <div className="px-4 py-3 bg-[var(--surface)] border-b border-[var(--line)] flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2 font-bold text-[#0a3b69]">
-              <MapPin size={15} className="text-[#0f5ca8]" />
+            <div className="flex items-center gap-2 font-bold text-[var(--text)]">
+              <MapPin size={15} className="text-[var(--teal)]" />
               <span>OpenStreetMap Live Blood & Organ Network</span>
             </div>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#eaf4fd] text-[#0f5ca8]">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--mint)] text-[var(--teal)]">
               {centres.length} centres mapped
             </span>
           </div>
@@ -557,7 +557,7 @@ export function DonationFinderPage() {
           </div>
 
           {/* Map Bottom Attribution & Quick Info */}
-          <div className="px-4 py-2.5 bg-[#f8fbfe] border-t border-[var(--line)] flex items-center justify-between text-[11px] text-[var(--text-muted)]">
+          <div className="px-4 py-2.5 bg-[var(--surface-sunken)] border-t border-[var(--line)] flex items-center justify-between text-[11px] text-[var(--text-muted)]">
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
               <span>Free, open-source cartography (OpenStreetMap contributors)</span>
@@ -569,7 +569,7 @@ export function DonationFinderPage() {
                   mapInstanceRef.current.setView([17.4399, 78.4637], 12);
                 }
               }}
-              className="text-[#0f5ca8] font-semibold hover:underline"
+              className="text-[var(--teal)] font-semibold hover:underline"
             >
               Reset view
             </button>

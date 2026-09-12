@@ -155,8 +155,8 @@ export function AnalyticsDashboardPage() {
         </header>
 
         {/* Toolbar with range tabs and export actions */}
-        <div className="analytics-toolbar print-hide flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2 bg-[#f8fafc] border border-[var(--line)] rounded-2xl">
-          <div className="flex items-center gap-1.5 p-1 bg-white border border-[var(--line)] rounded-xl w-full sm:w-auto" role="tablist">
+        <div className="analytics-toolbar print-hide flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2 bg-[var(--surface-sunken)] border border-[var(--line)] rounded-2xl">
+          <div className="flex items-center gap-1.5 p-1 bg-[var(--surface)] border border-[var(--line)] rounded-xl w-full sm:w-auto" role="tablist">
             {(['today', 'week', 'month'] as const).map((r) => {
               const labels = { today: 'Current', week: '7-day', month: 'Monthly' };
               const icons = { today: Clock, week: CalendarDays, month: CalendarRange };
@@ -171,8 +171,8 @@ export function AnalyticsDashboardPage() {
                   className={cn(
                     'flex-1 sm:flex-none flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-lg text-xs font-bold transition-all active:scale-95 cursor-pointer',
                     selectedRange === r
-                      ? 'bg-[#0a3b69] text-white shadow-xs'
-                      : 'text-[var(--text-muted)] hover:bg-[#f0f7fc] hover:text-[#0a3b69]'
+                      ? 'bg-[var(--teal)] text-white shadow-xs'
+                      : 'text-[var(--text-muted)] hover:bg-[var(--mint)] hover:text-[var(--teal)]'
                   )}
                 >
                   <Icon size={14} />
@@ -186,14 +186,14 @@ export function AnalyticsDashboardPage() {
             <button
               type="button"
               onClick={handleExportCsv}
-              className="btn-secondary flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 rounded-xl text-xs font-bold text-[#0a3b69] border border-[#cbd5e1] bg-white hover:bg-[#f0f7fc] active:scale-95 transition-all"
+              className="btn-secondary flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 rounded-xl text-xs font-bold text-[var(--text)] border border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface-sunken)] active:scale-95 transition-all"
             >
               <Download size={14} /> <span>Export CSV</span>
             </button>
             <button
               type="button"
               onClick={handlePrintReport}
-              className="btn-secondary flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 rounded-xl text-xs font-bold text-[#0a3b69] border border-[#cbd5e1] bg-white hover:bg-[#f0f7fc] active:scale-95 transition-all"
+              className="btn-secondary flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 rounded-xl text-xs font-bold text-[var(--text)] border border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface-sunken)] active:scale-95 transition-all"
             >
               <Printer size={14} /> <span>Print</span>
             </button>
@@ -202,37 +202,37 @@ export function AnalyticsDashboardPage() {
 
         {/* Summary stats matching provider-stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
-          <div className="p-4 rounded-xl border border-[#cbd5e1] bg-[#f8fafc] flex flex-col justify-between">
+          <div className="p-4 rounded-xl border border-[var(--line)] bg-[var(--surface)] flex flex-col justify-between">
             <span className="text-xs text-[var(--text-muted)] font-medium">
               {sampleData.sample ? 'Sample patient volume' : 'Active visits'}
             </span>
-            <strong className="text-2xl font-extrabold text-[#0a3b69] mt-1">{sampleData.waiting}</strong>
+            <strong className="text-2xl font-extrabold text-[var(--teal)] mt-1">{sampleData.waiting}</strong>
             <small className="text-[0.7rem] text-[var(--text-dim)]">
               {sampleData.sample ? 'Illustrative, not stored history' : 'Current queue entries'}
             </small>
           </div>
-          <div className="p-4 rounded-xl border border-[#cbd5e1] bg-[#f8fafc] flex flex-col justify-between">
+          <div className="p-4 rounded-xl border border-[var(--line)] bg-[var(--surface)] flex flex-col justify-between">
             <span className="text-xs text-[var(--text-muted)] font-medium">Average Wait Time</span>
-            <strong className="text-2xl font-extrabold text-[#0a3b69] mt-1">{sampleData.avgWait}</strong>
+            <strong className="text-2xl font-extrabold text-[var(--teal)] mt-1">{sampleData.avgWait}</strong>
             <small className="text-[0.7rem] text-[var(--text-dim)]">
               {sampleData.sample ? 'Illustrative duration' : 'Time since queue arrival'}
             </small>
           </div>
-          <div className="p-4 rounded-xl border border-[#cbd5e1] bg-[#f8fafc] flex flex-col justify-between">
+          <div className="p-4 rounded-xl border border-[var(--line)] bg-[var(--surface)] flex flex-col justify-between">
             <span className="text-xs text-[var(--text-muted)] font-medium">Priority Triage</span>
-            <strong className="text-2xl font-extrabold text-[#0a3b69] mt-1">{sampleData.priority}</strong>
+            <strong className="text-2xl font-extrabold text-amber-600 dark:text-amber-400 mt-1">{sampleData.priority}</strong>
             <small className="text-[0.7rem] text-[var(--text-dim)]">Requires immediate attention</small>
           </div>
-          <div className="p-4 rounded-xl border border-[#cbd5e1] bg-[#f8fafc] flex flex-col justify-between">
+          <div className="p-4 rounded-xl border border-[var(--line)] bg-[var(--surface)] flex flex-col justify-between">
             <span className="text-xs text-[var(--text-muted)] font-medium">Estimated Care Revenue</span>
-            <strong className="text-2xl font-extrabold text-green-700 mt-1">{sampleData.revenue}</strong>
+            <strong className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">{sampleData.revenue}</strong>
             <small className="text-[0.7rem] text-[var(--text-dim)]">₹125 per outpatient ticket</small>
           </div>
         </div>
 
         {/* Triage distribution */}
-        <div className="bg-white border border-[var(--line)] rounded-2xl p-5 shadow-sm">
-          <h2 className="text-base font-bold text-[#0a3b69] mb-4">Triage Priority Distribution</h2>
+        <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-5 shadow-sm">
+          <h2 className="text-base font-bold text-[var(--text)] mb-4">Triage Priority Distribution</h2>
           <div className="flex flex-col gap-3">
             {(['Red', 'Yellow', 'Green', 'Unassessed'] as const).map((level) => {
               const count = triageCounts[level];
@@ -241,7 +241,7 @@ export function AnalyticsDashboardPage() {
               return (
                 <div key={level} className="flex items-center gap-3">
                   <span className={cn('status-pill shrink-0 text-xs w-24 text-center', getTriageColor(level))}>{level}</span>
-                  <div className="flex-1 bg-[#f0f4f8] rounded-full h-2.5 overflow-hidden">
+                  <div className="flex-1 bg-[var(--surface-sunken)] rounded-full h-2.5 overflow-hidden">
                     <div
                       className="h-2.5 rounded-full transition-all"
                       style={{
@@ -265,15 +265,15 @@ export function AnalyticsDashboardPage() {
         </div>
 
         {/* Status breakdown */}
-        <div className="bg-white border border-[var(--line)] rounded-2xl p-5 shadow-sm">
-          <h2 className="text-base font-bold text-[#0a3b69] mb-4">Patient Visit Status Breakdown</h2>
+        <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-5 shadow-sm">
+          <h2 className="text-base font-bold text-[var(--text)] mb-4">Patient Visit Status Breakdown</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
             {[
-              ['Waiting', statusCounts.waiting, '#0a3b69'],
+              ['Waiting', statusCounts.waiting, 'var(--teal)'],
               ['Called', statusCounts.called, '#d97706'],
               ['In progress', statusCounts.in_progress, '#16a34a'],
             ].map(([label, count, color]) => (
-              <div key={label as string} className="text-center p-3 sm:p-4 bg-[#f8fafc] border border-[var(--line)] rounded-xl">
+              <div key={label as string} className="text-center p-3 sm:p-4 bg-[var(--surface-sunken)] border border-[var(--line)] rounded-xl">
                 <p className="text-2xl sm:text-3xl font-extrabold" style={{ color: color as string }}>
                   {count as number}
                 </p>

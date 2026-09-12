@@ -63,7 +63,7 @@ const SIDEBAR_ITEMS: Record<string, RoleConfig> = {
     ],
     secondary: [
       { label: 'Pharmacy & Orders', href: '/dashboard/patient/pharmacy', icon: Pill },
-      { label: 'Ambulance (SOS)', href: '/ambulance', icon: Siren },
+      { label: 'Ambulance (SOS)', href: '/dashboard/ambulance', icon: Siren },
       { label: 'Donations', href: '/dashboard/patient/donations', icon: HeartHandshake },
       { label: 'Help', href: '/about', icon: CircleHelp },
     ],
@@ -76,7 +76,7 @@ const SIDEBAR_ITEMS: Record<string, RoleConfig> = {
         items: [
           { label: 'Clinical Queue & eRx', href: '/dashboard/hospital?module=clinical', icon: Stethoscope },
           { label: 'Queue Workspace', href: '/dashboard/queue', icon: ListOrdered },
-          { label: 'Verify Prescription', href: '/verify-rx', icon: ShieldCheck },
+          { label: 'Verify Prescription', href: '/dashboard/verify-rx', icon: ShieldCheck },
           { label: 'Clinical Analytics', href: '/dashboard/analytics', icon: BarChart3 },
         ],
       },
@@ -119,7 +119,7 @@ const SIDEBAR_ITEMS: Record<string, RoleConfig> = {
 function getRoleFromPath(pathname: string, sessionRole?: string): string {
   if (sessionRole) return sessionRole;
   if (pathname.startsWith('/dashboard/patient')) return 'patient';
-  if (pathname.startsWith('/dashboard/hospital')) return 'doctor';
+  if (pathname.startsWith('/dashboard/hospital') || pathname.startsWith('/dashboard/queue') || pathname.startsWith('/dashboard/verify')) return 'doctor';
   if (pathname.startsWith('/dashboard/admin')) return 'staff';
   return 'patient';
 }

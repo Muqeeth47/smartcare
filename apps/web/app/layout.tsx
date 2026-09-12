@@ -46,7 +46,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `
               try {
                 var t = localStorage.getItem('smartcare.theme');
-                if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+                if (t === 'dark') {
+                  document.documentElement.setAttribute('data-theme', 'dark');
+                  document.documentElement.classList.add('dark');
+                } else {
+                  document.documentElement.setAttribute('data-theme', 'light');
+                  document.documentElement.classList.remove('dark');
+                }
                 var fs = parseInt(localStorage.getItem('smartcare.fontScale') || '0', 10);
                 var fsMap = {'-2':'13px','-1':'14px','0':'16px','1':'18px','2':'20px'};
                 document.documentElement.style.setProperty('--font-base', fsMap[String(fs)] || '16px');

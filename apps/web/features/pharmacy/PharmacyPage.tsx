@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Topbar } from '@/components/layout/Topbar';
-import { Footer, PatientShell } from '@/components/layout/Shell';
+import { Footer, PatientShell, WorkspaceShell } from '@/components/layout/Shell';
 import { usePharmacy, usePatient } from '@/lib/store/app-store';
 import {
   Pill,
@@ -87,7 +87,7 @@ const CATALOG_ITEMS: MedicineCatalogItem[] = [
   },
 ];
 
-export function PharmacyPage({ variant = 'landing' }: { variant?: 'landing' | 'patient' }) {
+export function PharmacyPage({ variant = 'landing' }: { variant?: 'landing' | 'patient' | 'workspace' }) {
   const { orders: pharmacyOrders, createOrder: createPharmacyOrder, updateStatus: updatePharmacyOrderStatus } = usePharmacy();
   const { patientData } = usePatient();
   const searchParams = useSearchParams();
@@ -724,6 +724,20 @@ export function PharmacyPage({ variant = 'landing' }: { variant?: 'landing' | 'p
         )}
         {pageContent}
       </PatientShell>
+    );
+  }
+
+  if (variant === 'workspace') {
+    return (
+      <WorkspaceShell title="Pharmacy & Dispensary" subtitle="Jan Aushadhi Generic Formulary & Counter Dispensation">
+        {toastMessage && (
+          <div className="fixed top-20 right-4 z-50 flex items-center gap-2 bg-[var(--surface)] text-[var(--text)] border border-[var(--line)] px-4 py-3 rounded-xl shadow-xl text-sm font-medium animate-in fade-in slide-in-from-top-4">
+            <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+            <span>{toastMessage}</span>
+          </div>
+        )}
+        {pageContent}
+      </WorkspaceShell>
     );
   }
 

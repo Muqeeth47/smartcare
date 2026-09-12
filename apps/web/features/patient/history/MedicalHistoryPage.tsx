@@ -251,7 +251,7 @@ export function MedicalHistoryPage() {
               id="download-pdf-btn"
               type="button"
               onClick={handleDownloadPdf}
-              className="btn-secondary flex-1 sm:flex-none flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl text-xs font-bold text-[#0a3b69] border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] shadow-sm transition-all cursor-pointer"
+              className="btn-secondary flex-1 sm:flex-none flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl text-xs font-bold text-[var(--text)] border border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface-sunken)] shadow-sm transition-all cursor-pointer"
             >
               <Download size={16} /> Download PDF Report
             </button>
@@ -260,7 +260,7 @@ export function MedicalHistoryPage() {
               id="qr-handoff-btn"
               type="button"
               onClick={openQrModal}
-              className="btn-ghost w-full sm:w-auto flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl text-xs font-bold text-[#0f5ca8] hover:bg-[#e5f1fc] transition-all cursor-pointer"
+              className="btn-ghost w-full sm:w-auto flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl text-xs font-bold text-[var(--teal)] hover:bg-[var(--mint)] transition-all cursor-pointer"
             >
               <QrCode size={16} /> Share with hospital
             </button>
@@ -268,12 +268,12 @@ export function MedicalHistoryPage() {
         </div>
 
         {/* On-screen Patient Demographics Card */}
-        <div className="card print-hide p-5 rounded-2xl bg-white border border-[var(--line)] shadow-sm">
+        <div className="card print-hide p-5 rounded-2xl bg-[var(--surface)] border border-[var(--line)] shadow-sm">
           <div className="flex items-center justify-between pb-3 mb-3 border-b border-[var(--line)]">
-            <strong className="text-sm font-bold text-[#0a3b69] flex items-center gap-2">
+            <strong className="text-sm font-bold text-[var(--teal)] flex items-center gap-2">
               <UserRound size={16} /> Patient Demographics
             </strong>
-            <span className="text-[0.7rem] font-bold px-2.5 py-0.5 rounded-full bg-[#e5f1fc] text-[#0f5ca8]">
+            <span className="text-[0.7rem] font-bold px-2.5 py-0.5 rounded-full bg-[var(--mint)] text-[var(--teal)]">
               Verified Profile
             </span>
           </div>
@@ -292,7 +292,7 @@ export function MedicalHistoryPage() {
             </div>
             <div>
               <small className="text-[var(--text-muted)] block mb-0.5">Passport ID</small>
-              <strong className="text-sm font-mono font-bold text-[#0f5ca8]">{passportId}</strong>
+              <strong className="text-sm font-mono font-bold text-[var(--teal)]">{passportId}</strong>
             </div>
           </div>
         </div>
@@ -388,13 +388,13 @@ export function MedicalHistoryPage() {
           {/* 4-Pillar Medical History Grid matching original history.js */}
           <div className="history-grid grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Pillar 1: Effective Medications */}
-            <div className="card history-pillar-card p-5 rounded-2xl bg-white border border-[var(--line)] shadow-sm">
+            <div className="card history-pillar-card p-5 rounded-2xl bg-[var(--surface)] border border-[var(--line)] shadow-sm">
               <div className="flex items-center justify-between pb-3 mb-3 border-b border-[var(--line)]">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-8 h-8 rounded-lg bg-[#e8f4fb] text-[#0f5ca8] flex items-center justify-center">
+                  <span className="w-8 h-8 rounded-lg bg-[var(--mint)] text-[var(--teal)] flex items-center justify-center">
                     <Pill size={18} />
                   </span>
-                  <h3 className="text-sm font-bold text-[#0a3b69]">Effective Medicines</h3>
+                  <h3 className="text-sm font-bold text-[var(--teal)]">Effective Medicines</h3>
                 </div>
               </div>
               <p className="text-xs text-[var(--text-muted)] mb-3">Medicines &amp; dosages that work best for your condition.</p>
@@ -405,7 +405,7 @@ export function MedicalHistoryPage() {
                       <div className="flex items-start justify-between gap-2">
                         <strong className="text-xs font-bold text-[var(--text)]">{med.medicineName}</strong>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[0.68rem] font-bold px-2 py-0.5 rounded bg-[#e8f4fb] text-[#0f5ca8]">
+                          <span className="text-[0.68rem] font-bold px-2 py-0.5 rounded bg-[var(--mint)] text-[var(--teal)]">
                             {med.dosage}
                           </span>
                           <button
@@ -431,22 +431,22 @@ export function MedicalHistoryPage() {
             </div>
 
             {/* Pillar 2: Allergies & Avoid List */}
-            <div className="card history-pillar-card p-5 rounded-2xl bg-white border border-red-200 shadow-sm">
-              <div className="flex items-center justify-between pb-3 mb-3 border-b border-red-100">
+            <div className="card history-pillar-card p-5 rounded-2xl bg-[var(--surface)] border border-red-200 dark:border-red-900/60 shadow-sm">
+              <div className="flex items-center justify-between pb-3 mb-3 border-b border-red-100 dark:border-red-950">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-8 h-8 rounded-lg bg-red-100 text-red-700 flex items-center justify-center">
+                  <span className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400 flex items-center justify-center">
                     <TriangleAlert size={18} />
                   </span>
-                  <h3 className="text-sm font-bold text-red-800">Allergies &amp; Avoid List</h3>
+                  <h3 className="text-sm font-bold text-red-700 dark:text-red-400">Allergies &amp; Avoid List</h3>
                 </div>
               </div>
               <p className="text-xs text-[var(--text-muted)] mb-3">Drugs &amp; substances that must be strictly avoided by doctors.</p>
               <div className="space-y-2.5">
                 {allergies.length > 0 ? (
                   allergies.map((alg, idx) => (
-                    <div key={alg.id} className="history-item-row p-3 rounded-xl bg-red-50 border border-red-200">
+                    <div key={alg.id} className="history-item-row p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/60">
                       <div className="flex items-start justify-between gap-2">
-                        <strong className="text-xs font-bold text-red-800 flex items-center gap-1.5">
+                        <strong className="text-xs font-bold text-red-800 dark:text-red-300 flex items-center gap-1.5">
                           <TriangleAlert size={13} /> {alg.substance}
                         </strong>
                         <div className="flex items-center gap-1.5">
@@ -463,11 +463,11 @@ export function MedicalHistoryPage() {
                           </button>
                         </div>
                       </div>
-                      <div className="text-[0.75rem] text-red-900 mt-1">{alg.reactionDescription}</div>
+                      <div className="text-[0.75rem] text-red-900 dark:text-red-200 mt-1">{alg.reactionDescription}</div>
                     </div>
                   ))
                 ) : (
-                  <div className="text-xs text-[var(--text-muted)] p-4 text-center bg-red-50/50 rounded-xl">
+                  <div className="text-xs text-[var(--text-muted)] p-4 text-center bg-red-50/50 dark:bg-red-950/20 rounded-xl">
                     No allergies recorded. Click "Add / Edit Medical Record" to add.
                   </div>
                 )}
@@ -475,22 +475,22 @@ export function MedicalHistoryPage() {
             </div>
 
             {/* Pillar 3: Optimal Care Conditions */}
-            <div className="card history-pillar-card p-5 rounded-2xl bg-white border border-[var(--line)] shadow-sm">
+            <div className="card history-pillar-card p-5 rounded-2xl bg-[var(--surface)] border border-[var(--line)] shadow-sm">
               <div className="flex items-center justify-between pb-3 mb-3 border-b border-[var(--line)]">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+                  <span className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 flex items-center justify-center">
                     <ShieldAlert size={18} />
                   </span>
-                  <h3 className="text-sm font-bold text-[#0a3b69]">Optimal Care Conditions</h3>
+                  <h3 className="text-sm font-bold text-[var(--teal)]">Optimal Care Conditions</h3>
                 </div>
               </div>
               <p className="text-xs text-[var(--text-muted)] mb-3">Dietary, positioning, &amp; environmental guidelines.</p>
               <div className="space-y-2.5">
                 {careConditions.length > 0 ? (
                   careConditions.map((cond, idx) => (
-                    <div key={cond.id} className="history-item-row p-3 rounded-xl bg-amber-50/70 border border-amber-200">
+                    <div key={cond.id} className="history-item-row p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50">
                       <div className="flex items-start justify-between gap-2">
-                        <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded bg-amber-200 text-amber-800">
+                        <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200">
                           {cond.category}
                         </span>
                         <button
@@ -506,7 +506,7 @@ export function MedicalHistoryPage() {
                     </div>
                   ))
                 ) : (
-                  <div className="text-xs text-[var(--text-muted)] p-4 text-center bg-amber-50/30 rounded-xl">
+                  <div className="text-xs text-[var(--text-muted)] p-4 text-center bg-amber-50/30 dark:bg-amber-950/20 rounded-xl">
                     No care conditions recorded. Click "Add / Edit Medical Record" to add.
                   </div>
                 )}
@@ -514,22 +514,22 @@ export function MedicalHistoryPage() {
             </div>
 
             {/* Pillar 4: Emergency Protocols */}
-            <div className="card history-pillar-card p-5 rounded-2xl bg-white border border-[var(--line)] shadow-sm">
+            <div className="card history-pillar-card p-5 rounded-2xl bg-[var(--surface)] border border-[var(--line)] shadow-sm">
               <div className="flex items-center justify-between pb-3 mb-3 border-b border-[var(--line)]">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                  <span className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 flex items-center justify-center">
                     <Siren size={18} />
                   </span>
-                  <h3 className="text-sm font-bold text-[#0a3b69]">Emergency Protocols</h3>
+                  <h3 className="text-sm font-bold text-[var(--teal)]">Emergency Protocols</h3>
                 </div>
               </div>
               <p className="text-xs text-[var(--text-muted)] mb-3">Step-by-step crisis action plans for attending doctors.</p>
               <div className="space-y-2.5">
                 {protocols.length > 0 ? (
                   protocols.map((emg, idx) => (
-                    <div key={emg.id} className="history-item-row p-3 rounded-xl bg-indigo-50 border border-indigo-200">
+                    <div key={emg.id} className="history-item-row p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/50">
                       <div className="flex items-start justify-between gap-2">
-                        <strong className="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
+                        <strong className="text-xs font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
                           <Siren size={13} /> Trigger: {emg.triggerCondition}
                         </strong>
                         <button
@@ -578,17 +578,17 @@ export function MedicalHistoryPage() {
           onClick={closeModal}
         >
           <div
-            className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl max-w-lg w-full max-h-[88vh] overflow-y-auto"
+            className="bg-[var(--surface)] text-[var(--text)] border border-[var(--line)] rounded-t-3xl sm:rounded-2xl shadow-2xl max-w-lg w-full max-h-[88vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
             <div className="flex items-center justify-between p-5 border-b border-[var(--line)]">
               <div className="flex items-center gap-2.5">
-                <span className="w-8 h-8 rounded-lg bg-[#0a3b69] text-white flex items-center justify-center">
+                <span className="w-8 h-8 rounded-lg bg-[var(--teal)] text-white flex items-center justify-center">
                   <PlusCircle size={18} />
                 </span>
                 <div>
-                  <h3 className="text-base font-bold text-[#0a3b69]">Add / Update Medical History</h3>
+                  <h3 className="text-base font-bold text-[var(--text)]">Add / Update Medical History</h3>
                   <p className="text-xs text-[var(--text-muted)]">Saved locally to this profile</p>
                 </div>
               </div>
@@ -602,7 +602,7 @@ export function MedicalHistoryPage() {
             </div>
 
             {/* Tab switch */}
-            <div className="flex p-2 bg-[#f4f8fc] border-b border-[var(--line)] gap-1.5 text-xs font-bold overflow-x-auto" role="tablist">
+            <div className="flex p-2 bg-[var(--surface-sunken)] border-b border-[var(--line)] gap-1.5 text-xs font-bold overflow-x-auto" role="tablist">
               {[
                 { id: 'med', label: 'Medicine' },
                 { id: 'alg', label: 'Allergy' },
@@ -617,7 +617,7 @@ export function MedicalHistoryPage() {
                   aria-selected={editTab === t.id}
                   onClick={() => handleEditTabChange(t.id as any)}
                   className={`flex-1 min-h-[44px] py-2 px-2.5 rounded-lg transition-all font-bold text-center shrink-0 cursor-pointer ${
-                    editTab === t.id ? 'bg-[#0a3b69] text-white shadow-xs' : 'text-[#0a3b69] hover:bg-white'
+                    editTab === t.id ? 'bg-[var(--teal)] text-white shadow-xs' : 'text-[var(--text)] hover:bg-[var(--surface)]'
                   }`}
                 >
                   {t.label}
@@ -848,11 +848,11 @@ export function MedicalHistoryPage() {
           onClick={closeModal}
         >
           <div
-            className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center space-y-4 max-h-[90vh] overflow-y-auto"
+            className="bg-[var(--surface)] text-[var(--text)] border border-[var(--line)] rounded-t-3xl sm:rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center space-y-4 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center pb-2 border-b border-[var(--line)]">
-              <h3 className="text-base font-bold text-[#0a3b69] flex items-center gap-2">
+              <h3 className="text-base font-bold text-[var(--text)] flex items-center gap-2">
                 <QrCode size={18} /> Medical Passport QR
               </h3>
               <button
@@ -864,8 +864,8 @@ export function MedicalHistoryPage() {
               </button>
             </div>
 
-            <div className="p-4 bg-[#f0f7fc] border border-[#c2dcf3] rounded-2xl inline-block">
-              <div className="w-48 h-48 bg-white border border-[#0a3b69]/20 rounded-xl flex flex-col items-center justify-center p-3 mx-auto shadow-inner">
+            <div className="p-4 bg-[var(--surface-sunken)] border border-[var(--line)] rounded-2xl inline-block">
+              <div className="w-48 h-48 bg-white border border-[var(--line)] rounded-xl flex flex-col items-center justify-center p-3 mx-auto shadow-inner">
                 <QrCode size={130} className="text-[#0a3b69]" />
                 <span className="font-mono text-xs font-bold text-[#0a3b69] mt-2">{passportId}</span>
               </div>
@@ -881,7 +881,7 @@ export function MedicalHistoryPage() {
               <button
                 type="button"
                 onClick={handleCopyPassport}
-                className="w-full sm:flex-1 flex items-center justify-center gap-1.5 min-h-[44px] rounded-xl border border-[var(--line)] text-xs font-bold text-[#0a3b69] hover:bg-[#f0f7fc] transition-colors cursor-pointer"
+                className="w-full sm:flex-1 flex items-center justify-center gap-1.5 min-h-[44px] rounded-xl border border-[var(--line)] text-xs font-bold text-[var(--text)] hover:bg-[var(--surface-sunken)] transition-colors cursor-pointer"
               >
                 {copied ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
                 <span>{copied ? 'Copied' : 'Copy ID'}</span>

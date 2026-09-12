@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Topbar } from '@/components/layout/Topbar';
-import { Footer } from '@/components/layout/Shell';
+import { Footer, WorkspaceShell } from '@/components/layout/Shell';
+import { cn } from '@/lib/utils';
 import { DemoDB } from '@/lib/db/demo-db';
 import type { Prescription } from '@smartcare/types';
 import {
@@ -23,7 +24,7 @@ import {
   X,
 } from 'lucide-react';
 
-export function VerifyRxPage() {
+export function VerifyRxPage({ embedded = false }: { embedded?: boolean }) {
   const searchParams = useSearchParams();
   const initialId = searchParams.get('id') || searchParams.get('rx') || 'RX-2026-DEMO01';
 
@@ -73,10 +74,8 @@ export function VerifyRxPage() {
     }
   };
 
-  return (
-    <div className="min-h-screen flex flex-col bg-[var(--surface-sunken)] text-[var(--text)] transition-colors">
-      <Topbar variant="landing" />
-
+  const pageContent = (
+    <div className={cn('w-full max-w-4xl mx-auto', embedded ? 'py-4 sm:py-6 px-3 sm:px-4' : 'py-8 px-4')}>
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-20 right-4 z-50 flex items-center gap-2 bg-[var(--surface)] text-[var(--text)] border border-[var(--line)] px-4 py-3 rounded-xl shadow-xl text-sm font-medium animate-in fade-in slide-in-from-top-4">
@@ -85,7 +84,7 @@ export function VerifyRxPage() {
         </div>
       )}
 
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-8">
+      <div>
         {/* Header */}
         <div className="text-center mb-8">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[var(--mint)] text-[var(--teal)] border border-[var(--line)] mb-3">
@@ -394,7 +393,7 @@ export function VerifyRxPage() {
             </button>
           </div>
         )}
-      </main>
+      </div>
 
       {/* Dispense & Lock Modal */}
       {showDispenseModal && rxRecord && (
@@ -515,7 +514,26 @@ export function VerifyRxPage() {
           </div>
         </div>
       )}
+    </div>
+  );
 
+  if (embedded) {
+    return (
+      <WorkspaceShell
+        title="Verify Prescription"
+        subtitle="Cryptographic verification & anti-abuse one-time dispensation lock"
+      >
+        {pageContent}
+      </WorkspaceShell>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col bg-[var(--surface-sunken)] text-[var(--text)] transition-colors">
+      <Topbar variant="landing" />
+      <main className="flex-1">
+        {pageContent}
+      </main>
       <Footer />
     </div>
   );

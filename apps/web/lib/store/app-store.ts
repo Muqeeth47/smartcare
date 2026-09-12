@@ -419,6 +419,11 @@ export const useAppStore = create<AppState & AppActions>()(
         set({ theme });
         if (typeof document !== 'undefined') {
           document.documentElement.setAttribute('data-theme', theme);
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
         }
         try { localStorage.setItem('smartcare.theme', theme); } catch {}
       },

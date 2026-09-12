@@ -238,11 +238,6 @@ export function Topbar({
         </div>
 
         <div className="flex items-center gap-2">
-          {backHref && (
-            <Link href={backHref} className="text-xs text-[var(--text-muted)] hover:text-[var(--teal)] transition-colors hidden sm:flex items-center gap-1">
-              {backLabel || 'Back to home'}
-            </Link>
-          )}
           {Controls}
         </div>
       </header>
@@ -271,11 +266,8 @@ export function Topbar({
         </Link>
 
         {/* 2. Middle: Desktop Navigation Links (Clean single line, hidden on mobile) */}
-        <nav className="hidden lg:flex items-center gap-1.5" aria-label="Main navigation">
+        <nav className="hidden lg:flex items-center gap-2" aria-label="Main navigation">
           <a href="/#how-it-works" className="nav-link-item">How it works</a>
-          <Link href="/pharmacy" className="nav-link-item">Pharmacy</Link>
-          <Link href="/verify-rx" className="nav-link-item">Verify Rx</Link>
-          <Link href="/donate" className="nav-link-item">Donation</Link>
           <a href="/#for-providers" className="nav-link-item">For hospitals</a>
         </nav>
 
@@ -376,27 +368,7 @@ export function Topbar({
                   24/7
                 </span>
               </Link>
-              <Link
-                href="/pharmacy"
-                onClick={() => setMobileNavOpen(false)}
-                className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold text-[var(--text)] hover:bg-[var(--mint)] transition-colors no-underline"
-              >
-                <span>Pharmacy</span>
-              </Link>
-              <Link
-                href="/verify-rx"
-                onClick={() => setMobileNavOpen(false)}
-                className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold text-[var(--text)] hover:bg-[var(--mint)] transition-colors no-underline"
-              >
-                <span>Verify Prescription</span>
-              </Link>
-              <Link
-                href="/donate"
-                onClick={() => setMobileNavOpen(false)}
-                className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold text-[var(--text)] hover:bg-[var(--mint)] transition-colors no-underline"
-              >
-                <span>Donation</span>
-              </Link>
+
               <a
                 href="/#for-providers"
                 onClick={() => setMobileNavOpen(false)}

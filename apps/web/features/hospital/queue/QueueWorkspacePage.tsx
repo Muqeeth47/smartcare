@@ -189,7 +189,7 @@ export function QueueWorkspacePage() {
               </strong>
               <small className="text-[11px] text-[var(--muted)]">Needs attention first</small>
             </div>
-            <span className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+            <span className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
               <AlertTriangle size={20} />
             </span>
           </div>
@@ -202,7 +202,7 @@ export function QueueWorkspacePage() {
               </strong>
               <small className="text-[11px] text-[var(--muted)]">Based on arrival time</small>
             </div>
-            <span className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+            <span className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
               <Clock size={20} />
             </span>
           </div>
@@ -210,12 +210,12 @@ export function QueueWorkspacePage() {
           <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-4 sm:p-5 shadow-xs flex items-start justify-between">
             <div>
               <span className="text-xs text-[var(--muted)] font-semibold uppercase tracking-wider block">Queue state</span>
-              <strong className="text-2xl sm:text-3xl font-extrabold text-emerald-600 mt-1 block">
+              <strong className="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1 block">
                 {metrics.waiting > 0 ? 'Active' : 'Clear'}
               </strong>
               <small className="text-[11px] text-[var(--muted)]">Ready for new visits</small>
             </div>
-            <span className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+            <span className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
               <CheckCircle2 size={20} />
             </span>
           </div>
@@ -368,12 +368,12 @@ export function QueueWorkspacePage() {
                             className={cn(
                               'text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider',
                               status === 'in_progress'
-                                ? 'bg-emerald-100 text-emerald-800'
+                                ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300'
                                 : status === 'called'
-                                ? 'bg-amber-100 text-amber-800'
+                                ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300'
                                 : status === 'completed'
-                                ? 'bg-slate-200 text-slate-700'
-                                : 'bg-blue-100 text-blue-800'
+                                ? 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                                : 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300'
                             )}
                           >
                             {status.replace('_', ' ')}
@@ -436,7 +436,7 @@ export function QueueWorkspacePage() {
           onClick={() => setShowQRModal(false)}
         >
           <div
-            className="bg-white rounded-t-2xl sm:rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-[var(--line)] max-h-[85vh] sm:max-h-[90vh] overflow-y-auto space-y-4"
+            className="bg-[var(--surface)] text-[var(--ink)] rounded-t-2xl sm:rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-[var(--line)] max-h-[85vh] sm:max-h-[90vh] overflow-y-auto space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">

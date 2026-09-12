@@ -68,7 +68,7 @@
 }
 
 /* ─── Design Tokens (Dark) ────────────────────────────────────────────────── */
-[data-theme="dark"] {
+[data-theme="dark"], .dark {
   --teal: #4da3f5;
   --teal-10: rgba(77, 163, 245, 0.10);
   --teal-20: rgba(77, 163, 245, 0.20);
@@ -725,11 +725,12 @@ html {
 
 /* ─── Workspace Shell & Desktop Sidebar ───────────────────────────────────── */
 .provider-shell {
-  max-width: 1440px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
   display: grid;
-  grid-template-columns: 230px minmax(0, 1fr);
-  gap: 1.5rem;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 1.25rem;
   align-items: start;
   transition: grid-template-columns 0.28s cubic-bezier(0.4, 0, 0.2, 1), gap 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -742,26 +743,28 @@ html {
 @media (max-width: 768px) {
   .provider-shell {
     display: block;
+    width: 100%;
+    margin: 0;
   }
 }
 
 .workspace-content {
   min-width: 0;
   min-height: calc(100vh - 6.2rem);
-  padding-right: 1.5rem;
+  padding-right: 1.25rem;
   padding-left: 0;
   transition: padding-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* When sidebar is collapsed on desktop, remove left padding — icon rail handles it */
+/* When sidebar is collapsed on desktop, adjust left padding */
 .provider-shell.sidebar-collapsed .workspace-content {
   padding-left: 1.25rem;
 }
 
 @media (max-width: 768px) {
   .workspace-content {
-    padding-left: 1rem;
-    padding-right: 1rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
   }
 }
 
@@ -769,7 +772,7 @@ html {
 .workspace-tabs.desktop-sidebar {
   position: sticky;
   top: 4.5rem;
-  width: 230px;
+  width: 240px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -779,7 +782,7 @@ html {
   overflow-x: hidden;
   scrollbar-width: none;
   margin: 0;
-  padding: .75rem .75rem 1rem 1.25rem;
+  padding: .75rem .75rem 1rem 1rem;
   border-right: 1px solid var(--line);
   transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.22s ease, visibility 0.28s ease;
   transform: translateX(0);

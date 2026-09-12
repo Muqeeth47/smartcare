@@ -1037,6 +1037,26 @@ const DEMO_USERS: Record<string, ProfessionalProfile & { password: string; name?
     state: 'Telangana',
     city: 'Hyderabad',
   },
+  'cmo@district.gov.in': {
+    email: 'cmo@district.gov.in',
+    password: 'demo1234',
+    role: 'staff',
+    name: 'Dr. Rajeshwar Sharma (District CMO)',
+    hospital: 'Hyderabad District Health Directorate',
+    country: 'India',
+    state: 'Telangana',
+    city: 'Hyderabad',
+  },
+  'commander@mohfw.gov.in': {
+    email: 'commander@mohfw.gov.in',
+    password: 'demo1234',
+    role: 'staff',
+    name: 'MoHFW Central Medical Command Hub',
+    hospital: 'MoHFW State Control Desk',
+    country: 'India',
+    state: 'Telangana',
+    city: 'Hyderabad',
+  },
 };
 
 const DEMO_BLOOD_CENTRES: BloodDonationCentre[] = [
@@ -1892,32 +1912,66 @@ export const DemoDB = {
     const updated = orders.map((o) => (o.id === target.id ? { ...o, status: 'delivered' as const, updatedAt: 'Just now' } : o));
     writeStorage(REDISTRIBUTION_ORDERS_KEY, updated);
 
-    // Apply delivery: increase recipient hospital's stock!
+    // Two-way ledger update: debit source hospital/warehouse, credit target recipient
     const profiles = DemoDB.getAllSupplyProfiles();
+    let resolvedShortageCount = 0;
+
     const updatedProfiles = profiles.map((facility) => {
+      // 1. Source facility: debit stock
+      if (facility.hospitalId === target.sourceHospitalId) {
+        const debitedMeds = facility.medicines.map((m) => {
+          if (m.id === target.medicineId) {
+            const debitedStock = Math.max(0, m.currentStock - target.quantity);
+            const debitedDays = m.dailyConsumption > 0 ? Math.round(debitedStock / m.dailyConsumption) : 999;
+            return {
+              ...m,
+              currentStock: debitedStock,
+              daysRemaining: debitedDays,
+              lastUpdated: 'Dispatched in rebalance',
+            };
+          }
+          return m;
+        });
+        return { ...facility, medicines: debitedMeds, lastReportedAt: 'Just now' };
+      }
+
+      // 2. Target recipient: credit stock and clear shortage if replenished
       if (facility.hospitalId === target.targetHospitalId) {
-        const newMeds = facility.medicines.map((m) => {
+        const creditedMeds = facility.medicines.map((m) => {
           if (m.id === target.medicineId) {
             const newStock = m.currentStock + target.quantity;
             const newDays = m.dailyConsumption > 0 ? Math.round(newStock / m.dailyConsumption) : 999;
+            const isResolved = newDays > 3;
+            if (isResolved) resolvedShortageCount++;
+
             return {
               ...m,
               currentStock: newStock,
               daysRemaining: newDays,
               status: (newDays <= 3 ? 'critical' : newDays <= 7 ? 'low' : 'normal') as MedicineStockStatus,
-              activeShortage: newDays <= 3,
-              shortageReason: newDays <= 3 ? m.shortageReason : undefined,
+              activeShortage: !isResolved,
+              shortageReason: isResolved ? undefined : m.shortageReason,
               lastUpdated: 'Inward dispatch verified',
             };
           }
           return m;
         });
-        return { ...facility, medicines: newMeds, lastReportedAt: 'Just now' };
+        return { ...facility, medicines: creditedMeds, lastReportedAt: 'Just now' };
       }
+
       return facility;
     });
 
     writeStorage(SUPPLY_PROFILES_KEY, updatedProfiles);
+
+    // Resolve any open shortage reports for this medicine at recipient facility if buffer restored
+    if (resolvedShortageCount > 0) {
+      const reports = DemoDB.getShortageReports();
+      const updatedReports = reports.map((r) =>
+        r.hospitalId === target.targetHospitalId && r.medicineId === target.medicineId ? { ...r, resolved: true } : r
+      );
+      writeStorage(SHORTAGE_REPORTS_KEY, updatedReports);
+    }
 
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('smartcare:rebalance-delivered', { detail: { order: target } }));
@@ -1926,7 +1980,7 @@ export const DemoDB = {
 
     return {
       success: true,
-      message: `Verified! Inward transfer of ${target.quantity} ${target.unit} of ${target.medicineName} received into stock.`,
+      message: `Verified! Inward transfer of ${target.quantity} ${target.unit} of ${target.medicineName} received into stock. Inventory ledger balanced.`,
       order: { ...target, status: 'delivered' },
     };
   },
@@ -1936,13 +1990,39 @@ export const DemoDB = {
     const existingOrders = DemoDB.getRedistributionOrders();
     const newOrders: RedistributionOrder[] = [...existingOrders];
 
-    // Find shortages in PHCs / Hospitals
-    const nonWarehouses = profiles.filter((p) => p.tier !== 'warehouse');
-    const warehouse = profiles.find((p) => p.tier === 'warehouse') || profiles[profiles.length - 1];
+    // Haversine distance calculator between 2 GPS coordinates
+    const calcHaversineKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+      const R = 6371; // Earth radius in km
+      const dLat = ((lat2 - lat1) * Math.PI) / 180;
+      const dLon = ((lon2 - lon1) * Math.PI) / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return Number((R * c).toFixed(1));
+    };
 
-    nonWarehouses.forEach((hosp) => {
+    // Locate Central Warehouse depot
+    const warehouse = profiles.find((p) => p.tier === 'warehouse') || profiles[profiles.length - 1];
+    const clinicalFacilities = profiles.filter((p) => p.tier !== 'warehouse');
+
+    clinicalFacilities.forEach((hosp) => {
+      // Calculate spatial distance from warehouse
+      const distance =
+        hosp.coordinates && warehouse?.coordinates
+          ? calcHaversineKm(
+              warehouse.coordinates.lat,
+              warehouse.coordinates.lng,
+              hosp.coordinates.lat,
+              hosp.coordinates.lng
+            )
+          : Number((12 + Math.random() * 10).toFixed(1));
+
+      // Estimated transit in minutes (avg 32 km/h + 8 min handling buffer)
+      const transitMins = Math.max(18, Math.round(distance * 1.9 + 8));
+
       hosp.medicines.forEach((med) => {
-        if (med.daysRemaining <= 2 || med.activeShortage) {
+        if (med.daysRemaining <= 3 || med.activeShortage) {
           // Check if an active order already exists
           const existing = newOrders.find(
             (o) =>
@@ -1952,7 +2032,20 @@ export const DemoDB = {
           );
 
           if (!existing && warehouse) {
-            const rebalQty = Math.max(med.minBuffer * 2, 50);
+            // Rebalance quantity: restore 7 days buffer or minBuffer * 2
+            const targetDays = 7;
+            const targetNeed = Math.max(med.minBuffer * 2, med.dailyConsumption * targetDays);
+            const deficit = Math.max(0, targetNeed - med.currentStock);
+            const warehouseMed = warehouse.medicines.find((wm) => wm.id === med.id);
+            const availableSurplus = warehouseMed
+              ? Math.max(0, warehouseMed.currentStock - warehouseMed.minBuffer)
+              : deficit;
+            const rebalQty = Math.max(20, Math.min(deficit || med.minBuffer * 2, availableSurplus || deficit || 50));
+
+            // Greedy urgency priority scoring: P = (10 / (DaysRemaining + 0.1)) - (0.05 * DistanceKm)
+            const urgencyScore = 10 / (med.daysRemaining + 0.1) - 0.05 * distance;
+            const priority: 'CRITICAL' | 'HIGH' = urgencyScore >= 12 || med.daysRemaining <= 1 ? 'CRITICAL' : 'HIGH';
+
             const orderNum = `REBAL-2026-${Math.floor(100 + Math.random() * 900)}`;
             newOrders.push({
               id: `rebal-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 100)}`,
@@ -1966,9 +2059,9 @@ export const DemoDB = {
               quantity: rebalQty,
               unit: med.unit,
               status: 'suggested',
-              priority: med.daysRemaining <= 1 ? 'CRITICAL' : 'HIGH',
-              routeDistanceKm: Number((12 + Math.random() * 15).toFixed(1)),
-              estimatedTransitMins: Math.round(25 + Math.random() * 20),
+              priority,
+              routeDistanceKm: distance,
+              estimatedTransitMins: transitMins,
               otpCode: String(Math.floor(100000 + Math.random() * 900000)),
               createdAt: 'Just now',
             });

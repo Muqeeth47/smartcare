@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { DemoDB } from '@/lib/db/demo-db';
 import { useSession, useAppStore } from '@/lib/store/app-store';
 import { cn } from '@/lib/utils';
+import { MedicineShortageHeatMap } from './MedicineShortageHeatMap';
 import {
   ShieldAlert,
   Building2,
@@ -55,9 +56,6 @@ export function StateCommandSupplyModule() {
   const [shortages, setShortages] = useState<ShortageReport[]>([]);
   const [selectedDistrict, setSelectedDistrict] = useState<string>('Hyderabad & Rangareddy Central');
 
-  // Interactive GIS selection
-  const [selectedMapNode, setSelectedMapNode] = useState<HospitalSupplyProfile | null>(null);
-
   // Search & Filters
   const [medFilter, setMedFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -71,11 +69,8 @@ export function StateCommandSupplyModule() {
     setOrders(ords);
     const sh = DemoDB.getShortageReports();
     setShortages(sh);
-    if (!selectedMapNode && agg.facilityProfiles.length > 0) {
-      setSelectedMapNode(agg.facilityProfiles[0]);
-    }
     setTimeout(() => setIsRefreshing(false), 250);
-  }, [selectedDistrict, selectedMapNode]);
+  }, [selectedDistrict]);
 
   useEffect(() => {
     loadData();
@@ -114,6 +109,16 @@ export function StateCommandSupplyModule() {
       showToast(`Rebalance order ${updated.orderNumber} dispatched! Transit manifest updated.`, 'success');
       loadData();
     }
+  };
+
+  const handleTriggerRebalanceFromMap = (targetFacilityId: string, medicineId: string) => {
+    const facility = aggregate?.facilityProfiles.find((f) => f.hospitalId === targetFacilityId);
+    const med = facility?.medicines.find((m) => m.id === medicineId);
+    showToast(
+      `Auto-rebalance prioritized for ${facility?.hospitalName || 'facility'} (${med?.name || medicineId}). Order ready for review.`,
+      'info'
+    );
+    handleTabChange('redistribution');
   };
 
   // Filtered medicines
@@ -511,193 +516,10 @@ export function StateCommandSupplyModule() {
 
       {/* ─── TAB 2: INTERACTIVE GIS RESOURCE HEAT MAP ──────────────────────────── */}
       {activeTab === 'heatmap' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Visual GIS District Canvas */}
-            <div className="lg:col-span-2 bg-slate-900 rounded-2xl border border-slate-800 p-6 relative overflow-hidden min-h-[480px] flex flex-col justify-between text-white shadow-xl">
-              {/* GIS Canvas Header */}
-              <div className="flex items-center justify-between z-10">
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping" />
-                    <h3 className="font-bold text-base text-white">GIS District Health Mesh Map</h3>
-                  </div>
-                  <p className="text-xs text-slate-400">
-                    Hyderabad &amp; Rangareddy Health Network &bull; 5 Interactive Telemetry Nodes
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3 text-xs">
-                  <span className="flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-red-500" /> &le;3d Shortage
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500" /> Stable
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-blue-500" /> Depot
-                  </span>
-                </div>
-              </div>
-
-              {/* Schematic Map Layout with Node Stations */}
-              <div className="relative my-8 h-80 w-full border border-slate-800 rounded-xl bg-slate-950/60 p-4">
-                {/* SVG Route Lines linking facilities */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none stroke-indigo-500/30 stroke-dashed stroke-2">
-                  <line x1="20%" y1="30%" x2="50%" y2="25%" />
-                  <line x1="50%" y1="25%" x2="80%" y2="40%" />
-                  <line x1="50%" y1="25%" x2="45%" y2="75%" />
-                  <line x1="45%" y1="75%" x2="80%" y2="85%" />
-                </svg>
-
-                {/* Node 1: PHC Gachibowli (Top-Left) */}
-                <button
-                  onClick={() => setSelectedMapNode(aggregate.facilityProfiles.find((p) => p.hospitalId === 'phc-gachibowli') || null)}
-                  className="absolute left-[15%] top-[25%] -translate-x-1/2 -translate-y-1/2 p-3 rounded-2xl bg-slate-900 border-2 border-emerald-500/80 hover:scale-110 transition-all text-left shadow-lg group focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-                    <span className="font-bold text-xs text-white">PHC Gachibowli</span>
-                  </div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">Beds: 21/30 &bull; Stable</div>
-                </button>
-
-                {/* Node 2: Central Depot (Top-Center) */}
-                <button
-                  onClick={() => setSelectedMapNode(aggregate.facilityProfiles.find((p) => p.hospitalId === 'depot-central') || null)}
-                  className="absolute left-[50%] top-[20%] -translate-x-1/2 -translate-y-1/2 p-3.5 rounded-2xl bg-slate-900 border-2 border-blue-500 hover:scale-110 transition-all text-left shadow-xl group focus:outline-none focus:ring-2 focus:ring-blue-400"
-                >
-                  <div className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-blue-400" />
-                    <span className="font-black text-xs text-white">District Warehouse Depot</span>
-                  </div>
-                  <div className="text-[10px] text-blue-300 font-semibold mt-0.5">Strategic Reserve (120k+ Units)</div>
-                </button>
-
-                {/* Node 3: SmartCare Community Hospital (Center-Right) */}
-                <button
-                  onClick={() => setSelectedMapNode(aggregate.facilityProfiles.find((p) => p.hospitalId === 'hosp-smartcare') || null)}
-                  className="absolute left-[78%] top-[35%] -translate-x-1/2 -translate-y-1/2 p-3.5 rounded-2xl bg-slate-900 border-2 border-red-500 hover:scale-110 transition-all text-left shadow-xl group focus:outline-none focus:ring-2 focus:ring-red-400"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-red-500 animate-ping" />
-                    <span className="font-bold text-xs text-white">SmartCare Community Hospital</span>
-                  </div>
-                  <div className="text-[10px] text-red-300 font-semibold mt-0.5">Shortage: Insulin &amp; IV Saline (2d)</div>
-                </button>
-
-                {/* Node 4: City General Hospital (Bottom-Center) */}
-                <button
-                  onClick={() => setSelectedMapNode(aggregate.facilityProfiles.find((p) => p.hospitalId === 'hosp-city-gen') || null)}
-                  className="absolute left-[45%] top-[75%] -translate-x-1/2 -translate-y-1/2 p-3.5 rounded-2xl bg-slate-900 border-2 border-emerald-500/80 hover:scale-110 transition-all text-left shadow-lg group focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-                    <span className="font-bold text-xs text-white">City General Hospital</span>
-                  </div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">Beds: 335/400 &bull; Stable Buffer</div>
-                </button>
-
-                {/* Node 5: PHC Shamshabad (Bottom-Right) */}
-                <button
-                  onClick={() => setSelectedMapNode(aggregate.facilityProfiles.find((p) => p.hospitalId === 'phc-shamshabad') || null)}
-                  className="absolute left-[80%] top-[80%] -translate-x-1/2 -translate-y-1/2 p-3.5 rounded-2xl bg-slate-900 border-2 border-red-500 hover:scale-110 transition-all text-left shadow-xl group focus:outline-none focus:ring-2 focus:ring-red-400"
-                >
-                  <div className="flex items-center gap-2">
-                    <Flame className="h-4 w-4 text-red-500 animate-bounce" />
-                    <span className="font-bold text-xs text-white">PHC Shamshabad</span>
-                  </div>
-                  <div className="text-[10px] text-red-300 font-semibold mt-0.5">SOS Stock-Out Alert (1 Day Left)</div>
-                </button>
-              </div>
-
-              <div className="text-xs text-slate-400 flex items-center justify-between">
-                <div>Click any facility node on map to inspect telemetry &amp; live capacity</div>
-                <div className="font-mono text-slate-500">Live GPS Coordinate Grid Active</div>
-              </div>
-            </div>
-
-            {/* Selected Node Inspector Card */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4 shadow-sm">
-              {selectedMapNode ? (
-                <div className="space-y-4">
-                  <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
-                    <span className="text-[10px] uppercase font-bold text-indigo-600 dark:text-indigo-400 tracking-wider">
-                      Facility Telemetry Inspector
-                    </span>
-                    <h4 className="font-bold text-base text-slate-900 dark:text-white mt-0.5">
-                      {selectedMapNode.hospitalName}
-                    </h4>
-                    <p className="text-xs text-slate-500">
-                      Tier: {selectedMapNode.tier.toUpperCase()} &bull; {selectedMapNode.district} District
-                    </p>
-                  </div>
-
-                  <div className="space-y-2 text-xs">
-                    <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-500">Bed Occupancy:</span>
-                      <span className="font-bold text-slate-900 dark:text-white">
-                        {selectedMapNode.bedsOccupied} / {selectedMapNode.bedsTotal} Beds
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-500">ICU Capacity:</span>
-                      <span className="font-bold text-slate-900 dark:text-white">
-                        {selectedMapNode.icuOccupied} / {selectedMapNode.icuTotal} Units
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-500">Oxygen Cylinder Bank:</span>
-                      <span className="font-bold text-slate-900 dark:text-white">
-                        {selectedMapNode.oxygenCylindersAvailable} / {selectedMapNode.oxygenCylindersTotal} Cylinders
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-500">Last Telemetry Ping:</span>
-                      <span className="font-mono text-slate-700 dark:text-slate-300">{selectedMapNode.lastReportedAt}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 pt-2">
-                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Critical Stock Status:</div>
-                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                      {selectedMapNode.medicines
-                        .filter((m) => m.status === 'critical' || m.status === 'low')
-                        .map((m) => (
-                          <div
-                            key={m.id}
-                            className={cn(
-                              'p-2 rounded-lg text-xs flex items-center justify-between',
-                              m.status === 'critical'
-                                ? 'bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-900'
-                                : 'bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900'
-                            )}
-                          >
-                            <span className="font-semibold">{m.name}</span>
-                            <span className="font-mono font-bold">{m.daysRemaining}d left</span>
-                          </div>
-                        ))}
-
-                      {selectedMapNode.medicines.filter((m) => m.status === 'critical' || m.status === 'low').length === 0 && (
-                        <div className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 p-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg">
-                          <CheckCircle2 className="h-4 w-4" />
-                          No shortages detected at this node.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-12 text-slate-400">
-                  Select a facility node on the map to view real-time telemetry.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <MedicineShortageHeatMap
+          facilities={aggregate.facilityProfiles}
+          onTriggerRebalance={handleTriggerRebalanceFromMap}
+        />
       )}
 
       {/* ─── TAB 3: AI REDISTRIBUTION APPROVAL DESK ───────────────────────────── */}

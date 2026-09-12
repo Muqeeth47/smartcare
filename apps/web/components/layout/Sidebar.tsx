@@ -21,6 +21,10 @@ import {
   Pill,
   Siren,
   ShieldCheck,
+  Truck,
+  MapPin,
+  Activity,
+  Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSession, useAppStore } from '@/lib/store/app-store';
@@ -49,12 +53,14 @@ const SIDEBAR_ITEMS: Record<string, { main: SidebarItem[]; secondary: SidebarIte
   },
   doctor: {
     main: [
-      { label: 'Overview', href: '/dashboard/hospital', icon: LayoutDashboard },
-      { label: 'Queue', href: '/dashboard/queue', icon: ListOrdered },
+      { label: 'Clinical Queue', href: '/dashboard/hospital?module=clinical', icon: LayoutDashboard },
+      { label: 'Supply & Shortages', href: '/dashboard/hospital?module=supply', icon: Pill },
+      { label: 'Inward Dispatches', href: '/dashboard/hospital?module=supply&supplyTab=inward', icon: Truck },
+      { label: 'Queue Workspace', href: '/dashboard/queue', icon: ListOrdered },
       { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-      { label: 'Verify Rx', href: '/verify-rx', icon: ShieldCheck },
     ],
     secondary: [
+      { label: 'Verify Rx', href: '/verify-rx', icon: ShieldCheck },
       { label: 'Pharmacy', href: '/pharmacy', icon: Pill },
       { label: 'Ambulance (Emergency)', href: '/ambulance', icon: Siren },
       { label: 'Donations', href: '/dashboard/hospital/donations', icon: HeartHandshake },
@@ -63,16 +69,17 @@ const SIDEBAR_ITEMS: Record<string, { main: SidebarItem[]; secondary: SidebarIte
   },
   staff: {
     main: [
-      { label: 'Operations', href: '/dashboard/admin', icon: LayoutDashboard },
-      { label: 'Rooms', href: '/dashboard/admin?tab=rooms', icon: DoorOpen },
-      { label: 'Queue', href: '/dashboard/queue', icon: ListOrdered },
-      { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-      { label: 'Verify Rx', href: '/verify-rx', icon: ShieldCheck },
+      { label: 'Command Overview', href: '/dashboard/admin?adminTab=command&commandTab=summary', icon: Building2 },
+      { label: 'Shortage Heat Map', href: '/dashboard/admin?adminTab=command&commandTab=heatmap', icon: MapPin },
+      { label: 'AI Redistribution', href: '/dashboard/admin?adminTab=command&commandTab=redistribution', icon: Truck },
+      { label: 'Surge Forecaster', href: '/dashboard/admin?adminTab=command&commandTab=federated', icon: Activity },
+      { label: 'Logistics Manifest', href: '/dashboard/admin?adminTab=command&commandTab=manifest', icon: Truck },
     ],
     secondary: [
-      { label: 'Pharmacy', href: '/pharmacy', icon: Pill },
+      { label: 'Hospital Ops & Rooms', href: '/dashboard/admin?adminTab=operations', icon: DoorOpen },
+      { label: 'Queue Workspace', href: '/dashboard/queue', icon: ListOrdered },
+      { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
       { label: 'Ambulance Dispatch', href: '/ambulance', icon: Siren },
-      { label: 'Donations', href: '/dashboard/admin/donations', icon: HeartHandshake },
       { label: 'Help', href: '/about', icon: CircleHelp },
     ],
   },
@@ -86,16 +93,25 @@ function getRoleFromPath(pathname: string, sessionRole?: string): string {
   return 'patient';
 }
 
-function checkActive(itemHref: string, pathname: string, currentTab?: string): boolean {
-  if (itemHref.includes('?tab=')) {
-    const [base, tabParam] = itemHref.split('?tab=');
-    return pathname === base && currentTab === tabParam;
+function checkActive(itemHref: string, pathname: string, searchParams?: URLSearchParams | null): boolean {
+  if (itemHref.includes('?')) {
+    const [base, query] = itemHref.split('?');
+    if (pathname !== base) return false;
+    if (!searchParams) return false;
+    const itemParams = new URLSearchParams(query);
+    let match = true;
+    itemParams.forEach((val, key) => {
+      if (searchParams.get(key) !== val) {
+        match = false;
+      }
+    });
+    return match;
   }
   if (itemHref === '/dashboard/patient' || itemHref === '/dashboard/hospital' || itemHref === '/dashboard/admin') {
-    if (currentTab) return false;
+    if (searchParams && searchParams.toString().length > 0) return false;
     return pathname === itemHref;
   }
-  return pathname.startsWith(itemHref);
+  return pathname === itemHref || pathname.startsWith(itemHref + '/');
 }
 
 /**
@@ -136,7 +152,7 @@ export function DesktopSidebar({ onToggleCollapse }: { onToggleCollapse?: () => 
       </div>
       {items.main.map((item) => {
         const Icon = item.icon;
-        const active = checkActive(item.href, pathname, currentTab);
+        const active = checkActive(item.href, pathname, searchParams);
         return (
           <Link
             key={item.label}
@@ -155,7 +171,7 @@ export function DesktopSidebar({ onToggleCollapse }: { onToggleCollapse?: () => 
 
       {items.secondary.map((item) => {
         const Icon = item.icon;
-        const active = checkActive(item.href, pathname, currentTab);
+        const active = checkActive(item.href, pathname, searchParams);
         return (
           <Link
             key={item.label}
@@ -259,7 +275,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="flex flex-col gap-1 py-1">
           {items.main.map((item) => {
             const Icon = item.icon;
-            const active = checkActive(item.href, pathname, currentTab);
+            const active = checkActive(item.href, pathname, searchParams);
             return (
               <Link
                 key={item.label}
@@ -285,7 +301,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="flex flex-col gap-1 py-1">
           {items.secondary.map((item) => {
             const Icon = item.icon;
-            const active = checkActive(item.href, pathname, currentTab);
+            const active = checkActive(item.href, pathname, searchParams);
             return (
               <Link
                 key={item.label}

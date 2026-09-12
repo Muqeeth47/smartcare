@@ -20,7 +20,6 @@ __pycache__/
 # Local scratch & artifacts
 smart-care-app/
 snow_source.js
-context.md
 .next/
 apps/web/.next/
 

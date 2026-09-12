@@ -35,10 +35,39 @@ import type { UserRole } from '@smartcare/types';
 
 type AuthMode = 'signin' | 'signup' | 'recovery';
 
-const DEMO_CREDENTIALS = {
-  patient: { email: 'patient@smartcare.demo', password: 'demo1234', role: 'patient' as UserRole, hospital: 'SmartCare Community Hospital' },
-  doctor: { email: 'hospital@smartcare.demo', password: 'demo1234', role: 'doctor' as UserRole, hospital: 'SmartCare Community Hospital' },
-  staff: { email: 'admin@smartcare.demo', password: 'demo1234', role: 'staff' as UserRole, hospital: 'SmartCare Community Hospital' },
+const DEMO_CREDENTIALS: Record<string, { email: string; password: string; role: UserRole; hospital: string; label: string; name: string }> = {
+  patient: {
+    email: 'patient@smartcare.demo',
+    password: 'demo1234',
+    role: 'patient',
+    hospital: 'SmartCare Community Hospital',
+    label: 'Patient Portal',
+    name: 'Asha Rao (Citizen)',
+  },
+  doctor: {
+    email: 'hospital@smartcare.demo',
+    password: 'demo1234',
+    role: 'doctor',
+    hospital: 'SmartCare Community Hospital',
+    label: 'Doctor / PHC',
+    name: 'Dr. Arjun Rao (Clinical)',
+  },
+  cmo: {
+    email: 'cmo@district.gov.in',
+    password: 'demo1234',
+    role: 'staff',
+    hospital: 'Hyderabad District Health Directorate',
+    label: 'District CMO',
+    name: 'Dr. Rajeshwar Sharma (District CMO)',
+  },
+  staff: {
+    email: 'commander@mohfw.gov.in',
+    password: 'demo1234',
+    role: 'staff',
+    hospital: 'MoHFW State Control Desk',
+    label: 'State Command',
+    name: 'MoHFW Central Medical Command Hub',
+  },
 };
 
 const ROLE_INFO: Record<UserRole, { label: string; badge: string; desc: string; icon: typeof UserRound }> = {
@@ -178,15 +207,15 @@ export function LoginPage() {
     }
   };
 
-  const handleDemoLogin = async (demoRole: 'patient' | 'doctor' | 'staff') => {
-    const creds = DEMO_CREDENTIALS[demoRole];
+  const handleDemoLogin = async (demoKey: 'patient' | 'doctor' | 'cmo' | 'staff') => {
+    const creds = DEMO_CREDENTIALS[demoKey];
     setLoading(true);
     try {
       const result = await DemoDB.checkCredentials(creds.hospital, creds.email, creds.password, creds.role);
       if (result.success && result.user) {
         const u = result.user;
         login(u.email, u.role as UserRole, { hospital: u.hospital || '', country: u.country || 'India', state: u.state || '', city: u.city || '' });
-        showToast(`Signed in as ${demoRole} demo`, 'success');
+        showToast(`Signed in as ${creds.label} demo`, 'success');
         const dest = u.role === 'patient' ? '/dashboard/patient' : u.role === 'doctor' ? '/dashboard/hospital' : '/dashboard/admin';
         router.push(dest);
       }
@@ -195,15 +224,15 @@ export function LoginPage() {
     }
   };
 
-  const handleAutofill = (demoRole: 'patient' | 'doctor' | 'staff') => {
-    const creds = DEMO_CREDENTIALS[demoRole];
-    setRole(demoRole);
+  const handleAutofill = (demoKey: 'patient' | 'doctor' | 'cmo' | 'staff') => {
+    const creds = DEMO_CREDENTIALS[demoKey];
+    setRole(creds.role);
     setEmail(creds.email);
     setPassword(creds.password);
-    if (demoRole !== 'patient') setFacility(creds.hospital);
+    if (creds.role !== 'patient') setFacility(creds.hospital);
     setTouched({ email: true, password: true, facility: true });
     setMode('signin');
-    setMessage(`Autofilled demo credentials for ${demoRole === 'patient' ? 'Patient (Asha Rao)' : demoRole === 'doctor' ? 'Doctor (Dr Arjun Rao)' : 'Operations (Staff Admin)'}. Click "Sign in" below to enter.`);
+    setMessage(`Autofilled demo credentials for ${creds.label} (${creds.name}). Click "Sign In" below to enter.`);
     setMessageType('success');
   };
 
@@ -310,36 +339,45 @@ export function LoginPage() {
               );
             })()}
 
-            {/* 4. Demo Autofill (3 Role Buttons) */}
+            {/* 4. Demo Autofill (4 Personas: Doctor, District CMO, State Commander, Patient) */}
             <div className="p-3 rounded-xl bg-gradient-to-r from-[var(--mint)] to-blue-50/70 dark:to-blue-950/30 border border-[var(--teal)]/25 mb-5">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <span className="text-[11px] font-black uppercase tracking-wider text-[var(--teal)] flex items-center gap-1">
                   <Sparkles size={13} />
-                  Auto-fill Demo Credentials
+                  Instant Demo Access &bull; 4 Tiers
                 </span>
                 <span className="text-[10px] font-semibold text-[var(--text-muted)]">
-                  Click button to fill
+                  Tap to autofill
                 </span>
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                {(['doctor', 'staff', 'patient'] as const).map((r) => {
-                  const info = ROLE_INFO[r];
-                  const Icon = info.icon;
-                  const isCurrentRole = role === r;
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { key: 'doctor' as const, label: 'Doctor / PHC', icon: Hospital, desc: 'Clinical & SOS Stock' },
+                  { key: 'cmo' as const, label: 'District CMO', icon: ShieldCheck, desc: 'District Mesh & Depot' },
+                  { key: 'staff' as const, label: 'State Command', icon: Building2, desc: 'MoHFW & Heat Map' },
+                  { key: 'patient' as const, label: 'Patient Portal', icon: UserRound, desc: 'Queue & Digital Rx' },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  const isCurrent = email === DEMO_CREDENTIALS[item.key].email;
                   return (
                     <button
-                      key={r}
+                      key={item.key}
                       type="button"
-                      onClick={() => handleAutofill(r)}
+                      onClick={() => handleAutofill(item.key)}
                       className={cn(
-                        'flex items-center justify-center gap-1.5 py-2 px-1.5 rounded-lg font-extrabold text-xs transition-all cursor-pointer shadow-2xs border',
-                        isCurrentRole
-                          ? 'bg-[var(--teal)] text-white border-[var(--teal)] shadow-xs'
+                        'flex flex-col items-start p-2.5 rounded-xl text-left transition-all cursor-pointer border min-h-[48px]',
+                        isCurrent
+                          ? 'bg-[var(--teal)] text-white border-[var(--teal)] shadow-sm'
                           : 'bg-[var(--surface)] text-[var(--teal-dark)] border-[var(--line)] hover:bg-[var(--mint)] hover:border-[var(--teal)]/40'
                       )}
                     >
-                      <Icon size={14} className={isCurrentRole ? 'text-white' : 'text-[var(--teal)]'} />
-                      <span>{r === 'doctor' ? 'Doctor / PHC' : r === 'staff' ? 'State CMO' : 'Patient'}</span>
+                      <div className="flex items-center gap-1.5 font-extrabold text-xs">
+                        <Icon size={14} className={isCurrent ? 'text-white' : 'text-[var(--teal)]'} />
+                        <span>{item.label}</span>
+                      </div>
+                      <span className={cn('text-[10px] mt-0.5 leading-none', isCurrent ? 'text-white/85' : 'text-[var(--text-muted)]')}>
+                        {item.desc}
+                      </span>
                     </button>
                   );
                 })}

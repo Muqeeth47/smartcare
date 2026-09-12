@@ -266,19 +266,7 @@ export function LoginPage() {
     }
   };
 
-  const handleAutofill = (demoKey: 'patient' | 'doctor' | 'cmo' | 'staff') => {
-    const creds = DEMO_CREDENTIALS[demoKey];
-    const targetPortal: PortalKey = demoKey === 'staff' ? 'commander' : (demoKey as PortalKey);
-    setPortalKey(targetPortal);
-    setRole(creds.role);
-    setEmail(creds.email);
-    setPassword(creds.password);
-    if (creds.role !== 'patient') setFacility(creds.hospital);
-    setTouched({ email: true, password: true, facility: true });
-    setMode('signin');
-    setMessage(`Autofilled demo credentials for ${creds.label} (${creds.name}). Click "Sign In" below to enter.`);
-    setMessageType('success');
-  };
+
 
   const ThemeIcon = theme === 'dark' ? Moon : Sun;
 
@@ -379,55 +367,17 @@ export function LoginPage() {
                     <p className="text-[11px] text-[var(--text-muted)] mt-0.5 leading-snug">
                       {currentInfo.desc}
                     </p>
+                    <div className="mt-1.5 flex items-center gap-2 text-[10px] text-[var(--teal)] font-semibold">
+                      <span className="font-mono bg-[var(--surface)] px-1.5 py-0.5 rounded border border-[var(--line)]">
+                        {currentInfo.defaultEmail}
+                      </span>
+                      <span>&bull;</span>
+                      <span className="text-[var(--text-muted)]">Demo credentials loaded</span>
+                    </div>
                   </div>
                 </div>
               );
             })()}
-
-            {/* 4. Demo Autofill (4 Personas: Doctor, District CMO, State Commander, Patient) */}
-            <div className="p-3 rounded-xl bg-gradient-to-r from-[var(--mint)] to-blue-50/70 dark:to-blue-950/30 border border-[var(--teal)]/25 mb-5">
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <span className="text-[11px] font-black uppercase tracking-wider text-[var(--teal)] flex items-center gap-1">
-                  <Sparkles size={13} />
-                  Instant Demo Access &bull; 4 Tiers
-                </span>
-                <span className="text-[10px] font-semibold text-[var(--text-muted)]">
-                  Tap to autofill
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { key: 'doctor' as const, label: 'Doctor / PHC', icon: Hospital, desc: 'Clinical & SOS Stock' },
-                  { key: 'cmo' as const, label: 'District CMO', icon: ShieldCheck, desc: 'District Mesh & Depot' },
-                  { key: 'staff' as const, label: 'State Command', icon: Building2, desc: 'MoHFW & Heat Map' },
-                  { key: 'patient' as const, label: 'Patient Portal', icon: UserRound, desc: 'Queue & Digital Rx' },
-                ].map((item) => {
-                  const Icon = item.icon;
-                  const isCurrent = email === DEMO_CREDENTIALS[item.key].email;
-                  return (
-                    <button
-                      key={item.key}
-                      type="button"
-                      onClick={() => handleAutofill(item.key)}
-                      className={cn(
-                        'flex flex-col items-start p-2.5 rounded-xl text-left transition-all cursor-pointer border min-h-[48px]',
-                        isCurrent
-                          ? 'bg-[var(--teal)] text-white border-[var(--teal)] shadow-sm'
-                          : 'bg-[var(--surface)] text-[var(--teal-dark)] border-[var(--line)] hover:bg-[var(--mint)] hover:border-[var(--teal)]/40'
-                      )}
-                    >
-                      <div className="flex items-center gap-1.5 font-extrabold text-xs">
-                        <Icon size={14} className={isCurrent ? 'text-white' : 'text-[var(--teal)]'} />
-                        <span>{item.label}</span>
-                      </div>
-                      <span className={cn('text-[10px] mt-0.5 leading-none', isCurrent ? 'text-white/85' : 'text-[var(--text-muted)]')}>
-                        {item.desc}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
 
             {/* Feedback Message */}
             {message && (
@@ -758,7 +708,7 @@ export function LoginPage() {
                 onSubmit={(e) => {
                   e.preventDefault();
                   setMessageType('error');
-                  setMessage('Password recovery is simulated in local demo mode. Use the Instant Demo Access buttons above.');
+                  setMessage('Password recovery is simulated in local demo mode. Select any demo portal above to sign in.');
                 }}
                 className="flex flex-col gap-3.5"
                 noValidate

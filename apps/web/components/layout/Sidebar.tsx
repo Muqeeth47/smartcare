@@ -6,6 +6,7 @@ import Link from 'next/link';
 import {
   X,
   PanelLeftClose,
+  PanelLeftOpen,
   HeartPulse,
   LayoutDashboard,
   CalendarPlus,
@@ -17,7 +18,6 @@ import {
   LogOut,
   ListOrdered,
   BarChart3,
-  DoorOpen,
   Pill,
   Siren,
   ShieldCheck,
@@ -26,6 +26,7 @@ import {
   MapPin,
   Activity,
   Building2,
+  Stethoscope,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSession, useAppStore } from '@/lib/store/app-store';
@@ -36,14 +37,29 @@ interface SidebarItem {
   icon: React.ElementType;
 }
 
-const SIDEBAR_ITEMS: Record<string, { main: SidebarItem[]; secondary: SidebarItem[] }> = {
+interface SidebarSection {
+  title?: string;
+  badge?: string;
+  items: SidebarItem[];
+}
+
+interface RoleConfig {
+  sections: SidebarSection[];
+  secondary: SidebarItem[];
+}
+
+const SIDEBAR_ITEMS: Record<string, RoleConfig> = {
   patient: {
-    main: [
-      { label: 'Overview', href: '/dashboard/patient', icon: LayoutDashboard },
-      { label: 'Book appointment', href: '/dashboard/patient/apply/1', icon: CalendarPlus },
-      { label: 'Medical History', href: '/dashboard/patient/history', icon: FileText },
-      { label: 'Previous visits', href: '/dashboard/patient/visits', icon: ClipboardCheck },
-      { label: 'Profile', href: '/dashboard/patient?tab=profile', icon: UserRound },
+    sections: [
+      {
+        items: [
+          { label: 'Overview', href: '/dashboard/patient', icon: LayoutDashboard },
+          { label: 'Book appointment', href: '/dashboard/patient/apply/1', icon: CalendarPlus },
+          { label: 'Medical History', href: '/dashboard/patient/history', icon: FileText },
+          { label: 'Previous visits', href: '/dashboard/patient/visits', icon: ClipboardCheck },
+          { label: 'Profile', href: '/dashboard/patient?tab=profile', icon: UserRound },
+        ],
+      },
     ],
     secondary: [
       { label: 'Pharmacy & Orders', href: '/dashboard/patient/pharmacy', icon: Pill },
@@ -53,36 +69,48 @@ const SIDEBAR_ITEMS: Record<string, { main: SidebarItem[]; secondary: SidebarIte
     ],
   },
   doctor: {
-    main: [
-      { label: 'Clinical Queue', href: '/dashboard/hospital?module=clinical', icon: LayoutDashboard },
-      { label: 'Stock Register', href: '/dashboard/hospital?module=supply&supplyTab=inventory', icon: Pill },
-      { label: 'SOS Shortages', href: '/dashboard/hospital?module=supply&supplyTab=shortage', icon: ShieldAlert },
-      { label: 'Inward Dispatches', href: '/dashboard/hospital?module=supply&supplyTab=inward', icon: Truck },
-      { label: 'Queue Workspace', href: '/dashboard/queue', icon: ListOrdered },
-      { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+    sections: [
+      {
+        title: 'Module 1: Patient & Doctor',
+        badge: 'Clinical',
+        items: [
+          { label: 'Clinical Queue & eRx', href: '/dashboard/hospital?module=clinical', icon: Stethoscope },
+          { label: 'Queue Workspace', href: '/dashboard/queue', icon: ListOrdered },
+          { label: 'Verify Prescription', href: '/verify-rx', icon: ShieldCheck },
+          { label: 'Clinical Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+        ],
+      },
+      {
+        title: 'Module 2: Hospital & State Mesh',
+        badge: 'Supply',
+        items: [
+          { label: 'Medicine Stock Register', href: '/dashboard/hospital?module=supply&supplyTab=inventory', icon: Pill },
+          { label: 'SOS Shortage Desk', href: '/dashboard/hospital?module=supply&supplyTab=shortage', icon: ShieldAlert },
+          { label: 'Inward Dispatches (OTP)', href: '/dashboard/hospital?module=supply&supplyTab=inward', icon: Truck },
+        ],
+      },
     ],
     secondary: [
-      { label: 'Verify Rx', href: '/verify-rx', icon: ShieldCheck },
-      { label: 'Pharmacy', href: '/pharmacy', icon: Pill },
-      { label: 'Ambulance (Emergency)', href: '/ambulance', icon: Siren },
-      { label: 'Donations', href: '/dashboard/hospital/donations', icon: HeartHandshake },
       { label: 'Help', href: '/about', icon: CircleHelp },
     ],
   },
   staff: {
-    main: [
-      { label: 'Command Overview', href: '/dashboard/admin?adminTab=command&commandTab=summary', icon: Building2 },
-      { label: 'Shortage Heat Map', href: '/dashboard/admin?adminTab=command&commandTab=heatmap', icon: MapPin },
-      { label: 'AI Redistribution', href: '/dashboard/admin?adminTab=command&commandTab=redistribution', icon: Truck },
-      { label: 'Emergency SOS Escalation', href: '/dashboard/admin?adminTab=command&commandTab=escalation', icon: ShieldAlert },
-      { label: 'Surge Forecaster', href: '/dashboard/admin?adminTab=command&commandTab=federated', icon: Activity },
-      { label: 'Logistics Manifest', href: '/dashboard/admin?adminTab=command&commandTab=manifest', icon: Truck },
+    sections: [
+      {
+        title: 'State Health Command',
+        badge: 'MoHFW Mesh',
+        items: [
+          { label: 'Command Overview', href: '/dashboard/admin?adminTab=command&commandTab=summary', icon: Building2 },
+          { label: 'Shortage Heat Map', href: '/dashboard/admin?adminTab=command&commandTab=heatmap', icon: MapPin },
+          { label: 'AI Redistribution', href: '/dashboard/admin?adminTab=command&commandTab=redistribution', icon: Truck },
+          { label: 'Emergency SOS Escalation', href: '/dashboard/admin?adminTab=command&commandTab=escalation', icon: ShieldAlert },
+          { label: 'Surge Forecaster', href: '/dashboard/admin?adminTab=command&commandTab=federated', icon: Activity },
+          { label: 'Logistics Manifest', href: '/dashboard/admin?adminTab=command&commandTab=manifest', icon: Truck },
+        ],
+      },
     ],
     secondary: [
-      { label: 'Hospital Ops & Rooms', href: '/dashboard/admin?adminTab=operations', icon: DoorOpen },
-      { label: 'Queue Workspace', href: '/dashboard/queue', icon: ListOrdered },
       { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-      { label: 'Ambulance Dispatch', href: '/ambulance', icon: Siren },
       { label: 'Help', href: '/about', icon: CircleHelp },
     ],
   },
@@ -121,16 +149,21 @@ function checkActive(itemHref: string, pathname: string, searchParams?: URLSearc
  * Desktop Left Sidebar (`.workspace-tabs.desktop-sidebar`)
  * Rendered sticky on the left column in `.provider-shell`.
  */
-export function DesktopSidebar({ onToggleCollapse }: { onToggleCollapse?: () => void }) {
+export function DesktopSidebar({
+  onToggleCollapse,
+  isCollapsed,
+}: {
+  onToggleCollapse?: () => void;
+  isCollapsed?: boolean;
+}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { role: sessionRole } = useSession();
   const logout = useAppStore((s) => s.logout);
 
-  const currentTab = searchParams?.get('tab') || undefined;
   const role = getRoleFromPath(pathname, sessionRole);
-  const items = SIDEBAR_ITEMS[role] || SIDEBAR_ITEMS.patient;
+  const config = SIDEBAR_ITEMS[role] || SIDEBAR_ITEMS.patient;
 
   const handleLogout = () => {
     logout();
@@ -139,58 +172,95 @@ export function DesktopSidebar({ onToggleCollapse }: { onToggleCollapse?: () => 
 
   return (
     <nav className="workspace-tabs desktop-sidebar" aria-label="Workspace navigation">
-      <div className="flex items-center justify-between px-1.5 pb-2 mb-1 border-b border-[var(--line)]">
-        <span className="text-[10px] font-extrabold tracking-wider uppercase text-[var(--muted)]">Navigation</span>
+      {/* Header bar with collapse/expand toggle */}
+      <div className="sidebar-header flex items-center justify-between px-1.5 pb-2 mb-1 border-b border-[var(--line)] w-full">
+        <span className="sidebar-header-label text-[10px] font-extrabold tracking-wider uppercase text-[var(--muted)]">
+          Navigation
+        </span>
         {onToggleCollapse && (
           <button
             type="button"
             onClick={onToggleCollapse}
-            title="Collapse sidebar"
-            aria-label="Collapse sidebar"
-            className="flex items-center justify-center w-6 h-6 rounded text-[var(--muted)] hover:text-[var(--teal)] hover:bg-[var(--mint)] transition-colors cursor-pointer"
+            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="sidebar-collapse-btn flex items-center justify-center w-7 h-7 rounded-lg text-[var(--muted)] hover:text-[var(--teal)] hover:bg-[var(--mint)] transition-colors cursor-pointer"
           >
-            <PanelLeftClose size={14} />
+            {isCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
           </button>
         )}
       </div>
-      {items.main.map((item) => {
-        const Icon = item.icon;
-        const active = checkActive(item.href, pathname, searchParams);
-        return (
-          <Link
-            key={item.label}
-            href={item.href}
-            className={active ? 'active' : ''}
-            aria-current={active ? 'page' : undefined}
-            title={item.label}
-          >
-            <Icon size={16} />
-            <span>{item.label}</span>
-          </Link>
-        );
-      })}
 
-      <div className="nav-divider" />
+      {/* Sections (e.g. Module 1 vs Module 2 for Doctor) */}
+      {config.sections.map((section, sIdx) => (
+        <div key={sIdx} className="sidebar-section w-full">
+          {section.title && (
+            <div className="sidebar-section-header px-1.5 pt-2 pb-1 flex items-center justify-between">
+              <span className="sidebar-section-title text-[9px] font-black uppercase tracking-wider text-[var(--teal)] truncate">
+                {section.title}
+              </span>
+              {section.badge && (
+                <span className="sidebar-section-badge text-[8px] font-extrabold uppercase px-1 py-0.5 rounded bg-[var(--teal)]/10 text-[var(--teal)]">
+                  {section.badge}
+                </span>
+              )}
+            </div>
+          )}
 
-      {items.secondary.map((item) => {
-        const Icon = item.icon;
-        const active = checkActive(item.href, pathname, searchParams);
-        return (
-          <Link
-            key={item.label}
-            href={item.href}
-            className={active ? 'active' : ''}
-            aria-current={active ? 'page' : undefined}
-            title={item.label}
-          >
-            <Icon size={16} />
-            <span>{item.label}</span>
-          </Link>
-        );
-      })}
+          <div className="flex flex-col gap-0.5 w-full">
+            {section.items.map((item) => {
+              const Icon = item.icon;
+              const active = checkActive(item.href, pathname, searchParams);
+              return (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={active ? 'active' : ''}
+                  aria-current={active ? 'page' : undefined}
+                  title={item.label}
+                >
+                  <Icon size={16} className="shrink-0" />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
 
-      <button type="button" onClick={handleLogout} className="signout-btn" aria-label="Sign out" title="Sign out">
-        <LogOut size={16} />
+          {sIdx < config.sections.length - 1 && <div className="nav-divider" />}
+        </div>
+      ))}
+
+      {config.secondary.length > 0 && (
+        <>
+          <div className="nav-divider" />
+          <div className="flex flex-col gap-0.5 w-full">
+            {config.secondary.map((item) => {
+              const Icon = item.icon;
+              const active = checkActive(item.href, pathname, searchParams);
+              return (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={active ? 'active' : ''}
+                  aria-current={active ? 'page' : undefined}
+                  title={item.label}
+                >
+                  <Icon size={16} className="shrink-0" />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      <button
+        type="button"
+        onClick={handleLogout}
+        className="signout-btn mt-auto"
+        aria-label="Sign out"
+        title="Sign out"
+      >
+        <LogOut size={16} className="shrink-0" />
         <span>Sign out</span>
       </button>
     </nav>
@@ -214,9 +284,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const logout = useAppStore((s) => s.logout);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
 
-  const currentTab = searchParams?.get('tab') || undefined;
   const role = getRoleFromPath(pathname, sessionRole);
-  const items = SIDEBAR_ITEMS[role] || SIDEBAR_ITEMS.patient;
+  const config = SIDEBAR_ITEMS[role] || SIDEBAR_ITEMS.patient;
 
   // Escape key handler
   useEffect(() => {
@@ -275,54 +344,78 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </button>
         </div>
 
-        <div className="flex flex-col gap-1 py-1">
-          {items.main.map((item) => {
-            const Icon = item.icon;
-            const active = checkActive(item.href, pathname, searchParams);
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                onClick={onClose}
-                className={cn(
-                  'flex items-center gap-3 min-h-[48px] px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-[0.98]',
-                  active
-                    ? 'bg-[var(--mint)] text-[var(--teal)] font-bold'
-                    : 'text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text)]'
-                )}
-                aria-current={active ? 'page' : undefined}
-              >
-                <Icon size={18} className="shrink-0" />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </div>
+        <div className="flex flex-col gap-3 py-1 overflow-y-auto">
+          {config.sections.map((section, sIdx) => (
+            <div key={sIdx} className="space-y-1">
+              {section.title && (
+                <div className="px-2 pt-1 pb-0.5 flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-[var(--teal)]">
+                    {section.title}
+                  </span>
+                  {section.badge && (
+                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-[var(--teal)]/10 text-[var(--teal)]">
+                      {section.badge}
+                    </span>
+                  )}
+                </div>
+              )}
 
-        <div className="nav-divider my-2" />
+              <div className="flex flex-col gap-1">
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  const active = checkActive(item.href, pathname, searchParams);
+                  return (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      onClick={onClose}
+                      className={cn(
+                        'flex items-center gap-3 min-h-[48px] px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-[0.98]',
+                        active
+                          ? 'bg-[var(--mint)] text-[var(--teal)] font-bold'
+                          : 'text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text)]'
+                      )}
+                      aria-current={active ? 'page' : undefined}
+                    >
+                      <Icon size={18} className="shrink-0" />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
 
-        <div className="flex flex-col gap-1 py-1">
-          {items.secondary.map((item) => {
-            const Icon = item.icon;
-            const active = checkActive(item.href, pathname, searchParams);
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                onClick={onClose}
-                className={cn(
-                  'flex items-center gap-3 min-h-[48px] px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-[0.98]',
-                  active
-                    ? 'bg-[var(--mint)] text-[var(--teal)] font-bold'
-                    : 'text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text)]'
-                )}
-                aria-current={active ? 'page' : undefined}
-              >
-                <Icon size={18} className="shrink-0" />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
+              {sIdx < config.sections.length - 1 && <div className="nav-divider my-2" />}
+            </div>
+          ))}
+
+          {config.secondary.length > 0 && (
+            <>
+              <div className="nav-divider my-1" />
+              <div className="flex flex-col gap-1">
+                {config.secondary.map((item) => {
+                  const Icon = item.icon;
+                  const active = checkActive(item.href, pathname, searchParams);
+                  return (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      onClick={onClose}
+                      className={cn(
+                        'flex items-center gap-3 min-h-[48px] px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-[0.98]',
+                        active
+                          ? 'bg-[var(--mint)] text-[var(--teal)] font-bold'
+                          : 'text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text)]'
+                      )}
+                      aria-current={active ? 'page' : undefined}
+                    >
+                      <Icon size={18} className="shrink-0" />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="mt-auto pt-4 border-t border-[var(--line)]">

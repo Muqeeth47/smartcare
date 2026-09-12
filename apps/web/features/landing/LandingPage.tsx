@@ -118,44 +118,26 @@ export function LandingPage() {
               {/* CTAs */}
               <div className="hero-ctas flex flex-col sm:flex-row gap-3 mt-6 sm:mt-8">
                 <Link
-                  id="hero-login"
-                  href="/login?mode=signin&role=patient"
-                  className="btn-hero-pop inline-flex items-center justify-center gap-2 font-extrabold text-sm no-underline"
+                  id="hero-explore-roles"
+                  href="/login"
+                  className="btn-hero-pop inline-flex items-center justify-center gap-2.5 font-extrabold text-sm sm:text-base no-underline"
                   style={{
-                    minHeight: '2.9rem',
-                    padding: '.76rem 1.4rem',
-                    borderRadius: '.65rem',
+                    minHeight: '3.1rem',
+                    padding: '.82rem 1.8rem',
+                    borderRadius: '.75rem',
                     background: '#fff',
                     color: 'var(--teal-dark)',
-                    border: '1.5px solid rgba(255,255,255,.85)',
-                    boxShadow: '0 4px 18px rgba(10,59,105,.25)',
+                    border: '1.5px solid rgba(255,255,255,.9)',
+                    boxShadow: '0 6px 22px rgba(10,59,105,.28)',
                     cursor: 'pointer',
                     transition: 'transform .18s ease, box-shadow .2s ease',
                   }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; }}
                 >
-                  Open patient portal <ArrowRight size={18} />
-                </Link>
-
-                <Link
-                  id="hero-demo"
-                  href="/login?mode=signin"
-                  className="btn-secondary inline-flex items-center justify-center gap-2 font-extrabold text-sm no-underline"
-                  style={{
-                    minHeight: '2.9rem',
-                    padding: '.76rem 1.2rem',
-                    borderRadius: '.65rem',
-                    background: 'rgba(255,255,255,.12)',
-                    color: '#fff',
-                    border: '1.5px solid rgba(255,255,255,.35)',
-                    cursor: 'pointer',
-                    transition: 'transform .18s ease, background .18s ease',
-                  }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,.2)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,.12)'; (e.currentTarget as HTMLElement).style.transform = ''; }}
-                >
-                  Explore demo roles <Users size={17} />
+                  <Users size={19} />
+                  <span>Explore the roles</span>
+                  <ArrowRight size={18} />
                 </Link>
               </div>
 

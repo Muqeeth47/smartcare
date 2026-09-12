@@ -62,7 +62,7 @@ export function WorkspaceShell({
       {/* provider-shell sticks flush to the left screen edge with 0 negative space */}
       <div className={cn('provider-shell w-full flex-1', isSidebarCollapsed && 'sidebar-collapsed')}>
         {/* Left Sidebar on Desktop */}
-        <DesktopSidebar onToggleCollapse={handleToggleSidebar} />
+        <DesktopSidebar onToggleCollapse={handleToggleSidebar} isCollapsed={isSidebarCollapsed} />
 
         {/* Right Content Area */}
         <div className="flex-1 flex flex-col min-w-0">
@@ -139,7 +139,7 @@ export function PatientShell({
       {/* provider-shell sticks flush to the left screen edge with 0 negative space */}
       <div className={cn('provider-shell w-full flex-1', isSidebarCollapsed && 'sidebar-collapsed')}>
         {/* Left Sidebar on Desktop */}
-        <DesktopSidebar onToggleCollapse={handleToggleSidebar} />
+        <DesktopSidebar onToggleCollapse={handleToggleSidebar} isCollapsed={isSidebarCollapsed} />
 
         {/* Right Content Area */}
         <div className="flex-1 flex flex-col min-w-0">
@@ -186,9 +186,7 @@ export function Footer() {
               <p className="text-xs font-semibold text-[var(--text)] uppercase tracking-wide mb-3">Explore</p>
               <div className="flex flex-col gap-2">
                 <Link href="/about" className="text-xs text-[var(--text-muted)] hover:text-[var(--teal)] transition-colors no-underline">About us</Link>
-                <Link href="/dashboard/patient/apply/1" className="text-xs text-[var(--text-muted)] hover:text-[var(--teal)] transition-colors no-underline">Patient portal</Link>
-                <Link href="/login" className="text-xs text-[var(--text-muted)] hover:text-[var(--teal)] transition-colors no-underline">Hospital portal</Link>
-                <Link href="/donate" className="text-xs text-[var(--text-muted)] hover:text-[var(--teal)] transition-colors no-underline">Community donation</Link>
+                <Link href="/login" className="text-xs text-[var(--text-muted)] hover:text-[var(--teal)] transition-colors no-underline">Explore the roles</Link>
               </div>
             </div>
             <div>

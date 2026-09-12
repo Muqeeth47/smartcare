@@ -796,10 +796,18 @@ html {
   overflow: hidden;
   align-items: center;
 }
+.provider-shell.sidebar-collapsed .workspace-tabs.desktop-sidebar .sidebar-header {
+  justify-content: center !important;
+  padding-left: 0;
+  padding-right: 0;
+}
 .provider-shell.sidebar-collapsed .workspace-tabs.desktop-sidebar .sidebar-header-label,
-.provider-shell.sidebar-collapsed .workspace-tabs.desktop-sidebar .collapse-btn-label { display: none; }
+.provider-shell.sidebar-collapsed .workspace-tabs.desktop-sidebar .sidebar-section-header,
+.provider-shell.sidebar-collapsed .workspace-tabs.desktop-sidebar .sidebar-section-title,
+.provider-shell.sidebar-collapsed .workspace-tabs.desktop-sidebar .sidebar-section-badge,
+.provider-shell.sidebar-collapsed .workspace-tabs.desktop-sidebar .collapse-btn-label { display: none !important; }
 .provider-shell.sidebar-collapsed .workspace-tabs.desktop-sidebar a span,
-.provider-shell.sidebar-collapsed .workspace-tabs.desktop-sidebar button:not(.sidebar-collapse-btn) span { display: none; }
+.provider-shell.sidebar-collapsed .workspace-tabs.desktop-sidebar button:not(.sidebar-collapse-btn) span { display: none !important; }
 .provider-shell.sidebar-collapsed .workspace-tabs.desktop-sidebar a,
 .provider-shell.sidebar-collapsed .workspace-tabs.desktop-sidebar button { justify-content: center; padding: 0.6rem 0; gap: 0; width: 100%; }
 .provider-shell.sidebar-collapsed .workspace-tabs.desktop-sidebar .nav-divider { width: 80%; margin: 0.35rem auto; }

@@ -70,24 +70,44 @@ const DEMO_CREDENTIALS: Record<string, { email: string; password: string; role: 
   },
 };
 
-const ROLE_INFO: Record<UserRole, { label: string; badge: string; desc: string; icon: typeof UserRound }> = {
+type PortalKey = 'doctor' | 'cmo' | 'commander' | 'patient';
+
+const PORTAL_INFO: Record<PortalKey, { label: string; role: UserRole; badge: string; desc: string; icon: typeof UserRound; defaultFacility: string; defaultEmail: string }> = {
   doctor: {
-    label: 'Doctor & PHC Officer',
-    badge: 'Clinical + Module 2 Supply',
-    desc: 'OPD queue management, e-prescriptions, and AushadhiNet medicine shortage reporting.',
+    label: 'Doctor / PHC',
+    role: 'doctor',
+    badge: 'Clinical + Supply',
+    desc: 'OPD queue triage, e-prescriptions, and AushadhiNet medicine shortage reporting.',
     icon: Hospital,
+    defaultFacility: 'SmartCare Community Hospital',
+    defaultEmail: 'hospital@smartcare.demo',
   },
-  staff: {
-    label: 'State & District Command Center',
-    badge: 'CMO & Federated Supply',
-    desc: 'District shortage aggregation, GIS resource heat map, and AI redistribution approval desk.',
+  cmo: {
+    label: 'District CMO',
+    role: 'staff',
+    badge: 'District Health Hub',
+    desc: 'District warehouse replenishment, local PHC shortage aggregation, and rebalance approvals.',
+    icon: ShieldCheck,
+    defaultFacility: 'Hyderabad District Health Directorate',
+    defaultEmail: 'cmo@district.gov.in',
+  },
+  commander: {
+    label: 'State Command',
+    role: 'staff',
+    badge: 'MoHFW Central Command',
+    desc: 'Inter-district health mesh, lack-of-medicine GIS heat map, and federated surge forecasting.',
     icon: Building2,
+    defaultFacility: 'MoHFW State Control Desk',
+    defaultEmail: 'commander@mohfw.gov.in',
   },
   patient: {
     label: 'Patient Portal',
+    role: 'patient',
     badge: 'Citizen Access',
-    desc: 'Book appointments, track queues live, and access digital prescriptions.',
+    desc: 'Book appointments, track queues live, and access digital prescriptions & emergency care.',
     icon: UserRound,
+    defaultFacility: 'SmartCare Community Hospital',
+    defaultEmail: 'patient@smartcare.demo',
   },
 };
 
@@ -107,13 +127,22 @@ export function LoginPage() {
     }))
   );
 
-  const [role, setRole] = useState<UserRole>((searchParams.get('role') as UserRole) || auth.targetRole || 'doctor');
+  const [portalKey, setPortalKey] = useState<PortalKey>(() => {
+    const p = searchParams.get('portal') as PortalKey;
+    if (p && PORTAL_INFO[p]) return p;
+    const r = searchParams.get('role');
+    if (r === 'patient') return 'patient';
+    if (r === 'staff') return 'cmo';
+    return 'doctor';
+  });
+
+  const [role, setRole] = useState<UserRole>(PORTAL_INFO[portalKey]?.role || 'doctor');
   const [mode, setMode] = useState<AuthMode>((searchParams.get('mode') as AuthMode) || 'signin');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState(PORTAL_INFO[portalKey]?.defaultEmail || '');
+  const [password, setPassword] = useState('demo1234');
   const [confirm, setConfirm] = useState('');
   const [name, setName] = useState('');
-  const [facility, setFacility] = useState('');
+  const [facility, setFacility] = useState(PORTAL_INFO[portalKey]?.defaultFacility || '');
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -129,15 +158,28 @@ export function LoginPage() {
   const nameValid = isPatient && mode === 'signup' ? name.trim().length > 0 : true;
   const facilityValid = !isPatient ? facility.trim().length > 0 : true;
 
-  const handleRoleChange = useCallback((newRole: UserRole) => {
-    setRole(newRole);
-    setAuthTarget(newRole);
+  const handlePortalChange = useCallback((newPortal: PortalKey) => {
+    const info = PORTAL_INFO[newPortal];
+    setPortalKey(newPortal);
+    setRole(info.role);
+    setAuthTarget(info.role);
+    setEmail(info.defaultEmail);
+    setPassword('demo1234');
+    if (info.role !== 'patient') {
+      setFacility(info.defaultFacility);
+    }
     setMessage('');
     setTouched({});
     const params = new URLSearchParams(searchParams.toString());
-    params.set('role', newRole);
+    params.set('portal', newPortal);
+    params.set('role', info.role);
     router.replace(`/login?${params.toString()}`, { scroll: false });
   }, [setAuthTarget, searchParams, router]);
+
+  const handleRoleChange = useCallback((newRole: UserRole) => {
+    const pk: PortalKey = newRole === 'doctor' ? 'doctor' : newRole === 'staff' ? 'cmo' : 'patient';
+    handlePortalChange(pk);
+  }, [handlePortalChange]);
 
   const handleModeChange = useCallback((newMode: AuthMode) => {
     setMode(newMode);
@@ -226,6 +268,8 @@ export function LoginPage() {
 
   const handleAutofill = (demoKey: 'patient' | 'doctor' | 'cmo' | 'staff') => {
     const creds = DEMO_CREDENTIALS[demoKey];
+    const targetPortal: PortalKey = demoKey === 'staff' ? 'commander' : (demoKey as PortalKey);
+    setPortalKey(targetPortal);
     setRole(creds.role);
     setEmail(creds.email);
     setPassword(creds.password);
@@ -283,33 +327,33 @@ export function LoginPage() {
               </button>
             </div>
 
-            {/* 2. Role Selector (Patient, Hospital, Staff) */}
+            {/* 2. Portal Selector (Doctor, District CMO, State Command, Patient) */}
             <div className="mb-5">
               <div className="text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)] mb-2 flex items-center justify-between">
                 <span>Select Portal</span>
-                <span className="text-[10px] font-semibold text-[var(--teal)]">3 Demo Workspaces</span>
+                <span className="text-[10px] font-semibold text-[var(--teal)]">4 Public Health Tiers</span>
               </div>
-              <div className="grid grid-cols-3 gap-2" role="tablist">
-                {(['doctor', 'staff', 'patient'] as const).map((r) => {
-                  const info = ROLE_INFO[r];
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2" role="tablist">
+                {(['doctor', 'cmo', 'commander', 'patient'] as const).map((pk) => {
+                  const info = PORTAL_INFO[pk];
                   const Icon = info.icon;
-                  const isSelected = role === r;
+                  const isSelected = portalKey === pk;
                   return (
                     <button
-                      key={r}
+                      key={pk}
                       type="button"
                       role="tab"
                       aria-selected={isSelected}
-                      onClick={() => handleRoleChange(r)}
+                      onClick={() => handlePortalChange(pk)}
                       className={cn(
-                        'flex flex-col items-center justify-center py-2.5 px-1.5 rounded-xl border text-center transition-all cursor-pointer min-h-[58px]',
+                        'flex flex-col items-center justify-center py-2 px-1 rounded-xl border text-center transition-all cursor-pointer min-h-[58px]',
                         isSelected
                           ? 'bg-[var(--mint)] border-[var(--teal)] text-[var(--teal)] font-black shadow-xs ring-1 ring-[var(--teal)]/30'
                           : 'bg-[var(--surface)] border-[var(--line)] text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text)]'
                       )}
                     >
                       <Icon size={18} className={cn('mb-1', isSelected ? 'text-[var(--teal)]' : 'text-[var(--text-muted)]')} />
-                      <span className="text-xs font-extrabold leading-none">{r === 'doctor' ? 'Doctor / PHC' : r === 'staff' ? 'State CMO' : 'Patient'}</span>
+                      <span className="text-[11px] font-extrabold leading-tight">{info.label}</span>
                     </button>
                   );
                 })}
@@ -318,7 +362,8 @@ export function LoginPage() {
 
             {/* 3. Role Summary Banner */}
             {(() => {
-              const RoleIcon = ROLE_INFO[role].icon;
+              const currentInfo = PORTAL_INFO[portalKey];
+              const RoleIcon = currentInfo.icon;
               return (
                 <div className="p-3 rounded-xl bg-[var(--surface-sunken)] border border-[var(--line)] mb-5 flex items-start gap-2.5">
                   <div className="w-8 h-8 rounded-lg bg-[var(--mint)] text-[var(--teal)] flex items-center justify-center shrink-0 mt-0.5 font-bold">
@@ -326,13 +371,13 @@ export function LoginPage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <strong className="text-xs font-black text-[var(--text)]">{ROLE_INFO[role].label}</strong>
+                      <strong className="text-xs font-black text-[var(--text)]">{currentInfo.label}</strong>
                       <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-[var(--teal)]/10 text-[var(--teal)]">
-                        {ROLE_INFO[role].badge}
+                        {currentInfo.badge}
                       </span>
                     </div>
                     <p className="text-[11px] text-[var(--text-muted)] mt-0.5 leading-snug">
-                      {ROLE_INFO[role].desc}
+                      {currentInfo.desc}
                     </p>
                   </div>
                 </div>
@@ -518,7 +563,7 @@ export function LoginPage() {
                     'Authenticating…'
                   ) : (
                     <>
-                      <span>Sign In to {ROLE_INFO[role].label}</span>
+                      <span>Sign In to {PORTAL_INFO[portalKey].label}</span>
                       <ArrowRight size={16} />
                     </>
                   )}
@@ -699,7 +744,7 @@ export function LoginPage() {
                     'Creating Account…'
                   ) : (
                     <>
-                      <span>Create {ROLE_INFO[role].label} Account</span>
+                      <span>Create {PORTAL_INFO[portalKey].label} Account</span>
                       <ArrowRight size={16} />
                     </>
                   )}

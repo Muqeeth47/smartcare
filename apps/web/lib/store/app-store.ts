@@ -263,6 +263,11 @@ export const useAppStore = create<AppState & AppActions>()(
           patientData,
         });
 
+        if (typeof document !== 'undefined') {
+          document.cookie = `smartcare_role=${role}; path=/; max-age=28800; SameSite=Lax`;
+          document.cookie = `smartcare_email=${encodeURIComponent(email)}; path=/; max-age=28800; SameSite=Lax`;
+        }
+
         // Immediately scope queue for this portal
         DemoDB.fetchQueue().then((fresh) => {
           get().setQueue(fresh);
@@ -270,6 +275,11 @@ export const useAppStore = create<AppState & AppActions>()(
       },
 
       logout: () => {
+        if (typeof document !== 'undefined') {
+          document.cookie = 'smartcare_role=; path=/; max-age=0';
+          document.cookie = 'smartcare_email=; path=/; max-age=0';
+        }
+
         set({
           isLogged: false,
           loggedEmail: '',

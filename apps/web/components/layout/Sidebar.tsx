@@ -21,6 +21,7 @@ import {
   Pill,
   Siren,
   ShieldCheck,
+  ShieldAlert,
   Truck,
   MapPin,
   Activity,
@@ -54,7 +55,8 @@ const SIDEBAR_ITEMS: Record<string, { main: SidebarItem[]; secondary: SidebarIte
   doctor: {
     main: [
       { label: 'Clinical Queue', href: '/dashboard/hospital?module=clinical', icon: LayoutDashboard },
-      { label: 'Supply & Shortages', href: '/dashboard/hospital?module=supply', icon: Pill },
+      { label: 'Stock Register', href: '/dashboard/hospital?module=supply&supplyTab=inventory', icon: Pill },
+      { label: 'SOS Shortages', href: '/dashboard/hospital?module=supply&supplyTab=shortage', icon: ShieldAlert },
       { label: 'Inward Dispatches', href: '/dashboard/hospital?module=supply&supplyTab=inward', icon: Truck },
       { label: 'Queue Workspace', href: '/dashboard/queue', icon: ListOrdered },
       { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
@@ -72,6 +74,7 @@ const SIDEBAR_ITEMS: Record<string, { main: SidebarItem[]; secondary: SidebarIte
       { label: 'Command Overview', href: '/dashboard/admin?adminTab=command&commandTab=summary', icon: Building2 },
       { label: 'Shortage Heat Map', href: '/dashboard/admin?adminTab=command&commandTab=heatmap', icon: MapPin },
       { label: 'AI Redistribution', href: '/dashboard/admin?adminTab=command&commandTab=redistribution', icon: Truck },
+      { label: 'Emergency SOS Escalation', href: '/dashboard/admin?adminTab=command&commandTab=escalation', icon: ShieldAlert },
       { label: 'Surge Forecaster', href: '/dashboard/admin?adminTab=command&commandTab=federated', icon: Activity },
       { label: 'Logistics Manifest', href: '/dashboard/admin?adminTab=command&commandTab=manifest', icon: Truck },
     ],

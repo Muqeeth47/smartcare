@@ -42,6 +42,12 @@ import {
   Clock,
   FlaskConical,
   Navigation,
+  Printer,
+  Share2,
+  Maximize2,
+  Pill,
+  AlertCircle,
+  BookmarkCheck,
 } from 'lucide-react';
 import type { PatientVisit } from '@smartcare/types';
 
@@ -135,6 +141,16 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
   const [paymentTab, setPaymentTab] = useState<'upi' | 'card' | 'netbanking' | 'counter'>('upi');
   const [paymentDoneView, setPaymentDoneView] = useState(false);
   const [copiedToken, setCopiedToken] = useState(false);
+
+  // Medical passport integration & utility state
+  const [passportId, setPassportId] = useState('SC-PASSPORT-8924');
+  const [medicalPassport, setMedicalPassport] = useState<any>(() => {
+    return DemoDB.getMedicalPassport('SC-PASSPORT-8924', 'patient');
+  });
+  const [isPassportLinked, setIsPassportLinked] = useState(true);
+  const [genericOptIn, setGenericOptIn] = useState(true);
+  const [showEnlargedQr, setShowEnlargedQr] = useState(false);
+  const [isSavedToPassport, setIsSavedToPassport] = useState(false);
 
   // Leaflet map refs
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -522,6 +538,38 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
     }
   };
 
+  // Boarding Pass Utility Actions
+  const handleSaveToPassport = () => {
+    setIsSavedToPassport(true);
+    showToast('Care reservation saved to Medical Passport (SC-PASSPORT-8924)', 'success');
+  };
+
+  const handlePrintSlip = () => {
+    if (typeof window !== 'undefined') {
+      window.print();
+    }
+  };
+
+  const handleSharePass = async () => {
+    const text = `SmartCare Care Pass:\nToken: ${bookingId || 'SC-DEMO8924'}\nPatient: ${patientData.name || 'Patient'}\nHospital: ${patientData.hospital || 'SmartCare Community Hospital'}\nClinician: ${currentDoctor?.name || 'Assigned Clinician'}\nSlot: ${currentSlot?.label || 'Today'}\nStatus: ${isPaid ? 'Fee Paid (₹125)' : 'Payment Pending'}`;
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'SmartCare Care Reservation Pass',
+          text,
+        });
+        showToast('Appointment pass shared successfully', 'success');
+        return;
+      } catch {
+        // user dismissed or not supported, fallback to clipboard
+      }
+    }
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(text);
+      showToast('Appointment details copied to clipboard!', 'success');
+    }
+  };
+
   // Payment simulation actions
   const completeSimulatedPayment = () => {
     const txn = `TXN-SC-${Math.floor(100000 + Math.random() * 900000)}`;
@@ -712,6 +760,45 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
                   </div>
                   <span className="hint">Select care category. You can modify this at the care centre.</span>
                 </fieldset>
+
+                {/* Medical Passport Link Banner */}
+                <div className="field full">
+                  <div className="p-3.5 rounded-xl border border-[var(--line)] bg-[var(--surface-sunken)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <span className="w-9 h-9 rounded-lg bg-[var(--mint)] text-[var(--teal)] flex items-center justify-center shrink-0 mt-0.5">
+                        <BookmarkCheck size={18} />
+                      </span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <strong className="text-xs font-bold text-[var(--ink)]">
+                            SmartCare Medical Passport / ABHA ID
+                          </strong>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${isPassportLinked ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'}`}>
+                            {isPassportLinked ? 'Auto-Synced' : 'Not Linked'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[var(--muted)] mt-0.5">
+                          Passport ID: <code className="font-mono text-[var(--teal)] font-bold">{passportId}</code> · Blood Group: <strong className="text-[var(--ink)]">O+</strong> · Known Allergies: <span className="text-red-600 dark:text-red-400 font-semibold">Penicillin, NSAIDs</span>
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsPassportLinked(!isPassportLinked);
+                        showToast(
+                          isPassportLinked
+                            ? 'Medical Passport unlinked for this reservation'
+                            : 'Medical Passport linked with allergies pre-alert',
+                          'info'
+                        );
+                      }}
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--line)] hover:bg-[var(--surface)] transition-all shrink-0 text-[var(--teal)] min-h-[36px]"
+                    >
+                      {isPassportLinked ? 'Unlink' : 'Link Passport'}
+                    </button>
+                  </div>
+                </div>
               </div>
               <div className="flow-actions compact-flow-actions">
                 <span className="status-note">Required fields marked with *</span>
@@ -952,6 +1039,29 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
                 <span className="demo-badge">Presentation mode</span>
               </div>
 
+              {/* Medical Passport Safety Pre-Alert */}
+              {isPassportLinked && (
+                <div className="p-3.5 mb-4 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/40 flex items-start gap-3 text-xs">
+                  <span className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+                    <ShieldAlert size={18} />
+                  </span>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <strong className="text-amber-900 dark:text-amber-300 font-bold">
+                        Medical Passport Pre-Alert Active (ID: {passportId})
+                      </strong>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200 font-bold uppercase">
+                        Safety Synced
+                      </span>
+                    </div>
+                    <p className="text-amber-800 dark:text-amber-300/90 leading-relaxed">
+                      Known Allergies on File: <span className="font-bold underline text-red-700 dark:text-red-400">Penicillin, NSAIDs (Aspirin)</span>.
+                      When you check into {patientData.hospital || 'the care centre'}, {currentDoctor?.name || 'the attending clinician'} will automatically receive contraindication warnings before prescribing.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div className="review-grid step3-review-grid">
                 <div className="step3-fields">
                   <section className="care-selection-section" aria-labelledby="care-team-title">
@@ -1137,6 +1247,42 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
                       }}
                     />
                   </div>
+
+                  {/* Jan Aushadhi Generic Formulary Savings Strip */}
+                  <div className="p-3.5 mt-3 rounded-xl border border-emerald-300 dark:border-emerald-800/80 bg-emerald-50/70 dark:bg-emerald-950/40 flex items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                        <Pill size={16} />
+                      </span>
+                      <div>
+                        <strong className="text-emerald-950 dark:text-emerald-300 font-bold block">
+                          PMBI Jan Aushadhi Generic Formulary
+                        </strong>
+                        <span className="text-emerald-800 dark:text-emerald-400 text-[11px]">
+                          Opt into verified generic medicine equivalents at the hospital pharmacy to save up to 75%.
+                        </span>
+                      </div>
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={genericOptIn}
+                        onChange={(e) => {
+                          setGenericOptIn(e.target.checked);
+                          showToast(
+                            e.target.checked
+                              ? 'Jan Aushadhi generic substitution enabled (up to 75% savings)'
+                              : 'Generic preference disabled',
+                            'info'
+                          );
+                        }}
+                        className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 accent-emerald-600"
+                      />
+                      <span className="text-xs font-bold text-emerald-900 dark:text-emerald-300 hidden sm:inline">
+                        Prefer Generic
+                      </span>
+                    </label>
+                  </div>
                 </div>
 
                 {/* Right Column: Live Booking Summary Card */}
@@ -1279,11 +1425,20 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
 
                   {/* Pass QR Strip */}
                   <div className="pass-qr-strip">
-                    <img
-                      src={qrImageUrl}
-                      alt="Check-in QR Code"
-                      className="pass-qr-img"
-                    />
+                    <div
+                      className="relative group cursor-pointer"
+                      onClick={() => setShowEnlargedQr(true)}
+                      title="Click to enlarge QR code for counter scanner"
+                    >
+                      <img
+                        src={qrImageUrl}
+                        alt="Check-in QR Code"
+                        className="pass-qr-img hover:opacity-90 transition-opacity"
+                      />
+                      <span className="absolute bottom-1.5 right-1.5 bg-black/70 text-white p-1 rounded-md opacity-75 group-hover:opacity-100 transition-opacity">
+                        <Maximize2 size={12} />
+                      </span>
+                    </div>
                     <div className="pass-qr-details">
                       <span className="pass-qr-label">
                         <QrCode size={13} /> Scan at hospital counter
@@ -1302,7 +1457,7 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
                         <Copy size={16} />
                       </div>
                       <small className="copy-hint-text">
-                        {copiedToken ? 'Copied to clipboard!' : 'Click token to copy'}
+                        {copiedToken ? 'Copied to clipboard!' : 'Click token to copy · Click QR to enlarge'}
                       </small>
                     </div>
                   </div>
@@ -1349,6 +1504,39 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
                           : 'Simulate "Payment Done" portal (₹125)'}
                       </span>
                     </button>
+
+                    {/* Quick Utility Actions */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <button
+                        id="btn-print-slip"
+                        className="btn-secondary btn-icon justify-center min-h-[44px]"
+                        type="button"
+                        onClick={handlePrintSlip}
+                        title="Print appointment slip"
+                      >
+                        <Printer size={15} /> <span>Print Slip</span>
+                      </button>
+
+                      <button
+                        id="btn-save-passport"
+                        className={`btn-secondary btn-icon justify-center min-h-[44px] ${isSavedToPassport ? 'text-emerald-600 dark:text-emerald-400 font-bold' : ''}`}
+                        type="button"
+                        onClick={handleSaveToPassport}
+                        title="Save to SmartCare Medical Passport"
+                      >
+                        <BookmarkCheck size={15} /> <span>{isSavedToPassport ? 'Saved' : 'Passport'}</span>
+                      </button>
+
+                      <button
+                        id="btn-share-pass"
+                        className="btn-secondary btn-icon justify-center min-h-[44px]"
+                        type="button"
+                        onClick={handleSharePass}
+                        title="Share appointment summary"
+                      >
+                        <Share2 size={15} /> <span>Share</span>
+                      </button>
+                    </div>
 
                     <button
                       id="btn-book-another"
@@ -1712,6 +1900,58 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Enlarged QR Modal for Hospital Barcode Guns & Desk Scanners */}
+      {showEnlargedQr && (
+        <div
+          className="modal-backdrop flex items-center justify-center p-4 z-50 bg-black/75 backdrop-blur-xs"
+          onClick={() => setShowEnlargedQr(false)}
+        >
+          <div
+            className="bg-white text-slate-900 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border-4 border-white"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="enlarged-qr-title"
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <span id="enlarged-qr-title" className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Counter Scanner Display Mode
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowEnlargedQr(false)}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                aria-label="Close QR view"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-4 bg-white rounded-2xl border-2 border-slate-200 shadow-inner flex justify-center">
+              <img
+                src={qrImageUrl}
+                alt="Enlarged Check-in QR"
+                className="w-56 h-56 object-contain"
+              />
+            </div>
+            <div>
+              <strong className="text-lg font-mono font-extrabold tracking-widest text-[#0a3b69] block">
+                {bookingId || 'SC-DEMO8924'}
+              </strong>
+              <small className="text-xs text-slate-500 block mt-1">
+                Hold screen toward the hospital OPD counter barcode scanner.
+              </small>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowEnlargedQr(false)}
+              className="w-full py-2.5 rounded-xl bg-[#0a3b69] text-white text-xs font-bold hover:bg-[#082a4d] transition-colors"
+            >
+              Done / Close
+            </button>
           </div>
         </div>
       )}

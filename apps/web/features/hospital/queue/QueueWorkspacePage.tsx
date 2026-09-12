@@ -7,6 +7,7 @@ import { useQueue, useSession, useAppStore, sortQueue, queueStatus } from '@/lib
 import { WorkspaceShell } from '@/components/layout/Shell';
 import { cn, timeAgo, getTriageColor } from '@/lib/utils';
 import { DemoDB } from '@/lib/db/demo-db';
+import { RealQrScanner } from '@/components/qr/RealQrScanner';
 import {
   Users,
   Clock,
@@ -123,12 +124,15 @@ export function QueueWorkspacePage() {
     showToast(`Patient ${label}`, 'success');
   };
 
-  const handleLookupQr = () => {
-    const clean = qrInput.trim();
+  const handleLookupQrWithCode = (rawCode: string) => {
+    const clean = rawCode.trim();
     if (!clean) return;
 
     const found = queue.find(
-      (item) => item.id.toLowerCase() === clean.toLowerCase() || clean.toUpperCase().includes('PASSPORT')
+      (item) =>
+        item.id.toLowerCase() === clean.toLowerCase() ||
+        ((item as any).reference && (item as any).reference.toLowerCase() === clean.toLowerCase()) ||
+        clean.toLowerCase().includes(item.id.toLowerCase())
     );
 
     if (found) {
@@ -137,8 +141,22 @@ export function QueueWorkspacePage() {
       setShowQRModal(false);
       setQrInput('');
     } else {
-      showToast(`No matching queue record found for "${clean}"`, 'error');
+      const passport = DemoDB.getMedicalPassport(clean, 'doctor');
+      if (passport) {
+        showToast(`Found Medical Passport: ${passport.passportId} (${passport.profile.name || 'Patient'})`, 'success');
+        setSearchQuery(passport.profile.name || clean);
+        setShowQRModal(false);
+        setQrInput('');
+      } else {
+        showToast(`Scanned "${clean}" - filtering queue search`, 'info');
+        setSearchQuery(clean);
+        setShowQRModal(false);
+      }
     }
+  };
+
+  const handleLookupQr = () => {
+    handleLookupQrWithCode(qrInput);
   };
 
   return (
@@ -427,80 +445,59 @@ export function QueueWorkspacePage() {
         </div>
       </div>
 
-      {/* QR Scanner / Lookup Modal */}
+      {/* QR Scanner / Lookup Modal with Real Optical Camera */}
       {showQRModal && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs transition-opacity"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-xs transition-opacity"
           role="dialog"
           aria-modal="true"
           onClick={() => setShowQRModal(false)}
         >
           <div
-            className="bg-[var(--surface)] text-[var(--ink)] rounded-t-2xl sm:rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-[var(--line)] max-h-[85vh] sm:max-h-[90vh] overflow-y-auto space-y-4"
+            className="w-full max-w-lg space-y-3"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="w-10 h-10 rounded-xl bg-[var(--mint)] text-[var(--teal)] flex items-center justify-center shrink-0">
-                  <QrCode size={20} />
-                </span>
-                <div>
-                  <h3 className="text-base font-extrabold text-[var(--ink)]">Scan Patient QR Ticket</h3>
-                  <p className="text-xs text-[var(--muted)]">Enter or scan ticket token / Medical Passport</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowQRModal(false)}
-                className="flex items-center justify-center min-w-[44px] min-h-[44px] rounded-xl text-[var(--muted)] hover:bg-[var(--surface-sunken)] active:scale-95 transition-all"
-                aria-label="Close scanner"
-              >
-                <X size={18} />
-              </button>
-            </div>
+            <RealQrScanner
+              onScan={(data) => {
+                setQrInput(data);
+                handleLookupQrWithCode(data);
+              }}
+              onClose={() => setShowQRModal(false)}
+              title="Scan Patient QR Ticket / Passport"
+              description="Point your device camera at the patient's boarding pass QR, printed token, or ABHA passport."
+              demoSamples={queue.slice(0, 3).map((q) => ({
+                label: `${q.name} (${q.id})`,
+                value: q.id,
+              }))}
+            />
 
-            <div className="space-y-3 pt-2">
+            {/* Manual lookup fallback card */}
+            <div className="bg-[var(--surface)] text-[var(--ink)] rounded-2xl p-4 shadow-xl border border-[var(--line)] space-y-3">
               <label className="block text-xs font-semibold text-[var(--muted)]">
-                QR Ticket Token or Passport ID
+                Or type Token / Passport ID manually:
               </label>
-              <input
-                type="text"
-                value={qrInput}
-                onChange={(e) => setQrInput(e.target.value)}
-                placeholder="e.g. SC-PASSPORT-8924 or P-101"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] text-sm font-mono focus:outline-none focus:border-[var(--teal)]"
-              />
-
-              <div className="text-[11px] text-[var(--muted)] flex items-center gap-1.5 flex-wrap">
-                <span>Demo shortcuts:</span>
-                {queue.slice(0, 3).map((q) => (
-                  <button
-                    key={q.id}
-                    type="button"
-                    onClick={() => setQrInput(q.id)}
-                    className="font-mono bg-[var(--surface-sunken)] hover:bg-[var(--mint)] px-2 py-0.5 rounded text-[var(--teal)] transition-colors min-h-[32px]"
-                  >
-                    {q.id}
-                  </button>
-                ))}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={qrInput}
+                  onChange={(e) => setQrInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleLookupQr();
+                    }
+                  }}
+                  placeholder="e.g. SC-PASSPORT-8924 or P-101"
+                  className="flex-1 px-3.5 py-2 rounded-xl border border-[var(--line)] bg-[var(--surface)] text-xs font-mono focus:outline-none focus:border-[var(--teal)]"
+                />
+                <button
+                  type="button"
+                  onClick={handleLookupQr}
+                  className="min-h-[40px] px-4 py-2 rounded-xl text-xs font-bold bg-[var(--teal)] text-white hover:bg-[var(--teal-dark)] active:scale-95 transition-all shadow-xs"
+                >
+                  Lookup
+                </button>
               </div>
-            </div>
-
-            <div className="pt-3 border-t border-[var(--line)] flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowQRModal(false)}
-                className="w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold text-[var(--muted)] hover:bg-[var(--surface-sunken)] active:scale-95 transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleLookupQr}
-                className="w-full sm:w-auto min-h-[44px] px-5 py-2 rounded-xl text-xs font-bold bg-[var(--teal)] text-white hover:bg-[var(--teal-dark)] active:scale-95 transition-all shadow-xs"
-              >
-                Lookup Patient
-              </button>
             </div>
           </div>
         </div>

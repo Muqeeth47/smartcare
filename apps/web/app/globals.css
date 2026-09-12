@@ -2796,6 +2796,192 @@ fieldset.field {
 }
 
 /* ═══════════════════════════════════════════════
+   PATIENT BOOKING WIZARD DARK MODE & PRINT
+   ═══════════════════════════════════════════════ */
+[data-theme="dark"] .compact-flow-card {
+  background: var(--surface) !important;
+  border-color: var(--line) !important;
+  color: var(--text) !important;
+}
+
+[data-theme="dark"] .confirmation-hero-bar {
+  background: linear-gradient(135deg, #0d2238 0%, #0c2b1e 100%) !important;
+  border-color: #1e4570 !important;
+}
+
+[data-theme="dark"] .conf-hero-text h1 {
+  color: #e6f0fa !important;
+}
+
+[data-theme="dark"] .appointment-pass-card {
+  background: #0d1e32 !important;
+  border-color: #1e4570 !important;
+  color: #e6f0fa !important;
+}
+
+[data-theme="dark"] .pass-header {
+  background: #11263e !important;
+  border-bottom-color: #1e4570 !important;
+}
+
+[data-theme="dark"] .pass-hospital {
+  color: #e6f0fa !important;
+}
+
+[data-theme="dark"] .pass-body {
+  background: #0d1e32 !important;
+}
+
+[data-theme="dark"] .pass-field strong {
+  color: #e6f0fa !important;
+}
+
+[data-theme="dark"] .pass-tear-line .dashed-line {
+  border-bottom-color: #1e4570 !important;
+}
+
+[data-theme="dark"] .pass-tear-line .notch {
+  background: var(--canvas) !important;
+  border-color: #1e4570 !important;
+}
+
+[data-theme="dark"] .pass-qr-strip {
+  background: #11263e !important;
+}
+
+[data-theme="dark"] .pass-qr-img {
+  background: #ffffff !important;
+}
+
+[data-theme="dark"] .compact-steps-card {
+  background: #0d2238 !important;
+  border-color: #1e4570 !important;
+  color: #e6f0fa !important;
+}
+
+[data-theme="dark"] .compact-steps-card h3 {
+  color: #74b3f0 !important;
+}
+
+[data-theme="dark"] .next-steps-list li strong {
+  color: #93c5fd !important;
+}
+
+[data-theme="dark"] .next-steps-list li span {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .compact-summary-card {
+  background: #102236 !important;
+  border-color: #1e4570 !important;
+}
+
+[data-theme="dark"] .summary-card-header h2 {
+  color: #93c5fd !important;
+}
+
+[data-theme="dark"] .summary-rows-group .summary-row {
+  border-bottom-color: #1e3a58 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .summary-rows-group .summary-row strong {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .summary-fee-strip strong {
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .care-safety-strip {
+  background: #2a1b02 !important;
+  border-color: #633c06 !important;
+  color: #fde68a !important;
+}
+
+[data-theme="dark"] .payment-gateway-modal {
+  background: #0d1e32 !important;
+  border-color: #1e4570 !important;
+  color: #e6f0fa !important;
+}
+
+[data-theme="dark"] .receipt-card {
+  background: #102236 !important;
+  border-color: #1e4570 !important;
+  color: #e6f0fa !important;
+}
+
+[data-theme="dark"] .receipt-row {
+  border-bottom-color: #1e3a58 !important;
+}
+
+[data-theme="dark"] .receipt-row strong {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .checkout-summary-box {
+  background: #102236 !important;
+  border-color: #1e4570 !important;
+}
+
+[data-theme="dark"] .pm-tab {
+  background: #11263e !important;
+  border-color: #1e4570 !important;
+  color: #94adcb !important;
+}
+
+[data-theme="dark"] .pm-tab.active {
+  background: var(--teal) !important;
+  color: #fff !important;
+}
+
+/* Print Stylesheet for Appointment Boarding Pass */
+@media print {
+  nav,
+  header,
+  footer,
+  .mobile-bottom-nav,
+  .desktop-sidebar,
+  .flow-header-actions,
+  .stepper-compact,
+  .confirmation-hero-bar,
+  .confirmation-next-section,
+  .confirmation-action-buttons {
+    display: none !important;
+  }
+
+  body,
+  .patient-application-shell,
+  .compact-flow-card {
+    background: #fff !important;
+    color: #000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .confirmation-layout-grid {
+    display: block !important;
+  }
+
+  .appointment-pass-card {
+    max-width: 480px !important;
+    margin: 20px auto !important;
+    border: 2px solid #000 !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+  }
+
+  .pass-header,
+  .pass-body,
+  .pass-qr-strip {
+    background: #fff !important;
+    color: #000 !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════
    DONATIONS MAP MOBILE & SCROLL OPTIMIZATION
    ═══════════════════════════════════════════════ */
 .nd-finder-shell {

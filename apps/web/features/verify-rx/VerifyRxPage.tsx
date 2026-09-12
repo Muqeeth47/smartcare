@@ -7,6 +7,7 @@ import { Topbar } from '@/components/layout/Topbar';
 import { Footer, WorkspaceShell } from '@/components/layout/Shell';
 import { cn } from '@/lib/utils';
 import { DemoDB } from '@/lib/db/demo-db';
+import { RealQrScanner } from '@/components/qr/RealQrScanner';
 import type { Prescription } from '@smartcare/types';
 import {
   ShieldCheck,
@@ -471,46 +472,25 @@ export function VerifyRxPage({ embedded = false }: { embedded?: boolean }) {
         </div>
       )}
 
-      {/* Camera QR Scanner Simulator Modal */}
+      {/* Camera QR Scanner Real Modal */}
       {showScannerModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[var(--surface)] text-[var(--text)] rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl border border-[var(--line)] animate-in fade-in">
-            <div className="w-16 h-16 rounded-2xl bg-[var(--mint)] text-[var(--teal)] flex items-center justify-center mx-auto mb-3">
-              <QrCode className="w-8 h-8 animate-pulse" />
-            </div>
-            <h3 className="text-base font-bold text-[var(--text)]">Camera QR Scanner</h3>
-            <p className="text-xs text-[var(--text-muted)] mt-1 mb-4">
-              Point your device camera at the prescription QR code stamp on the printed or digital consultation summary.
-            </p>
-
-            <div className="border-2 border-dashed border-[var(--teal)]/40 rounded-xl p-6 bg-[var(--surface-sunken)] mb-4 flex flex-col items-center justify-center">
-              <span className="text-xs text-[var(--text-muted)]">Camera Feed Active</span>
-              <span className="text-xs font-mono font-bold text-[var(--teal)] mt-2">
-                Simulating Optical OCR...
-              </span>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveRxId('RX-2026-DEMO01');
-                  setQuery('RX-2026-DEMO01');
-                  setShowScannerModal(false);
-                  showToast('Scanned code: RX-2026-DEMO01');
-                }}
-                className="w-full py-2.5 rounded-xl bg-[var(--teal)] text-white font-semibold text-sm hover:opacity-90 transition min-h-[48px] cursor-pointer"
-              >
-                Scan Demo Rx (RX-2026-DEMO01)
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowScannerModal(false)}
-                className="w-full py-2.5 rounded-xl border border-[var(--line)] text-[var(--text)] font-semibold text-sm hover:bg-[var(--mint)] min-h-[48px] cursor-pointer"
-              >
-                Cancel
-              </button>
-            </div>
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[var(--surface)] text-[var(--text)] rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-[var(--line)] animate-in fade-in zoom-in-95">
+            <RealQrScanner
+              title="Camera QR Prescription Scanner"
+              description="Point camera at the printed or digital QR code stamp, or upload an image."
+              onClose={() => setShowScannerModal(false)}
+              onScan={(scannedCode) => {
+                setActiveRxId(scannedCode);
+                setQuery(scannedCode);
+                setShowScannerModal(false);
+                showToast(`Prescription recognized: ${scannedCode}`);
+              }}
+              demoSamples={[
+                { label: 'Demo Rx #1', value: 'RX-2026-DEMO01' },
+                { label: 'Demo Rx #2', value: 'RX-2026-DEMO02' },
+              ]}
+            />
           </div>
         </div>
       )}

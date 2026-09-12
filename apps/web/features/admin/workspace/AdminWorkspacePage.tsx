@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useSession, useQueue, useAppStore, CARE_TEAM, sortQueue } from '@/lib/store/app-store';
 import { WorkspaceShell } from '@/components/layout/Shell';
 import { DemoDB } from '@/lib/db/demo-db';
+import { StateCommandSupplyModule } from '../supply/StateCommandSupplyModule';
 import { cn, getTriageColor } from '@/lib/utils';
 import {
   Users,
@@ -40,6 +41,14 @@ export function AdminWorkspacePage() {
   const { queue, metrics } = useQueue();
   const { showToast, setQueue } = useAppStore();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams.get('adminTab') || 'command';
+
+  const handleTabChange = (tab: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('adminTab', tab);
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
 
   // Rooms state
   const roomStorageKey = `smartcare.rooms:${String(hospital || 'SmartCare Community Hospital').toLowerCase()}`;
@@ -138,8 +147,50 @@ export function AdminWorkspacePage() {
   return (
     <WorkspaceShell title="Hospital operations" subtitle="Operations workspace" backHref="/" backLabel="Back to home">
       <div className="max-w-6xl mx-auto py-6 space-y-6">
-        {/* Provider Header */}
-        <header className="provider-header flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b-2 border-[#0a3b69] pb-3 mb-5">
+        {/* Module Switcher: Module 2 (State & District Command Center) vs Operations */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-2 sm:p-2.5 shadow-sm">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleTabChange('command')}
+              className={cn(
+                'flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all min-h-[44px]',
+                currentTab === 'command'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              )}
+            >
+              <Building className="w-4 h-4 text-amber-300" />
+              Module 2: AushadhiNet State Command
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleTabChange('operations')}
+              className={cn(
+                'flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all min-h-[44px]',
+                currentTab === 'operations'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              )}
+            >
+              <Users className="w-4 h-4" />
+              Hospital Ops &amp; Rooms
+            </button>
+          </div>
+
+          <div className="text-xs text-slate-500 px-3 hidden md:flex items-center gap-1.5 font-medium">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            District CMO &amp; State Command Active
+          </div>
+        </div>
+
+        {currentTab === 'command' ? (
+          <StateCommandSupplyModule />
+        ) : (
+          <>
+            {/* Provider Header */}
+            <header className="provider-header flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b-2 border-[#0a3b69] pb-3 mb-5">
           <div>
             <div className="eyebrow eyebrow-dark mb-1">
               <span className="eyebrow-dot" />
@@ -507,6 +558,8 @@ export function AdminWorkspacePage() {
             </div>
           )}
         </section>
+          </>
+        )}
       </div>
     </WorkspaceShell>
   );

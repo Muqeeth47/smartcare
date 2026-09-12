@@ -42,23 +42,23 @@ const DEMO_CREDENTIALS = {
 };
 
 const ROLE_INFO: Record<UserRole, { label: string; badge: string; desc: string; icon: typeof UserRound }> = {
-  patient: {
-    label: 'Patient Portal',
-    badge: 'Care Access',
-    desc: 'Book appointments, track queues live, and access digital prescriptions.',
-    icon: UserRound,
-  },
   doctor: {
-    label: 'Clinician Workspace',
-    badge: 'Clinical Team',
-    desc: 'Call next patients, manage active queues, and issue digital prescriptions.',
+    label: 'Doctor & PHC Officer',
+    badge: 'Clinical + Module 2 Supply',
+    desc: 'OPD queue management, e-prescriptions, and AushadhiNet medicine shortage reporting.',
     icon: Hospital,
   },
   staff: {
-    label: 'Hospital Operations',
-    badge: 'Administration',
-    desc: 'Register walk-in patients, manage room readiness, and triage care queues.',
+    label: 'State & District Command Center',
+    badge: 'CMO & Federated Supply',
+    desc: 'District shortage aggregation, GIS resource heat map, and AI redistribution approval desk.',
     icon: Building2,
+  },
+  patient: {
+    label: 'Patient Portal',
+    badge: 'Citizen Access',
+    desc: 'Book appointments, track queues live, and access digital prescriptions.',
+    icon: UserRound,
   },
 };
 
@@ -78,7 +78,7 @@ export function LoginPage() {
     }))
   );
 
-  const [role, setRole] = useState<UserRole>((searchParams.get('role') as UserRole) || auth.targetRole || 'patient');
+  const [role, setRole] = useState<UserRole>((searchParams.get('role') as UserRole) || auth.targetRole || 'doctor');
   const [mode, setMode] = useState<AuthMode>((searchParams.get('mode') as AuthMode) || 'signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -261,7 +261,7 @@ export function LoginPage() {
                 <span className="text-[10px] font-semibold text-[var(--teal)]">3 Demo Workspaces</span>
               </div>
               <div className="grid grid-cols-3 gap-2" role="tablist">
-                {(['patient', 'doctor', 'staff'] as const).map((r) => {
+                {(['doctor', 'staff', 'patient'] as const).map((r) => {
                   const info = ROLE_INFO[r];
                   const Icon = info.icon;
                   const isSelected = role === r;
@@ -280,7 +280,7 @@ export function LoginPage() {
                       )}
                     >
                       <Icon size={18} className={cn('mb-1', isSelected ? 'text-[var(--teal)]' : 'text-[var(--text-muted)]')} />
-                      <span className="text-xs font-extrabold leading-none">{r === 'patient' ? 'Patient' : r === 'doctor' ? 'Doctor' : 'Staff'}</span>
+                      <span className="text-xs font-extrabold leading-none">{r === 'doctor' ? 'Doctor / PHC' : r === 'staff' ? 'State CMO' : 'Patient'}</span>
                     </button>
                   );
                 })}
@@ -322,7 +322,7 @@ export function LoginPage() {
                 </span>
               </div>
               <div className="grid grid-cols-3 gap-2">
-                {(['patient', 'doctor', 'staff'] as const).map((r) => {
+                {(['doctor', 'staff', 'patient'] as const).map((r) => {
                   const info = ROLE_INFO[r];
                   const Icon = info.icon;
                   const isCurrentRole = role === r;
@@ -339,7 +339,7 @@ export function LoginPage() {
                       )}
                     >
                       <Icon size={14} className={isCurrentRole ? 'text-white' : 'text-[var(--teal)]'} />
-                      <span>{r === 'patient' ? 'Patient' : r === 'doctor' ? 'Doctor' : 'Staff'}</span>
+                      <span>{r === 'doctor' ? 'Doctor / PHC' : r === 'staff' ? 'State CMO' : 'Patient'}</span>
                     </button>
                   );
                 })}

@@ -12,6 +12,15 @@ import type {
   AppointmentBooking,
   AmbulanceBooking,
   PharmacyOrder,
+  MedicineItem,
+  HospitalSupplyProfile,
+  ShortageReport,
+  RedistributionOrder,
+  DistrictSupplyAggregate,
+  DistrictMedicineSummary,
+  FacilityTier,
+  MedicineStockStatus,
+  ShortageSeverity,
 } from '@smartcare/types';
 
 // ─── Storage helpers ─────────────────────────────────────────────────────────
@@ -41,6 +50,940 @@ const DONATIONS_KEY = 'smartcare.donations';
 const AMBULANCE_KEY = 'smartcare.activeAmbulance';
 const AMBULANCE_HISTORY_KEY = 'smartcare.ambulanceHistory';
 const PHARMACY_ORDERS_KEY = 'smartcare.pharmacyOrders';
+const SUPPLY_PROFILES_KEY = 'smartcare.supplyProfiles';
+const REDISTRIBUTION_ORDERS_KEY = 'smartcare.redistributionOrders';
+const SHORTAGE_REPORTS_KEY = 'smartcare.shortageReports';
+
+// ─── Module 2 Supply Default Data ──────────────────────────────────────────
+
+const DEFAULT_SUPPLY_PROFILES: HospitalSupplyProfile[] = [
+  {
+    hospitalId: 'hosp-smartcare',
+    hospitalName: 'SmartCare Community Hospital',
+    district: 'Hyderabad',
+    state: 'Telangana',
+    tier: 'tertiary',
+    bedsTotal: 250,
+    bedsOccupied: 210,
+    icuTotal: 30,
+    icuOccupied: 28,
+    oxygenCylindersAvailable: 75,
+    oxygenCylindersTotal: 80,
+    lastReportedAt: 'Today, 09:30 AM',
+    coordinates: { lat: 17.385, lng: 78.4867 },
+    medicines: [
+      {
+        id: 'med-pcm',
+        name: 'Paracetamol 500mg Tablets',
+        category: 'Critical Supplies',
+        unit: 'Strips (10s)',
+        currentStock: 1200,
+        minBuffer: 500,
+        dailyConsumption: 120,
+        daysRemaining: 10,
+        status: 'normal',
+        batchNumber: 'PCM-2026-B8',
+        expiryDate: '2027-11-30',
+        lastUpdated: '15 mins ago',
+      },
+      {
+        id: 'med-amox',
+        name: 'Amoxicillin 250mg Capsules',
+        category: 'Antibiotics',
+        unit: 'Strips (10s)',
+        currentStock: 800,
+        minBuffer: 400,
+        dailyConsumption: 90,
+        daysRemaining: 9,
+        status: 'normal',
+        batchNumber: 'AMX-2026-C1',
+        expiryDate: '2027-08-31',
+        lastUpdated: '1 hour ago',
+      },
+      {
+        id: 'med-insulin',
+        name: 'Insulin Glargine 100 IU/ml',
+        category: 'Chronic Care',
+        unit: 'Vials (10ml)',
+        currentStock: 28,
+        minBuffer: 100,
+        dailyConsumption: 14,
+        daysRemaining: 2,
+        status: 'critical',
+        batchNumber: 'INS-2026-K4',
+        expiryDate: '2027-04-30',
+        lastUpdated: 'Just now',
+        activeShortage: true,
+        shortageReason: 'Critical shortage: High inpatient diabetic ketoacidosis inflow and batch shipment delay.',
+      },
+      {
+        id: 'med-ors',
+        name: 'Oral Rehydration Salts (ORS)',
+        category: 'Critical Supplies',
+        unit: 'Sachets',
+        currentStock: 1500,
+        minBuffer: 600,
+        dailyConsumption: 130,
+        daysRemaining: 12,
+        status: 'normal',
+        batchNumber: 'ORS-2026-F9',
+        expiryDate: '2028-01-31',
+        lastUpdated: '3 hours ago',
+      },
+      {
+        id: 'med-ns',
+        name: 'IV Normal Saline 0.9% (500ml)',
+        category: 'Emergency & IV',
+        unit: 'Bottles',
+        currentStock: 52,
+        minBuffer: 200,
+        dailyConsumption: 28,
+        daysRemaining: 2,
+        status: 'critical',
+        batchNumber: 'IVS-2026-T2',
+        expiryDate: '2028-06-30',
+        lastUpdated: '10 mins ago',
+        activeShortage: true,
+        shortageReason: 'Emergency trauma admissions inflow; stock depleted past safe reserve.',
+      },
+      {
+        id: 'med-covax',
+        name: 'Covaxin Doses',
+        category: 'Vaccines',
+        unit: 'Vials',
+        currentStock: 420,
+        minBuffer: 200,
+        dailyConsumption: 25,
+        daysRemaining: 17,
+        status: 'normal',
+        batchNumber: 'CVX-2026-V7',
+        expiryDate: '2026-12-31',
+        lastUpdated: 'Yesterday',
+      },
+      {
+        id: 'med-rabies',
+        name: 'Anti-Rabies Vaccine (ARV)',
+        category: 'Vaccines',
+        unit: 'Vials',
+        currentStock: 55,
+        minBuffer: 50,
+        dailyConsumption: 7,
+        daysRemaining: 8,
+        status: 'normal',
+        batchNumber: 'ARV-2026-R3',
+        expiryDate: '2027-05-31',
+        lastUpdated: '2 hours ago',
+      },
+      {
+        id: 'med-oxy',
+        name: 'Medical Oxygen Cylinders (D-Type)',
+        category: 'Emergency & IV',
+        unit: 'Cylinders',
+        currentStock: 75,
+        minBuffer: 40,
+        dailyConsumption: 12,
+        daysRemaining: 6,
+        status: 'low',
+        batchNumber: 'OXY-CYL-88',
+        expiryDate: '2030-01-01',
+        lastUpdated: '30 mins ago',
+      },
+      {
+        id: 'med-asv',
+        name: 'Anti-Snake Venom (ASV) Polyvalent',
+        category: 'Emergency & IV',
+        unit: 'Vials (10ml)',
+        currentStock: 18,
+        minBuffer: 20,
+        dailyConsumption: 2,
+        daysRemaining: 9,
+        status: 'normal',
+        batchNumber: 'ASV-2026-P2',
+        expiryDate: '2027-09-30',
+        lastUpdated: '4 hours ago',
+      },
+      {
+        id: 'med-metform',
+        name: 'Metformin 500mg Tablets',
+        category: 'Chronic Care',
+        unit: 'Strips (10s)',
+        currentStock: 950,
+        minBuffer: 500,
+        dailyConsumption: 80,
+        daysRemaining: 12,
+        status: 'normal',
+        batchNumber: 'MET-2026-M4',
+        expiryDate: '2027-10-31',
+        lastUpdated: 'Yesterday',
+      },
+    ],
+  },
+  {
+    hospitalId: 'phc-shamshabad',
+    hospitalName: 'PHC Shamshabad (Primary Health Centre)',
+    district: 'Rangareddy',
+    state: 'Telangana',
+    tier: 'phc',
+    bedsTotal: 20,
+    bedsOccupied: 17,
+    icuTotal: 2,
+    icuOccupied: 2,
+    oxygenCylindersAvailable: 3,
+    oxygenCylindersTotal: 10,
+    lastReportedAt: 'Today, 10:15 AM',
+    coordinates: { lat: 17.2543, lng: 78.4312 },
+    medicines: [
+      {
+        id: 'med-pcm',
+        name: 'Paracetamol 500mg Tablets',
+        category: 'Critical Supplies',
+        unit: 'Strips (10s)',
+        currentStock: 180,
+        minBuffer: 300,
+        dailyConsumption: 55,
+        daysRemaining: 3,
+        status: 'critical',
+        batchNumber: 'PCM-2026-B1',
+        expiryDate: '2027-09-30',
+        lastUpdated: '2 hours ago',
+        activeShortage: true,
+        shortageReason: 'Outbreak of seasonal viral fever in local village cluster.',
+      },
+      {
+        id: 'med-amox',
+        name: 'Amoxicillin 250mg Capsules',
+        category: 'Antibiotics',
+        unit: 'Strips (10s)',
+        currentStock: 75,
+        minBuffer: 150,
+        dailyConsumption: 28,
+        daysRemaining: 3,
+        status: 'critical',
+        batchNumber: 'AMX-2026-A9',
+        expiryDate: '2027-07-31',
+        lastUpdated: '1 hour ago',
+        activeShortage: true,
+        shortageReason: 'Pediatric respiratory caseload spike.',
+      },
+      {
+        id: 'med-insulin',
+        name: 'Insulin Glargine 100 IU/ml',
+        category: 'Chronic Care',
+        unit: 'Vials (10ml)',
+        currentStock: 4,
+        minBuffer: 40,
+        dailyConsumption: 4,
+        daysRemaining: 1,
+        status: 'critical',
+        batchNumber: 'INS-2026-D3',
+        expiryDate: '2027-03-31',
+        lastUpdated: 'Just now',
+        activeShortage: true,
+        shortageReason: 'Critical stock-out: Only 24 hours of cold-chain vials left.',
+      },
+      {
+        id: 'med-ors',
+        name: 'Oral Rehydration Salts (ORS)',
+        category: 'Critical Supplies',
+        unit: 'Sachets',
+        currentStock: 780,
+        minBuffer: 300,
+        dailyConsumption: 60,
+        daysRemaining: 13,
+        status: 'normal',
+        batchNumber: 'ORS-2026-E2',
+        expiryDate: '2028-02-28',
+        lastUpdated: '3 hours ago',
+      },
+      {
+        id: 'med-ns',
+        name: 'IV Normal Saline 0.9% (500ml)',
+        category: 'Emergency & IV',
+        unit: 'Bottles',
+        currentStock: 14,
+        minBuffer: 80,
+        dailyConsumption: 12,
+        daysRemaining: 1,
+        status: 'critical',
+        batchNumber: 'IVS-2026-N9',
+        expiryDate: '2028-05-31',
+        lastUpdated: '40 mins ago',
+        activeShortage: true,
+        shortageReason: 'Acute gastroenteritis spike; replacement delivery delayed.',
+      },
+      {
+        id: 'med-covax',
+        name: 'Covaxin Doses',
+        category: 'Vaccines',
+        unit: 'Vials',
+        currentStock: 110,
+        minBuffer: 80,
+        dailyConsumption: 10,
+        daysRemaining: 11,
+        status: 'normal',
+        batchNumber: 'CVX-2026-V1',
+        expiryDate: '2026-12-31',
+        lastUpdated: 'Yesterday',
+      },
+      {
+        id: 'med-rabies',
+        name: 'Anti-Rabies Vaccine (ARV)',
+        category: 'Vaccines',
+        unit: 'Vials',
+        currentStock: 2,
+        minBuffer: 20,
+        dailyConsumption: 2,
+        daysRemaining: 1,
+        status: 'critical',
+        batchNumber: 'ARV-2026-R1',
+        expiryDate: '2027-04-30',
+        lastUpdated: '10 mins ago',
+        activeShortage: true,
+        shortageReason: 'Multiple canine bite cases in panchayat; emergency buffer exhausted.',
+      },
+      {
+        id: 'med-oxy',
+        name: 'Medical Oxygen Cylinders (D-Type)',
+        category: 'Emergency & IV',
+        unit: 'Cylinders',
+        currentStock: 3,
+        minBuffer: 8,
+        dailyConsumption: 2,
+        daysRemaining: 1,
+        status: 'critical',
+        batchNumber: 'OXY-CYL-12',
+        expiryDate: '2030-01-01',
+        lastUpdated: '1 hour ago',
+        activeShortage: true,
+      },
+      {
+        id: 'med-asv',
+        name: 'Anti-Snake Venom (ASV) Polyvalent',
+        category: 'Emergency & IV',
+        unit: 'Vials (10ml)',
+        currentStock: 2,
+        minBuffer: 10,
+        dailyConsumption: 1,
+        daysRemaining: 2,
+        status: 'critical',
+        batchNumber: 'ASV-2026-P1',
+        expiryDate: '2027-06-30',
+        lastUpdated: 'Yesterday',
+        activeShortage: true,
+      },
+      {
+        id: 'med-metform',
+        name: 'Metformin 500mg Tablets',
+        category: 'Chronic Care',
+        unit: 'Strips (10s)',
+        currentStock: 130,
+        minBuffer: 150,
+        dailyConsumption: 25,
+        daysRemaining: 5,
+        status: 'low',
+        batchNumber: 'MET-2026-M1',
+        expiryDate: '2027-09-30',
+        lastUpdated: 'Yesterday',
+      },
+    ],
+  },
+  {
+    hospitalId: 'phc-gachibowli',
+    hospitalName: 'PHC Gachibowli (Urban Health Centre)',
+    district: 'Hyderabad',
+    state: 'Telangana',
+    tier: 'phc',
+    bedsTotal: 30,
+    bedsOccupied: 21,
+    icuTotal: 4,
+    icuOccupied: 3,
+    oxygenCylindersAvailable: 8,
+    oxygenCylindersTotal: 12,
+    lastReportedAt: 'Today, 08:45 AM',
+    coordinates: { lat: 17.44, lng: 78.3489 },
+    medicines: [
+      {
+        id: 'med-pcm',
+        name: 'Paracetamol 500mg Tablets',
+        category: 'Critical Supplies',
+        unit: 'Strips (10s)',
+        currentStock: 580,
+        minBuffer: 300,
+        dailyConsumption: 40,
+        daysRemaining: 14,
+        status: 'normal',
+        batchNumber: 'PCM-2026-B3',
+        expiryDate: '2027-10-31',
+        lastUpdated: '1 hour ago',
+      },
+      {
+        id: 'med-amox',
+        name: 'Amoxicillin 250mg Capsules',
+        category: 'Antibiotics',
+        unit: 'Strips (10s)',
+        currentStock: 340,
+        minBuffer: 200,
+        dailyConsumption: 35,
+        daysRemaining: 10,
+        status: 'normal',
+        batchNumber: 'AMX-2026-C4',
+        expiryDate: '2027-08-31',
+        lastUpdated: '2 hours ago',
+      },
+      {
+        id: 'med-insulin',
+        name: 'Insulin Glargine 100 IU/ml',
+        category: 'Chronic Care',
+        unit: 'Vials (10ml)',
+        currentStock: 22,
+        minBuffer: 30,
+        dailyConsumption: 5,
+        daysRemaining: 4,
+        status: 'low',
+        batchNumber: 'INS-2026-K1',
+        expiryDate: '2027-05-31',
+        lastUpdated: '3 hours ago',
+      },
+      {
+        id: 'med-ors',
+        name: 'Oral Rehydration Salts (ORS)',
+        category: 'Critical Supplies',
+        unit: 'Sachets',
+        currentStock: 890,
+        minBuffer: 400,
+        dailyConsumption: 50,
+        daysRemaining: 18,
+        status: 'normal',
+        batchNumber: 'ORS-2026-F1',
+        expiryDate: '2028-03-31',
+        lastUpdated: 'Yesterday',
+      },
+      {
+        id: 'med-ns',
+        name: 'IV Normal Saline 0.9% (500ml)',
+        category: 'Emergency & IV',
+        unit: 'Bottles',
+        currentStock: 85,
+        minBuffer: 70,
+        dailyConsumption: 10,
+        daysRemaining: 8,
+        status: 'normal',
+        batchNumber: 'IVS-2026-T7',
+        expiryDate: '2028-07-31',
+        lastUpdated: '2 hours ago',
+      },
+      {
+        id: 'med-covax',
+        name: 'Covaxin Doses',
+        category: 'Vaccines',
+        unit: 'Vials',
+        currentStock: 240,
+        minBuffer: 100,
+        dailyConsumption: 15,
+        daysRemaining: 16,
+        status: 'normal',
+        batchNumber: 'CVX-2026-V3',
+        expiryDate: '2027-01-31',
+        lastUpdated: 'Yesterday',
+      },
+      {
+        id: 'med-rabies',
+        name: 'Anti-Rabies Vaccine (ARV)',
+        category: 'Vaccines',
+        unit: 'Vials',
+        currentStock: 16,
+        minBuffer: 15,
+        dailyConsumption: 2,
+        daysRemaining: 8,
+        status: 'normal',
+        batchNumber: 'ARV-2026-R5',
+        expiryDate: '2027-06-30',
+        lastUpdated: '4 hours ago',
+      },
+      {
+        id: 'med-oxy',
+        name: 'Medical Oxygen Cylinders (D-Type)',
+        category: 'Emergency & IV',
+        unit: 'Cylinders',
+        currentStock: 8,
+        minBuffer: 6,
+        dailyConsumption: 1,
+        daysRemaining: 8,
+        status: 'normal',
+        batchNumber: 'OXY-CYL-33',
+        expiryDate: '2030-01-01',
+        lastUpdated: 'Yesterday',
+      },
+      {
+        id: 'med-asv',
+        name: 'Anti-Snake Venom (ASV) Polyvalent',
+        category: 'Emergency & IV',
+        unit: 'Vials (10ml)',
+        currentStock: 5,
+        minBuffer: 8,
+        dailyConsumption: 1,
+        daysRemaining: 5,
+        status: 'low',
+        batchNumber: 'ASV-2026-P9',
+        expiryDate: '2027-08-31',
+        lastUpdated: 'Yesterday',
+      },
+      {
+        id: 'med-metform',
+        name: 'Metformin 500mg Tablets',
+        category: 'Chronic Care',
+        unit: 'Strips (10s)',
+        currentStock: 410,
+        minBuffer: 200,
+        dailyConsumption: 30,
+        daysRemaining: 14,
+        status: 'normal',
+        batchNumber: 'MET-2026-M8',
+        expiryDate: '2027-11-30',
+        lastUpdated: 'Yesterday',
+      },
+    ],
+  },
+  {
+    hospitalId: 'hosp-city-gen',
+    hospitalName: 'City General Hospital (Charminar)',
+    district: 'Hyderabad',
+    state: 'Telangana',
+    tier: 'district_hospital',
+    bedsTotal: 400,
+    bedsOccupied: 335,
+    icuTotal: 50,
+    icuOccupied: 41,
+    oxygenCylindersAvailable: 112,
+    oxygenCylindersTotal: 120,
+    lastReportedAt: 'Today, 10:00 AM',
+    coordinates: { lat: 17.3616, lng: 78.4747 },
+    medicines: [
+      {
+        id: 'med-pcm',
+        name: 'Paracetamol 500mg Tablets',
+        category: 'Critical Supplies',
+        unit: 'Strips (10s)',
+        currentStock: 3500,
+        minBuffer: 1000,
+        dailyConsumption: 240,
+        daysRemaining: 15,
+        status: 'normal',
+        batchNumber: 'PCM-2026-CG1',
+        expiryDate: '2027-12-31',
+        lastUpdated: '1 hour ago',
+      },
+      {
+        id: 'med-amox',
+        name: 'Amoxicillin 250mg Capsules',
+        category: 'Antibiotics',
+        unit: 'Strips (10s)',
+        currentStock: 2150,
+        minBuffer: 800,
+        dailyConsumption: 175,
+        daysRemaining: 12,
+        status: 'normal',
+        batchNumber: 'AMX-2026-CG2',
+        expiryDate: '2027-09-30',
+        lastUpdated: '2 hours ago',
+      },
+      {
+        id: 'med-insulin',
+        name: 'Insulin Glargine 100 IU/ml',
+        category: 'Chronic Care',
+        unit: 'Vials (10ml)',
+        currentStock: 280,
+        minBuffer: 150,
+        dailyConsumption: 24,
+        daysRemaining: 12,
+        status: 'normal',
+        batchNumber: 'INS-2026-CG3',
+        expiryDate: '2027-06-30',
+        lastUpdated: '1 hour ago',
+      },
+      {
+        id: 'med-ors',
+        name: 'Oral Rehydration Salts (ORS)',
+        category: 'Critical Supplies',
+        unit: 'Sachets',
+        currentStock: 3100,
+        minBuffer: 1000,
+        dailyConsumption: 200,
+        daysRemaining: 15,
+        status: 'normal',
+        batchNumber: 'ORS-2026-CG4',
+        expiryDate: '2028-04-30',
+        lastUpdated: '3 hours ago',
+      },
+      {
+        id: 'med-ns',
+        name: 'IV Normal Saline 0.9% (500ml)',
+        category: 'Emergency & IV',
+        unit: 'Bottles',
+        currentStock: 820,
+        minBuffer: 400,
+        dailyConsumption: 60,
+        daysRemaining: 14,
+        status: 'normal',
+        batchNumber: 'IVS-2026-CG5',
+        expiryDate: '2028-08-31',
+        lastUpdated: '30 mins ago',
+      },
+      {
+        id: 'med-covax',
+        name: 'Covaxin Doses',
+        category: 'Vaccines',
+        unit: 'Vials',
+        currentStock: 880,
+        minBuffer: 300,
+        dailyConsumption: 40,
+        daysRemaining: 22,
+        status: 'normal',
+        batchNumber: 'CVX-2026-CG6',
+        expiryDate: '2027-02-28',
+        lastUpdated: 'Yesterday',
+      },
+      {
+        id: 'med-rabies',
+        name: 'Anti-Rabies Vaccine (ARV)',
+        category: 'Vaccines',
+        unit: 'Vials',
+        currentStock: 135,
+        minBuffer: 80,
+        dailyConsumption: 10,
+        daysRemaining: 13,
+        status: 'normal',
+        batchNumber: 'ARV-2026-CG7',
+        expiryDate: '2027-07-31',
+        lastUpdated: '1 hour ago',
+      },
+      {
+        id: 'med-oxy',
+        name: 'Medical Oxygen Cylinders (D-Type)',
+        category: 'Emergency & IV',
+        unit: 'Cylinders',
+        currentStock: 112,
+        minBuffer: 60,
+        dailyConsumption: 15,
+        daysRemaining: 7,
+        status: 'normal',
+        batchNumber: 'OXY-CYL-CG8',
+        expiryDate: '2030-01-01',
+        lastUpdated: '1 hour ago',
+      },
+      {
+        id: 'med-asv',
+        name: 'Anti-Snake Venom (ASV) Polyvalent',
+        category: 'Emergency & IV',
+        unit: 'Vials (10ml)',
+        currentStock: 34,
+        minBuffer: 25,
+        dailyConsumption: 3,
+        daysRemaining: 11,
+        status: 'normal',
+        batchNumber: 'ASV-2026-CG9',
+        expiryDate: '2027-10-31',
+        lastUpdated: 'Yesterday',
+      },
+      {
+        id: 'med-metform',
+        name: 'Metformin 500mg Tablets',
+        category: 'Chronic Care',
+        unit: 'Strips (10s)',
+        currentStock: 2550,
+        minBuffer: 800,
+        dailyConsumption: 160,
+        daysRemaining: 16,
+        status: 'normal',
+        batchNumber: 'MET-2026-CG10',
+        expiryDate: '2027-12-31',
+        lastUpdated: 'Yesterday',
+      },
+    ],
+  },
+  {
+    hospitalId: 'depot-central',
+    hospitalName: 'District Central Medical Warehouse (Buffer Depot)',
+    district: 'Hyderabad',
+    state: 'Telangana',
+    tier: 'warehouse',
+    bedsTotal: 0,
+    bedsOccupied: 0,
+    icuTotal: 0,
+    icuOccupied: 0,
+    oxygenCylindersAvailable: 340,
+    oxygenCylindersTotal: 400,
+    lastReportedAt: 'Today, 07:00 AM',
+    coordinates: { lat: 17.41, lng: 78.46 },
+    medicines: [
+      {
+        id: 'med-pcm',
+        name: 'Paracetamol 500mg Tablets',
+        category: 'Critical Supplies',
+        unit: 'Strips (10s)',
+        currentStock: 24000,
+        minBuffer: 5000,
+        dailyConsumption: 0,
+        daysRemaining: 999,
+        status: 'normal',
+        batchNumber: 'PCM-CENTRAL-01',
+        expiryDate: '2028-06-30',
+        lastUpdated: 'Today',
+      },
+      {
+        id: 'med-amox',
+        name: 'Amoxicillin 250mg Capsules',
+        category: 'Antibiotics',
+        unit: 'Strips (10s)',
+        currentStock: 17500,
+        minBuffer: 4000,
+        dailyConsumption: 0,
+        daysRemaining: 999,
+        status: 'normal',
+        batchNumber: 'AMX-CENTRAL-02',
+        expiryDate: '2028-05-31',
+        lastUpdated: 'Today',
+      },
+      {
+        id: 'med-insulin',
+        name: 'Insulin Glargine 100 IU/ml',
+        category: 'Chronic Care',
+        unit: 'Vials (10ml)',
+        currentStock: 3400,
+        minBuffer: 800,
+        dailyConsumption: 0,
+        daysRemaining: 999,
+        status: 'normal',
+        batchNumber: 'INS-CENTRAL-03',
+        expiryDate: '2027-12-31',
+        lastUpdated: 'Today',
+      },
+      {
+        id: 'med-ors',
+        name: 'Oral Rehydration Salts (ORS)',
+        category: 'Critical Supplies',
+        unit: 'Sachets',
+        currentStock: 29000,
+        minBuffer: 6000,
+        dailyConsumption: 0,
+        daysRemaining: 999,
+        status: 'normal',
+        batchNumber: 'ORS-CENTRAL-04',
+        expiryDate: '2028-12-31',
+        lastUpdated: 'Today',
+      },
+      {
+        id: 'med-ns',
+        name: 'IV Normal Saline 0.9% (500ml)',
+        category: 'Emergency & IV',
+        unit: 'Bottles',
+        currentStock: 7800,
+        minBuffer: 2000,
+        dailyConsumption: 0,
+        daysRemaining: 999,
+        status: 'normal',
+        batchNumber: 'IVS-CENTRAL-05',
+        expiryDate: '2028-11-30',
+        lastUpdated: 'Today',
+      },
+      {
+        id: 'med-covax',
+        name: 'Covaxin Doses',
+        category: 'Vaccines',
+        unit: 'Vials',
+        currentStock: 11500,
+        minBuffer: 2500,
+        dailyConsumption: 0,
+        daysRemaining: 999,
+        status: 'normal',
+        batchNumber: 'CVX-CENTRAL-06',
+        expiryDate: '2027-08-31',
+        lastUpdated: 'Today',
+      },
+      {
+        id: 'med-rabies',
+        name: 'Anti-Rabies Vaccine (ARV)',
+        category: 'Vaccines',
+        unit: 'Vials',
+        currentStock: 1750,
+        minBuffer: 400,
+        dailyConsumption: 0,
+        daysRemaining: 999,
+        status: 'normal',
+        batchNumber: 'ARV-CENTRAL-07',
+        expiryDate: '2028-02-28',
+        lastUpdated: 'Today',
+      },
+      {
+        id: 'med-oxy',
+        name: 'Medical Oxygen Cylinders (D-Type)',
+        category: 'Emergency & IV',
+        unit: 'Cylinders',
+        currentStock: 340,
+        minBuffer: 100,
+        dailyConsumption: 0,
+        daysRemaining: 999,
+        status: 'normal',
+        batchNumber: 'OXY-CENTRAL-08',
+        expiryDate: '2030-01-01',
+        lastUpdated: 'Today',
+      },
+      {
+        id: 'med-asv',
+        name: 'Anti-Snake Venom (ASV) Polyvalent',
+        category: 'Emergency & IV',
+        unit: 'Vials (10ml)',
+        currentStock: 440,
+        minBuffer: 100,
+        dailyConsumption: 0,
+        daysRemaining: 999,
+        status: 'normal',
+        batchNumber: 'ASV-CENTRAL-09',
+        expiryDate: '2028-04-30',
+        lastUpdated: 'Today',
+      },
+      {
+        id: 'med-metform',
+        name: 'Metformin 500mg Tablets',
+        category: 'Chronic Care',
+        unit: 'Strips (10s)',
+        currentStock: 14500,
+        minBuffer: 3000,
+        dailyConsumption: 0,
+        daysRemaining: 999,
+        status: 'normal',
+        batchNumber: 'MET-CENTRAL-10',
+        expiryDate: '2028-05-31',
+        lastUpdated: 'Today',
+      },
+    ],
+  },
+];
+
+const DEFAULT_REDISTRIBUTION_ORDERS: RedistributionOrder[] = [
+  {
+    id: 'rebal-001',
+    orderNumber: 'REBAL-2026-001',
+    sourceHospitalId: 'depot-central',
+    sourceHospitalName: 'District Central Medical Warehouse',
+    targetHospitalId: 'phc-shamshabad',
+    targetHospitalName: 'PHC Shamshabad',
+    medicineId: 'med-insulin',
+    medicineName: 'Insulin Glargine 100 IU/ml',
+    quantity: 60,
+    unit: 'Vials (10ml)',
+    status: 'suggested',
+    priority: 'CRITICAL',
+    routeDistanceKm: 18.4,
+    estimatedTransitMins: 35,
+    otpCode: '582914',
+    createdAt: 'Today, 10:20 AM',
+  },
+  {
+    id: 'rebal-002',
+    orderNumber: 'REBAL-2026-002',
+    sourceHospitalId: 'hosp-city-gen',
+    sourceHospitalName: 'City General Hospital (Charminar)',
+    targetHospitalId: 'hosp-smartcare',
+    targetHospitalName: 'SmartCare Community Hospital',
+    medicineId: 'med-ns',
+    medicineName: 'IV Normal Saline 0.9% (500ml)',
+    quantity: 120,
+    unit: 'Bottles',
+    status: 'in_transit',
+    priority: 'CRITICAL',
+    routeDistanceKm: 12.1,
+    estimatedTransitMins: 25,
+    otpCode: '941073',
+    createdAt: 'Today, 09:45 AM',
+  },
+  {
+    id: 'rebal-003',
+    orderNumber: 'REBAL-2026-003',
+    sourceHospitalId: 'depot-central',
+    sourceHospitalName: 'District Central Medical Warehouse',
+    targetHospitalId: 'phc-shamshabad',
+    targetHospitalName: 'PHC Shamshabad',
+    medicineId: 'med-rabies',
+    medicineName: 'Anti-Rabies Vaccine (ARV)',
+    quantity: 25,
+    unit: 'Vials',
+    status: 'approved',
+    priority: 'HIGH',
+    routeDistanceKm: 18.4,
+    estimatedTransitMins: 35,
+    otpCode: '318764',
+    createdAt: 'Today, 10:25 AM',
+  },
+];
+
+const DEFAULT_SHORTAGE_REPORTS: ShortageReport[] = [
+  {
+    id: 'short-001',
+    hospitalId: 'phc-shamshabad',
+    hospitalName: 'PHC Shamshabad',
+    district: 'Rangareddy',
+    medicineId: 'med-insulin',
+    medicineName: 'Insulin Glargine 100 IU/ml',
+    severity: 'critical',
+    currentStock: 4,
+    minBuffer: 40,
+    daysRemaining: 1,
+    reason: 'Critical stock-out: Only 24 hours of cold-chain vials left.',
+    reportedAt: 'Today, 10:15 AM',
+    reportedBy: 'Dr Ramesh Kumar (MO)',
+    resolved: false,
+  },
+  {
+    id: 'short-002',
+    hospitalId: 'hosp-smartcare',
+    hospitalName: 'SmartCare Community Hospital',
+    district: 'Hyderabad',
+    medicineId: 'med-insulin',
+    medicineName: 'Insulin Glargine 100 IU/ml',
+    severity: 'critical',
+    currentStock: 28,
+    minBuffer: 100,
+    daysRemaining: 2,
+    reason: 'Critical shortage: High inpatient diabetic ketoacidosis inflow and batch shipment delay.',
+    reportedAt: 'Today, 09:30 AM',
+    reportedBy: 'Dr Meera Shah',
+    resolved: false,
+  },
+  {
+    id: 'short-003',
+    hospitalId: 'hosp-smartcare',
+    hospitalName: 'SmartCare Community Hospital',
+    district: 'Hyderabad',
+    medicineId: 'med-ns',
+    medicineName: 'IV Normal Saline 0.9% (500ml)',
+    severity: 'critical',
+    currentStock: 52,
+    minBuffer: 200,
+    daysRemaining: 2,
+    reason: 'Emergency trauma admissions inflow; stock depleted past safe reserve.',
+    reportedAt: 'Today, 09:32 AM',
+    reportedBy: 'Dr Meera Shah',
+    resolved: false,
+  },
+  {
+    id: 'short-004',
+    hospitalId: 'phc-shamshabad',
+    hospitalName: 'PHC Shamshabad',
+    district: 'Rangareddy',
+    medicineId: 'med-rabies',
+    medicineName: 'Anti-Rabies Vaccine (ARV)',
+    severity: 'critical',
+    currentStock: 2,
+    minBuffer: 20,
+    daysRemaining: 1,
+    reason: 'Multiple canine bite cases in panchayat; emergency buffer exhausted.',
+    reportedAt: 'Today, 10:18 AM',
+    reportedBy: 'Dr Ramesh Kumar (MO)',
+    resolved: false,
+  },
+];
+
 
 // ─── Default Data ────────────────────────────────────────────────────────────
 
@@ -743,4 +1686,405 @@ export const DemoDB = {
       : { name: owner.split('@')[0].replace(/[._-]/g, ' '), age: 'Not provided', gender: 'Not specified', city: 'Not provided', ...savedProfile };
     return { passportId, profile, history: DemoDB.getMedicalHistory(owner) };
   },
+
+  // ─── Module 2: AushadhiNet & Supply Chain Database ─────────────────────────
+
+  getAllSupplyProfiles: (): HospitalSupplyProfile[] => {
+    const stored = readStorage<HospitalSupplyProfile[]>(SUPPLY_PROFILES_KEY);
+    if (stored && Array.isArray(stored) && stored.length > 0) {
+      return stored;
+    }
+    writeStorage(SUPPLY_PROFILES_KEY, DEFAULT_SUPPLY_PROFILES);
+    return DEFAULT_SUPPLY_PROFILES;
+  },
+
+  getHospitalSupplyProfile: (hospitalIdentifier?: string): HospitalSupplyProfile => {
+    const profiles = DemoDB.getAllSupplyProfiles();
+    if (!hospitalIdentifier) return profiles[0] || DEFAULT_SUPPLY_PROFILES[0];
+    const clean = hospitalIdentifier.trim().toLowerCase();
+    const match =
+      profiles.find(
+        (p) =>
+          p.hospitalId.toLowerCase() === clean ||
+          p.hospitalName.toLowerCase().includes(clean) ||
+          clean.includes(p.hospitalName.toLowerCase()) ||
+          clean.includes(p.hospitalId.toLowerCase())
+      ) ||
+      profiles.find((p) => p.tier === 'tertiary') ||
+      profiles[0];
+    return match || DEFAULT_SUPPLY_PROFILES[0];
+  },
+
+  updateMedicineStock: (
+    hospitalId: string,
+    medicineId: string,
+    currentStock: number,
+    dailyConsumption?: number,
+    shortageReason?: string,
+    isShortageAlert?: boolean
+  ): HospitalSupplyProfile => {
+    const profiles = DemoDB.getAllSupplyProfiles();
+    let updatedProfile: HospitalSupplyProfile | null = null;
+
+    const newProfiles = profiles.map((facility) => {
+      const match =
+        facility.hospitalId.toLowerCase() === hospitalId.toLowerCase() ||
+        facility.hospitalName.toLowerCase().includes(hospitalId.toLowerCase());
+
+      if (!match) return facility;
+
+      const newMedicines = facility.medicines.map((med) => {
+        if (med.id !== medicineId) return med;
+
+        const newDaily = dailyConsumption !== undefined ? dailyConsumption : med.dailyConsumption;
+        const newDaysRemaining = newDaily > 0 ? Math.round(currentStock / newDaily) : 999;
+        const autoCritical = newDaysRemaining <= 3;
+        const status: MedicineStockStatus = autoCritical ? 'critical' : newDaysRemaining <= 7 ? 'low' : 'normal';
+        const hasShortage = isShortageAlert !== undefined ? isShortageAlert : autoCritical || currentStock < med.minBuffer;
+
+        return {
+          ...med,
+          currentStock,
+          dailyConsumption: newDaily,
+          daysRemaining: newDaysRemaining,
+          status,
+          activeShortage: hasShortage,
+          shortageReason: hasShortage ? shortageReason || med.shortageReason || 'Critical shortage reported by clinician' : undefined,
+          lastUpdated: 'Just now',
+        };
+      });
+
+      updatedProfile = {
+        ...facility,
+        medicines: newMedicines,
+        lastReportedAt: 'Just now',
+      };
+      return updatedProfile;
+    });
+
+    writeStorage(SUPPLY_PROFILES_KEY, newProfiles);
+
+    // If shortage flagged, create a ShortageReport
+    if (isShortageAlert && updatedProfile) {
+      const activeProf: HospitalSupplyProfile = updatedProfile;
+      const targetMed = activeProf.medicines.find((m: MedicineItem) => m.id === medicineId);
+      if (targetMed) {
+        DemoDB.reportShortage({
+          hospitalId: activeProf.hospitalId,
+          hospitalName: activeProf.hospitalName,
+          district: activeProf.district,
+          medicineId: targetMed.id,
+          medicineName: targetMed.name,
+          severity: targetMed.daysRemaining <= 1 ? 'critical' : 'high',
+          currentStock,
+          minBuffer: targetMed.minBuffer,
+          daysRemaining: targetMed.daysRemaining,
+          reason: shortageReason || 'Immediate shortage reported via AushadhiNet clinician portal.',
+          reportedBy: 'Staff Clinician / Pharmacist',
+        });
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('smartcare:supply-updated', { detail: { hospitalId, medicineId } }));
+    }
+
+    return updatedProfile || profiles[0];
+  },
+
+  getShortageReports: (): ShortageReport[] => {
+    const stored = readStorage<ShortageReport[]>(SHORTAGE_REPORTS_KEY);
+    if (stored && Array.isArray(stored)) {
+      return stored;
+    }
+    writeStorage(SHORTAGE_REPORTS_KEY, DEFAULT_SHORTAGE_REPORTS);
+    return DEFAULT_SHORTAGE_REPORTS;
+  },
+
+  reportShortage: (report: Omit<ShortageReport, 'id' | 'reportedAt' | 'resolved'>): ShortageReport => {
+    const existing = DemoDB.getShortageReports();
+    const newReport: ShortageReport = {
+      ...report,
+      id: `short-${Date.now().toString().slice(-6)}`,
+      reportedAt: 'Today, ' + new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+      resolved: false,
+    };
+    const updated = [newReport, ...existing];
+    writeStorage(SHORTAGE_REPORTS_KEY, updated);
+
+    // Also auto-generate a redistribution suggestion if one doesn't exist
+    DemoDB.generateAutoRebalances();
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('smartcare:shortage-reported', { detail: newReport }));
+    }
+    return newReport;
+  },
+
+  resolveShortage: (shortageId: string): boolean => {
+    const reports = DemoDB.getShortageReports();
+    const updated = reports.map((r) => (r.id === shortageId ? { ...r, resolved: true } : r));
+    writeStorage(SHORTAGE_REPORTS_KEY, updated);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('smartcare:shortage-resolved', { detail: { id: shortageId } }));
+    }
+    return true;
+  },
+
+  getRedistributionOrders: (): RedistributionOrder[] => {
+    const stored = readStorage<RedistributionOrder[]>(REDISTRIBUTION_ORDERS_KEY);
+    if (stored && Array.isArray(stored)) {
+      return stored;
+    }
+    writeStorage(REDISTRIBUTION_ORDERS_KEY, DEFAULT_REDISTRIBUTION_ORDERS);
+    return DEFAULT_REDISTRIBUTION_ORDERS;
+  },
+
+  approveRedistributionOrder: (orderId: string): RedistributionOrder | null => {
+    const orders = DemoDB.getRedistributionOrders();
+    let approved: RedistributionOrder | null = null;
+    const updated = orders.map((o) => {
+      if (o.id === orderId || o.orderNumber === orderId) {
+        approved = { ...o, status: 'approved' as const, updatedAt: 'Just now' };
+        return approved;
+      }
+      return o;
+    });
+    writeStorage(REDISTRIBUTION_ORDERS_KEY, updated);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('smartcare:rebalance-updated', { detail: approved }));
+    }
+    return approved;
+  },
+
+  dispatchRedistributionOrder: (orderId: string): RedistributionOrder | null => {
+    const orders = DemoDB.getRedistributionOrders();
+    let dispatched: RedistributionOrder | null = null;
+    const updated = orders.map((o) => {
+      if (o.id === orderId || o.orderNumber === orderId) {
+        dispatched = { ...o, status: 'in_transit' as const, updatedAt: 'Just now' };
+        return dispatched;
+      }
+      return o;
+    });
+    writeStorage(REDISTRIBUTION_ORDERS_KEY, updated);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('smartcare:rebalance-updated', { detail: dispatched }));
+    }
+    return dispatched;
+  },
+
+  receiveRedistributionOrder: (
+    orderId: string,
+    otp: string
+  ): { success: boolean; message: string; order?: RedistributionOrder } => {
+    const orders = DemoDB.getRedistributionOrders();
+    const target = orders.find((o) => o.id === orderId || o.orderNumber === orderId);
+
+    if (!target) {
+      return { success: false, message: 'Transfer order not found in manifest.' };
+    }
+
+    if (target.otpCode.trim() !== otp.trim()) {
+      return { success: false, message: 'Invalid OTP verification code. Delivery cannot be verified.' };
+    }
+
+    const updated = orders.map((o) => (o.id === target.id ? { ...o, status: 'delivered' as const, updatedAt: 'Just now' } : o));
+    writeStorage(REDISTRIBUTION_ORDERS_KEY, updated);
+
+    // Apply delivery: increase recipient hospital's stock!
+    const profiles = DemoDB.getAllSupplyProfiles();
+    const updatedProfiles = profiles.map((facility) => {
+      if (facility.hospitalId === target.targetHospitalId) {
+        const newMeds = facility.medicines.map((m) => {
+          if (m.id === target.medicineId) {
+            const newStock = m.currentStock + target.quantity;
+            const newDays = m.dailyConsumption > 0 ? Math.round(newStock / m.dailyConsumption) : 999;
+            return {
+              ...m,
+              currentStock: newStock,
+              daysRemaining: newDays,
+              status: (newDays <= 3 ? 'critical' : newDays <= 7 ? 'low' : 'normal') as MedicineStockStatus,
+              activeShortage: newDays <= 3,
+              shortageReason: newDays <= 3 ? m.shortageReason : undefined,
+              lastUpdated: 'Inward dispatch verified',
+            };
+          }
+          return m;
+        });
+        return { ...facility, medicines: newMeds, lastReportedAt: 'Just now' };
+      }
+      return facility;
+    });
+
+    writeStorage(SUPPLY_PROFILES_KEY, updatedProfiles);
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('smartcare:rebalance-delivered', { detail: { order: target } }));
+      window.dispatchEvent(new CustomEvent('smartcare:supply-updated', { detail: { hospitalId: target.targetHospitalId } }));
+    }
+
+    return {
+      success: true,
+      message: `Verified! Inward transfer of ${target.quantity} ${target.unit} of ${target.medicineName} received into stock.`,
+      order: { ...target, status: 'delivered' },
+    };
+  },
+
+  generateAutoRebalances: (): RedistributionOrder[] => {
+    const profiles = DemoDB.getAllSupplyProfiles();
+    const existingOrders = DemoDB.getRedistributionOrders();
+    const newOrders: RedistributionOrder[] = [...existingOrders];
+
+    // Find shortages in PHCs / Hospitals
+    const nonWarehouses = profiles.filter((p) => p.tier !== 'warehouse');
+    const warehouse = profiles.find((p) => p.tier === 'warehouse') || profiles[profiles.length - 1];
+
+    nonWarehouses.forEach((hosp) => {
+      hosp.medicines.forEach((med) => {
+        if (med.daysRemaining <= 2 || med.activeShortage) {
+          // Check if an active order already exists
+          const existing = newOrders.find(
+            (o) =>
+              o.targetHospitalId === hosp.hospitalId &&
+              o.medicineId === med.id &&
+              ['suggested', 'approved', 'in_transit'].includes(o.status)
+          );
+
+          if (!existing && warehouse) {
+            const rebalQty = Math.max(med.minBuffer * 2, 50);
+            const orderNum = `REBAL-2026-${Math.floor(100 + Math.random() * 900)}`;
+            newOrders.push({
+              id: `rebal-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 100)}`,
+              orderNumber: orderNum,
+              sourceHospitalId: warehouse.hospitalId,
+              sourceHospitalName: warehouse.hospitalName,
+              targetHospitalId: hosp.hospitalId,
+              targetHospitalName: hosp.hospitalName,
+              medicineId: med.id,
+              medicineName: med.name,
+              quantity: rebalQty,
+              unit: med.unit,
+              status: 'suggested',
+              priority: med.daysRemaining <= 1 ? 'CRITICAL' : 'HIGH',
+              routeDistanceKm: Number((12 + Math.random() * 15).toFixed(1)),
+              estimatedTransitMins: Math.round(25 + Math.random() * 20),
+              otpCode: String(Math.floor(100000 + Math.random() * 900000)),
+              createdAt: 'Just now',
+            });
+          }
+        }
+      });
+    });
+
+    writeStorage(REDISTRIBUTION_ORDERS_KEY, newOrders);
+    return newOrders;
+  },
+
+  getDistrictSupplyAggregate: (district = 'Hyderabad'): DistrictSupplyAggregate => {
+    const profiles = DemoDB.getAllSupplyProfiles();
+    const shortages = DemoDB.getShortageReports().filter((s) => !s.resolved);
+    const orders = DemoDB.getRedistributionOrders();
+
+    // Clinical facilities (exclude central warehouse for accurate hospital occupancy & consumption stats)
+    const careFacilities = profiles.filter((p) => p.tier !== 'warehouse');
+
+    // Totals
+    let totalBeds = 0;
+    let occupiedBeds = 0;
+    let totalIcu = 0;
+    let occupiedIcu = 0;
+    let totalOxyAvailable = 0;
+    let totalOxyMax = 0;
+
+    careFacilities.forEach((f) => {
+      totalBeds += f.bedsTotal;
+      occupiedBeds += f.bedsOccupied;
+      totalIcu += f.icuTotal;
+      occupiedIcu += f.icuOccupied;
+      totalOxyAvailable += f.oxygenCylindersAvailable;
+      totalOxyMax += f.oxygenCylindersTotal;
+    });
+
+    const totalBedsOccupancyPercent = totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 100) : 0;
+    const totalIcuOccupancyPercent = totalIcu > 0 ? Math.round((occupiedIcu / totalIcu) * 100) : 0;
+    const oxygenAvailabilityPercent = totalOxyMax > 0 ? Math.round((totalOxyAvailable / totalOxyMax) * 100) : 0;
+
+    // Medicine Aggregations across hospitals
+    const medMap: Record<
+      string,
+      {
+        name: string;
+        category: string;
+        totalStock: number;
+        totalDaily: number;
+        reportingCount: number;
+        shortageHospitals: string[];
+      }
+    > = {};
+
+    careFacilities.forEach((f) => {
+      f.medicines.forEach((m) => {
+        if (!medMap[m.id]) {
+          medMap[m.id] = {
+            name: m.name,
+            category: m.category,
+            totalStock: 0,
+            totalDaily: 0,
+            reportingCount: 0,
+            shortageHospitals: [],
+          };
+        }
+        medMap[m.id].totalStock += m.currentStock;
+        medMap[m.id].totalDaily += m.dailyConsumption;
+        medMap[m.id].reportingCount += 1;
+        if (m.daysRemaining <= 3 || m.activeShortage) {
+          medMap[m.id].shortageHospitals.push(f.hospitalName);
+        }
+      });
+    });
+
+    const medicineSummaries: DistrictMedicineSummary[] = Object.entries(medMap).map(([id, data]) => {
+      const avgDays = data.totalDaily > 0 ? Math.round(data.totalStock / data.totalDaily) : 999;
+      const hasCriticalShortage = data.shortageHospitals.length > 0 || avgDays <= 3;
+      const status: MedicineStockStatus = hasCriticalShortage ? 'critical' : avgDays <= 7 ? 'low' : 'normal';
+
+      return {
+        medicineId: id,
+        medicineName: data.name,
+        category: data.category,
+        totalStock: data.totalStock,
+        avgDailyConsumption: data.totalDaily,
+        districtAvgDaysRemaining: avgDays,
+        hospitalsReporting: data.reportingCount,
+        hospitalsInShortage: data.shortageHospitals.length,
+        criticalHospitals: data.shortageHospitals,
+        status,
+      };
+    });
+
+    // District-wide average stock days
+    const totalDays = medicineSummaries.reduce((sum, m) => sum + (m.districtAvgDaysRemaining < 100 ? m.districtAvgDaysRemaining : 30), 0);
+    const avgStockDaysRemaining = medicineSummaries.length > 0 ? Math.round(totalDays / medicineSummaries.length) : 14;
+
+    const criticalAlertsCount = medicineSummaries.filter((m) => m.status === 'critical').length;
+    const pendingRebalances = orders.filter((o) => o.status === 'suggested').length;
+
+    return {
+      district: 'Hyderabad & Rangareddy Central',
+      state: 'Telangana',
+      totalFacilities: profiles.length,
+      reportingFacilities: profiles.length,
+      criticalAlertsCount,
+      avgStockDaysRemaining,
+      totalBedsOccupancyPercent,
+      totalIcuOccupancyPercent,
+      oxygenAvailabilityPercent,
+      medicineSummaries,
+      facilityProfiles: profiles,
+      pendingRebalances,
+      lastAggregatedAt: 'Today, ' + new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+    };
+  },
 };
+

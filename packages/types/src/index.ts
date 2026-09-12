@@ -418,3 +418,113 @@ export interface HospitalRoom {
 // ─── DonationRecord (stackshift alias) ──────────────────────────────────────
 
 export type DonationRecord = HospitalDonationPost | PatientDonationPost;
+
+// ─── Module 2: AushadhiNet & Health Resource Supply Chain ───────────────────
+
+export type MedicineStockStatus = 'normal' | 'low' | 'critical';
+export type ShortageSeverity = 'critical' | 'high' | 'moderate';
+export type FacilityTier = 'phc' | 'chc' | 'district_hospital' | 'tertiary' | 'warehouse';
+
+export interface MedicineItem {
+  id: string;
+  name: string;
+  category: 'Antibiotics' | 'Chronic Care' | 'Emergency & IV' | 'Vaccines' | 'Critical Supplies';
+  unit: string;
+  currentStock: number;
+  minBuffer: number;
+  dailyConsumption: number;
+  daysRemaining: number;
+  status: MedicineStockStatus;
+  batchNumber: string;
+  expiryDate: string;
+  lastUpdated?: string;
+  activeShortage?: boolean;
+  shortageReason?: string;
+}
+
+export interface HospitalSupplyProfile {
+  hospitalId: string;
+  hospitalName: string;
+  district: string;
+  state: string;
+  tier: FacilityTier;
+  bedsTotal: number;
+  bedsOccupied: number;
+  icuTotal: number;
+  icuOccupied: number;
+  oxygenCylindersAvailable: number;
+  oxygenCylindersTotal: number;
+  medicines: MedicineItem[];
+  lastReportedAt: string;
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
+}
+
+export interface ShortageReport {
+  id: string;
+  hospitalId: string;
+  hospitalName: string;
+  district: string;
+  medicineId: string;
+  medicineName: string;
+  severity: ShortageSeverity;
+  currentStock: number;
+  minBuffer: number;
+  daysRemaining: number;
+  reason: string;
+  reportedAt: string;
+  reportedBy: string;
+  resolved: boolean;
+}
+
+export interface RedistributionOrder {
+  id: string;
+  orderNumber: string;
+  sourceHospitalId: string;
+  sourceHospitalName: string;
+  targetHospitalId: string;
+  targetHospitalName: string;
+  medicineId: string;
+  medicineName: string;
+  quantity: number;
+  unit: string;
+  status: 'suggested' | 'approved' | 'in_transit' | 'delivered';
+  priority: 'CRITICAL' | 'HIGH' | 'NORMAL';
+  routeDistanceKm: number;
+  estimatedTransitMins: number;
+  otpCode: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface DistrictMedicineSummary {
+  medicineId: string;
+  medicineName: string;
+  category: string;
+  totalStock: number;
+  avgDailyConsumption: number;
+  districtAvgDaysRemaining: number;
+  hospitalsReporting: number;
+  hospitalsInShortage: number;
+  criticalHospitals: string[];
+  status: MedicineStockStatus;
+}
+
+export interface DistrictSupplyAggregate {
+  district: string;
+  state: string;
+  totalFacilities: number;
+  reportingFacilities: number;
+  criticalAlertsCount: number;
+  avgStockDaysRemaining: number;
+  totalBedsOccupancyPercent: number;
+  totalIcuOccupancyPercent: number;
+  oxygenAvailabilityPercent: number;
+  medicineSummaries: DistrictMedicineSummary[];
+  facilityProfiles: HospitalSupplyProfile[];
+  pendingRebalances: number;
+  lastAggregatedAt: string;
+}
+

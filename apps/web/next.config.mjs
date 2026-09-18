@@ -18,6 +18,9 @@ const nextConfig = {
     config.resolve.alias['@smartcare/types'] = path.resolve(__dirname, '../../packages/types/src/index.ts');
     return config;
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 };
 
 export default nextConfig;

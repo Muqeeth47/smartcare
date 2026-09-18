@@ -21,6 +21,8 @@ import {
   Bell,
   Check,
   BadgeCheck,
+  Search,
+  Filter,
 } from 'lucide-react';
 
 interface MedicineCatalogItem {
@@ -31,6 +33,7 @@ interface MedicineCatalogItem {
   brandedPrice: number;
   mrp: number;
   dosage: string;
+  category: 'pain' | 'cardiac' | 'antibiotic' | 'respiratory' | 'gastro' | 'maternal';
   isRx: boolean;
 }
 
@@ -43,6 +46,7 @@ const CATALOG_ITEMS: MedicineCatalogItem[] = [
     brandedPrice: 35,
     mrp: 35,
     dosage: '1-0-1',
+    category: 'pain',
     isRx: true,
   },
   {
@@ -53,6 +57,7 @@ const CATALOG_ITEMS: MedicineCatalogItem[] = [
     brandedPrice: 145,
     mrp: 175,
     dosage: '2 puffs PRN',
+    category: 'respiratory',
     isRx: true,
   },
   {
@@ -63,6 +68,7 @@ const CATALOG_ITEMS: MedicineCatalogItem[] = [
     brandedPrice: 210,
     mrp: 230,
     dosage: '1-0-1 with food',
+    category: 'antibiotic',
     isRx: true,
   },
   {
@@ -73,6 +79,7 @@ const CATALOG_ITEMS: MedicineCatalogItem[] = [
     brandedPrice: 22,
     mrp: 24,
     dosage: 'Dissolve in 1L water',
+    category: 'maternal',
     isRx: false,
   },
   {
@@ -83,6 +90,51 @@ const CATALOG_ITEMS: MedicineCatalogItem[] = [
     brandedPrice: 25,
     mrp: 32,
     dosage: '0-0-1',
+    category: 'respiratory',
+    isRx: false,
+  },
+  {
+    id: 'med-6',
+    genericName: 'Metformin Hydrochloride 500 mg (Jan Aushadhi)',
+    brandedName: 'Glycomet 500 (USV)',
+    genericPrice: 18,
+    brandedPrice: 48,
+    mrp: 52,
+    dosage: '1-0-1 after meals',
+    category: 'cardiac',
+    isRx: true,
+  },
+  {
+    id: 'med-7',
+    genericName: 'Amlodipine 5 mg + Telmisartan 40 mg (Jan Aushadhi)',
+    brandedName: 'Telma-AM (Glenmark)',
+    genericPrice: 32,
+    brandedPrice: 110,
+    mrp: 125,
+    dosage: '1-0-0 morning',
+    category: 'cardiac',
+    isRx: true,
+  },
+  {
+    id: 'med-8',
+    genericName: 'Pantoprazole Gastro-Resistant 40 mg (Jan Aushadhi)',
+    brandedName: 'Pan 40 (Alkem)',
+    genericPrice: 22,
+    brandedPrice: 95,
+    mrp: 105,
+    dosage: '1-0-0 before breakfast',
+    category: 'gastro',
+    isRx: true,
+  },
+  {
+    id: 'med-9',
+    genericName: 'Iron & Folic Acid Tablets (Jan Aushadhi PMBJP)',
+    brandedName: 'Autrin (Pfizer)',
+    genericPrice: 12,
+    brandedPrice: 60,
+    mrp: 65,
+    dosage: '0-1-0 with citrus water',
+    category: 'maternal',
     isRx: false,
   },
 ];
@@ -108,6 +160,8 @@ export function PharmacyPage({ variant = 'landing' }: { variant?: 'landing' | 'p
 
   const [useGeneric, setUseGeneric] = useState(true);
   const [fulfillmentType, setFulfillmentType] = useState<'counter' | 'delivery'>('counter');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [deliveryAddress, setDeliveryAddress] = useState(
     patientData.city ? `Near ${patientData.hospital || 'SmartCare Hospital'}, ${patientData.city}` : 'Flat 402, Aditya Towers, Gachibowli, Hyderabad'
   );
@@ -311,14 +365,77 @@ export function PharmacyPage({ variant = 'landing' }: { variant?: 'landing' | 'p
           {/* Two Column Layout: Medicines Catalog & Checkout Summary */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Medicines Catalog (2 cols) */}
-            <div className="lg:col-span-2 space-y-3">
-              <h2 className="text-base font-bold text-[var(--text)] flex items-center gap-2 mb-3">
-                <ShoppingBag className="w-4 h-4 text-[var(--teal)]" />
-                Hospital Formulary &amp; Prescribed Medications
-              </h2>
+            <div className="lg:col-span-2 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <h2 className="text-base font-bold text-[var(--text)] flex items-center gap-2">
+                  <ShoppingBag className="w-4 h-4 text-[var(--teal)]" />
+                  Hospital Formulary &amp; Prescribed Medications
+                </h2>
+                <span className="text-xs text-[var(--text-muted)] font-medium">
+                  {CATALOG_ITEMS.length} verified PMBJP formulations
+                </span>
+              </div>
+
+              {/* Live Search & Filter Bar */}
+              <div className="space-y-2.5">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-[var(--text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search by generic salt name, brand alternative, or symptom..."
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] text-xs sm:text-sm text-[var(--text)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--teal)] transition"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--text-muted)] hover:text-[var(--text)] px-1.5 py-0.5 rounded bg-[var(--surface-sunken)]"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                {/* Category Chips */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                  {[
+                    { id: 'all', label: 'All Medicines' },
+                    { id: 'pain', label: 'Pain & Fever' },
+                    { id: 'cardiac', label: 'Diabetes & BP' },
+                    { id: 'antibiotic', label: 'Antibiotics' },
+                    { id: 'respiratory', label: 'Respiratory' },
+                    { id: 'gastro', label: 'Gastrointestinal' },
+                    { id: 'maternal', label: 'Maternal & Child' },
+                  ].map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setSelectedCategory(cat.id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer min-h-[32px] ${
+                        selectedCategory === cat.id
+                          ? 'bg-[var(--teal)] text-white shadow-xs'
+                          : 'bg-[var(--surface)] text-[var(--text-muted)] hover:text-[var(--text)] border border-[var(--line)]'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               <div className="space-y-3">
-                {CATALOG_ITEMS.map((item) => {
+                {CATALOG_ITEMS.filter((item) => {
+                  const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
+                  const q = searchQuery.toLowerCase().trim();
+                  const matchesQuery =
+                    !q ||
+                    item.genericName.toLowerCase().includes(q) ||
+                    item.brandedName.toLowerCase().includes(q) ||
+                    item.dosage.toLowerCase().includes(q);
+                  return matchesCategory && matchesQuery;
+                }).map((item) => {
                   const inCart = cart.find((c) => c.id === item.id);
                   const currentPrice = useGeneric ? item.genericPrice : item.brandedPrice;
                   const displayName = useGeneric ? item.genericName : item.brandedName;

@@ -85,6 +85,22 @@ export function AmbulancePage({ embedded = false }: { embedded?: boolean }) {
   const [isLocating, setIsLocating] = useState(false);
   const [isDispatching, setIsDispatching] = useState(false);
 
+  // Live ETA countdown (seconds)
+  const [etaSecondsLeft, setEtaSecondsLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!activeBooking) { setEtaSecondsLeft(null); return; }
+    const initSecs = (activeBooking.etaMinutes || 6) * 60;
+    setEtaSecondsLeft(initSecs);
+    const timer = setInterval(() => {
+      setEtaSecondsLeft((prev) => {
+        if (prev === null || prev <= 1) { clearInterval(timer); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [activeBooking?.id]);
+
   useEffect(() => {
     const current = DemoDB.getActiveAmbulance();
     setActiveBooking(current);
@@ -190,10 +206,18 @@ export function AmbulancePage({ embedded = false }: { embedded?: boolean }) {
                 </div>
               </div>
               <div className="sm:text-right bg-rose-50/60 p-3 sm:p-0 rounded-xl sm:bg-transparent">
-                <span className="text-xs text-[var(--muted)] block font-medium">Estimated Arrival</span>
-                <strong className="text-2xl sm:text-3xl font-extrabold text-rose-600">
-                  ~{activeBooking.etaMinutes} mins
-                </strong>
+                <span className="text-xs text-[var(--muted)] block font-medium">
+                  {etaSecondsLeft === 0 ? 'Arriving Now' : 'Live ETA Countdown'}
+                </span>
+                {etaSecondsLeft !== null && etaSecondsLeft > 0 ? (
+                  <strong className="text-2xl sm:text-3xl font-extrabold text-rose-600 font-mono tabular-nums">
+                    {String(Math.floor(etaSecondsLeft / 60)).padStart(2, '0')}:{String(etaSecondsLeft % 60).padStart(2, '0')}
+                  </strong>
+                ) : etaSecondsLeft === 0 ? (
+                  <strong className="text-xl sm:text-2xl font-extrabold text-emerald-600 animate-pulse">Arrived</strong>
+                ) : (
+                  <strong className="text-2xl sm:text-3xl font-extrabold text-rose-600">~{activeBooking.etaMinutes} min</strong>
+                )}
               </div>
             </div>
 
@@ -211,9 +235,16 @@ export function AmbulancePage({ embedded = false }: { embedded?: boolean }) {
                 </span>
               </div>
 
-              {/* Progress bar */}
+              {/* Dynamic progress bar based on elapsed time */}
               <div className="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-rose-500 to-amber-500 rounded-full w-[65%] animate-pulse" />
+                <div
+                  className="h-full bg-gradient-to-r from-rose-500 to-amber-500 rounded-full transition-all duration-1000"
+                  style={{
+                    width: etaSecondsLeft !== null
+                      ? `${Math.max(5, 100 - Math.round((etaSecondsLeft / ((activeBooking.etaMinutes || 6) * 60)) * 100))}%`
+                      : '65%'
+                  }}
+                />
               </div>
 
               <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 text-[11px] text-[var(--muted)] font-medium">

@@ -26,7 +26,7 @@ export function Toast() {
         className={cn(
           'flex items-center gap-2 px-4 py-2.5 rounded-[var(--radius)]',
           'bg-[var(--surface-raised)] border shadow-[var(--shadow-card)]',
-          'text-sm font-medium whitespace-nowrap pointer-events-auto',
+          'text-xs sm:text-sm font-medium break-words max-w-[90vw] sm:max-w-md pointer-events-auto',
           'animate-in fade-in slide-in-from-bottom-2 duration-200',
           toastType === 'success' && 'border-[var(--green)] text-[var(--green)]',
           toastType === 'error' && 'border-[var(--red)] text-[var(--red)]',

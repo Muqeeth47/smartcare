@@ -27,6 +27,9 @@ import {
   Activity,
   Building2,
   Stethoscope,
+  TrendingUp,
+  Cpu,
+  Layers,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSession, useAppStore } from '@/lib/store/app-store';
@@ -101,11 +104,13 @@ const SIDEBAR_ITEMS: Record<string, RoleConfig> = {
         badge: 'MoHFW Mesh',
         items: [
           { label: 'Command Overview', href: '/dashboard/admin?adminTab=command&commandTab=summary', icon: Building2 },
+          { label: 'PHC Telemetry (Beds & Staff)', href: '/dashboard/admin?adminTab=command&commandTab=telemetry', icon: Activity },
           { label: 'Shortage Heat Map', href: '/dashboard/admin?adminTab=command&commandTab=heatmap', icon: MapPin },
+          { label: 'Demand Forecaster & Alerts', href: '/dashboard/admin?adminTab=command&commandTab=forecasting', icon: TrendingUp },
           { label: 'AI Redistribution', href: '/dashboard/admin?adminTab=command&commandTab=redistribution', icon: Truck },
-          { label: 'Emergency SOS Escalation', href: '/dashboard/admin?adminTab=command&commandTab=escalation', icon: ShieldAlert },
-          { label: 'Surge Forecaster', href: '/dashboard/admin?adminTab=command&commandTab=federated', icon: Activity },
-          { label: 'Logistics Manifest', href: '/dashboard/admin?adminTab=command&commandTab=manifest', icon: Truck },
+          { label: 'Multi-State Federated Hub', href: '/dashboard/admin?adminTab=command&commandTab=federated', icon: Cpu },
+          { label: 'Transit Manifest', href: '/dashboard/admin?adminTab=command&commandTab=manifest', icon: Layers },
+          { label: 'Emergency SOS & POs', href: '/dashboard/admin?adminTab=command&commandTab=escalation', icon: ShieldAlert },
         ],
       },
     ],

@@ -1,5 +1,5 @@
 import { WorkspaceShell } from '@/components/layout/Shell';
-import { SkeletonStats, SkeletonCard } from '@/components/ui/Skeleton';
+import { SkeletonStats } from '@/components/ui/Skeleton';
 
 export default function Loading() {
   return (

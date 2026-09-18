@@ -7,7 +7,6 @@ import {
   Activity,
   Info,
   Droplets,
-  ArrowLeft,
   CalendarPlus,
   ShieldAlert,
   Compass,

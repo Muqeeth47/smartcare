@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useQueue, useSession, useAppStore, sortQueue, queueStatus } from '@/lib/store/app-store';
@@ -68,6 +68,27 @@ export function QueueWorkspacePage() {
   // QR Modal
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrInput, setQrInput] = useState('');
+
+  // PHC Attendance banner (from DemoDB supply profiles)
+  const [attendance, setAttendance] = useState<{ doctorsOnDuty: number; doctorsSanctioned: number; nursesOnDuty: number; nursesSanctioned: number; attendancePercent: number; shiftStatus: string } | null>(null);
+
+  useEffect(() => {
+    const loadAttendance = () => {
+      try {
+        const profiles = DemoDB.getAllSupplyProfiles();
+        const profile = profiles.find((p) => p.hospitalName === hospital) || profiles[0];
+        if (profile?.attendance) setAttendance(profile.attendance as typeof attendance);
+      } catch { /* ignore */ }
+    };
+    loadAttendance();
+    const handler = () => loadAttendance();
+    window.addEventListener('smartcare:telemetry-15m-sync', handler);
+    window.addEventListener('smartcare:supply-updated', handler);
+    return () => {
+      window.removeEventListener('smartcare:telemetry-15m-sync', handler);
+      window.removeEventListener('smartcare:supply-updated', handler);
+    };
+  }, [hospital]);
 
   if (!role) return null;
 
@@ -238,6 +259,50 @@ export function QueueWorkspacePage() {
             </span>
           </div>
         </div>
+
+        {/* PHC Shift Attendance Banner */}
+        {attendance && (
+          <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl border ${
+            attendance.attendancePercent < 60
+              ? 'bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900'
+              : attendance.attendancePercent < 80
+              ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900'
+              : 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900'
+          }`}>
+            <div className="flex items-center gap-3">
+              <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                attendance.attendancePercent < 60 ? 'bg-rose-100 text-rose-600' :
+                attendance.attendancePercent < 80 ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
+              }`}>
+                <Stethoscope size={18} />
+              </span>
+              <div>
+                <p className="text-sm font-bold text-[var(--ink)]">
+                  Shift Attendance &middot; {attendance.shiftStatus} Shift
+                </p>
+                <p className="text-xs text-[var(--muted)]">
+                  {attendance.doctorsOnDuty}/{attendance.doctorsSanctioned} Doctors &nbsp;&middot;&nbsp;
+                  {attendance.nursesOnDuty}/{attendance.nursesSanctioned} Nurses on duty
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="w-32 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${Math.min(attendance.attendancePercent, 100)}%`,
+                    background: attendance.attendancePercent < 60 ? '#dc2626' : attendance.attendancePercent < 80 ? '#d97706' : '#16a34a'
+                  }}
+                />
+              </div>
+              <span className={`text-sm font-extrabold ${
+                attendance.attendancePercent < 60 ? 'text-rose-600' :
+                attendance.attendancePercent < 80 ? 'text-amber-600' : 'text-emerald-600'
+              }`}>{attendance.attendancePercent}%</span>
+            </div>
+          </div>
+        )}
 
         {/* Main Queue Management Section */}
         <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-5 sm:p-6 shadow-xs space-y-5">

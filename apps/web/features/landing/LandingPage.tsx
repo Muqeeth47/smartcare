@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -18,12 +18,40 @@ import {
   Hospital as HospitalIcon,
   CheckCircle2,
   Clock,
+  UserRound,
+  Cpu,
+  Sparkles,
+  TrendingUp,
+  ShieldAlert,
 } from 'lucide-react';
 import { Topbar } from '@/components/layout/Topbar';
 import { Footer } from '@/components/layout/Shell';
+import { DemoDB } from '@/lib/db/demo-db';
 
 export function LandingPage() {
   const [selectedHospital, setSelectedHospital] = useState<'SmartCare Community Hospital' | 'CityCare Trauma Centre'>('SmartCare Community Hospital');
+
+  // Live system health status (reads from DemoDB)
+  const [criticalAlerts, setCriticalAlerts] = useState(0);
+  const [facilitiesCount, setFacilitiesCount] = useState(0);
+
+  useEffect(() => {
+    const loadStatus = () => {
+      try {
+        const profiles = DemoDB.getAllSupplyProfiles();
+        const crit = profiles.reduce((sum, fp) => sum + fp.medicines.filter((m) => m.status === 'critical').length, 0);
+        setCriticalAlerts(crit);
+        setFacilitiesCount(profiles.length);
+      } catch { /* silently ignore if not available */ }
+    };
+    loadStatus();
+    window.addEventListener('smartcare:supply-updated', loadStatus);
+    window.addEventListener('smartcare:telemetry-15m-sync', loadStatus);
+    return () => {
+      window.removeEventListener('smartcare:supply-updated', loadStatus);
+      window.removeEventListener('smartcare:telemetry-15m-sync', loadStatus);
+    };
+  }, []);
 
   const HOSPITALS = [
     {
@@ -151,6 +179,22 @@ export function LandingPage() {
                 <span className="flex items-center gap-1.5"><Accessibility size={14} /> Mobile-first controls</span>
               </div>
 
+              {/* Live health system status pill */}
+              {criticalAlerts > 0 && (
+                <div
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mt-6"
+                  style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)' }}
+                >
+                  <ShieldAlert size={13} style={{ color: '#fca5a5' }} />
+                  <span style={{ color: '#fca5a5', fontSize: '.68rem', fontWeight: 800, letterSpacing: '.08em' }}>
+                    {criticalAlerts} critical stock shortages active across {facilitiesCount} facilities
+                  </span>
+                  <span
+                    style={{ display: 'inline-block', width: '.4rem', height: '.4rem', borderRadius: '50%', background: '#f87171', animation: 'pulse 1.5s ease-in-out infinite' }}
+                  />
+                </div>
+              )}
+
               {/* Hero facts */}
               <div
                 className="hero-facts mt-8 pt-4 grid grid-cols-3 gap-2 sm:gap-3"
@@ -158,7 +202,7 @@ export function LandingPage() {
               >
                 {[
                   { stat: '4 steps', label: 'patient booking flow' },
-                  { stat: '3 roles',  label: 'ready for demo' },
+                  { stat: `${facilitiesCount || 3} PHCs`,  label: 'monitored live' },
                   { stat: '1 profile', label: 'portable medical history' },
                 ].map((f) => (
                   <div key={f.stat} className="flex flex-col gap-0.5 min-w-0">
@@ -365,72 +409,137 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* ── For providers ──────────────────────────────────────────────── */}
+        {/* ── 4-Tier Public Health Mesh Portals ──────────────────────────── */}
         <section
           id="for-providers"
-          aria-label="Hospital portals"
+          aria-label="National Health Mesh Portals"
           data-section="provider-portals"
-          className="portal-split max-w-7xl mx-auto mt-4 grid grid-cols-1 md:grid-cols-2 gap-4"
+          className="max-w-7xl mx-auto mt-6"
         >
-          {/* Doctor */}
-          <article className="portal-panel border border-[var(--line)] rounded-xl p-6 sm:p-8 flex flex-col gap-5 hover:shadow-xl transition-shadow bg-[var(--surface)]">
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: 'var(--mint)', color: 'var(--teal)' }}>
-              <Stethoscope size={22} />
-            </div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
             <div>
-              <div
-                className="eyebrow-dark flex items-center gap-2 mb-2"
-                style={{ color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '.14em', fontSize: '.7rem', fontWeight: 800 }}
-              >
+              <div className="eyebrow-dark flex items-center gap-2" style={{ color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '.14em', fontSize: '.72rem', fontWeight: 800 }}>
                 <span style={{ width: '.45rem', height: '.45rem', borderRadius: '50%', background: 'var(--teal)', display: 'inline-block' }} />
-                Hospital care team
+                National Health Mesh Infrastructure
               </div>
-              <h2 style={{ maxWidth: '15ch', margin: '.7rem 0 .75rem', color: 'var(--teal-dark)', fontSize: 'clamp(1.5rem, 3vw, 2.4rem)', lineHeight: 1.05, letterSpacing: '-.05em', fontWeight: 800 }}>
-                Move each clinical handoff forward.
+              <h2 style={{ margin: '.3rem 0 0', color: 'var(--teal-dark)', fontSize: 'clamp(1.4rem, 2.5vw, 2.2rem)', letterSpacing: '-.04em', fontWeight: 800 }}>
+                Role-Aware Portals for Every Tier
               </h2>
-              <p style={{ color: 'var(--muted)', lineHeight: 1.6, fontSize: '.88rem' }}>
-                Review the assigned queue, call the next patient, scan tickets, and follow visits through consultation.
-              </p>
             </div>
             <Link
-              id="open-doctor-portal"
-              href="/login?role=doctor"
-              className="btn-primary mt-auto inline-flex items-center justify-center gap-2 font-extrabold text-sm text-white no-underline"
-              style={{ minHeight: '2.8rem', padding: '.76rem 1.1rem', borderRadius: '.65rem', background: 'var(--teal)', border: '1px solid var(--teal)', boxShadow: '0 4px 12px rgba(15,92,168,.28)', cursor: 'pointer' }}
+              href="/login"
+              className="text-xs font-bold text-[var(--teal)] hover:underline flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-[var(--surface-sunken)] border border-[var(--line)]"
             >
-              Open doctor sign-in <ArrowRight size={16} />
+              <span>Explore All Sign-In Options</span>
+              <ArrowRight size={13} />
             </Link>
-          </article>
+          </div>
 
-          {/* Ops */}
-          <article className="portal-panel border border-[var(--line)] rounded-xl p-6 sm:p-8 flex flex-col gap-5 hover:shadow-xl transition-shadow bg-[var(--surface)]">
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: 'var(--saffron-bg)', color: 'var(--saffron)' }}>
-              <Building2 size={22} />
-            </div>
-            <div>
-              <div
-                className="flex items-center gap-2 mb-2"
-                style={{ color: 'var(--saffron)', textTransform: 'uppercase', letterSpacing: '.14em', fontSize: '.7rem', fontWeight: 800 }}
-              >
-                <span style={{ width: '.45rem', height: '.45rem', borderRadius: '50%', background: 'var(--saffron)', display: 'inline-block' }} />
-                Hospital Operations
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* 1. Citizen / Patient */}
+            <article className="border border-[var(--line)] rounded-2xl p-5 flex flex-col justify-between hover:shadow-xl hover:-translate-y-0.5 transition-all bg-[var(--surface)] group">
+              <div>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  <UserRound size={20} />
+                </div>
+                <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">
+                  Citizen Portal
+                </div>
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-white mb-2 leading-snug">
+                  Live Queues & ABHA Rx
+                </h3>
+                <p className="text-xs text-[var(--text-muted)] leading-relaxed mb-4">
+                  Check live consultation wait times, reserve your token from home, and access tamper-proof digital prescriptions.
+                </p>
               </div>
-              <h2 style={{ maxWidth: '15ch', margin: '.7rem 0 .75rem', color: 'var(--teal-dark)', fontSize: 'clamp(1.5rem, 3vw, 2.4rem)', lineHeight: 1.05, letterSpacing: '-.05em', fontWeight: 800 }}>
-                Keep rooms and walk-ins visible.
-              </h2>
-              <p style={{ color: 'var(--muted)', lineHeight: 1.6, fontSize: '.88rem' }}>
-                Register walk-in patients, assign clinician queues, track room readiness, and monitor centre demand.
-              </p>
-            </div>
-            <Link
-              id="open-ops-portal"
-              href="/login?role=staff"
-              className="btn-secondary mt-auto inline-flex items-center justify-center gap-2 font-extrabold text-sm no-underline"
-              style={{ minHeight: '2.8rem', padding: '.76rem 1.1rem', borderRadius: '.65rem', color: 'var(--teal-dark)', background: 'var(--surface)', border: '1px solid var(--line-strong)', boxShadow: '0 2px 8px rgba(15,92,168,.10)', cursor: 'pointer' }}
-            >
-              Open operations sign-in <ArrowRight size={16} />
-            </Link>
-          </article>
+              <Link
+                id="open-patient-portal"
+                href="/login?portal=patient"
+                className="mt-auto flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all no-underline"
+              >
+                <span>Enter Citizen Portal</span>
+                <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </article>
+
+            {/* 2. Doctor / PHC In-Charge */}
+            <article className="border border-[var(--line)] rounded-2xl p-5 flex flex-col justify-between hover:shadow-xl hover:-translate-y-0.5 transition-all bg-[var(--surface)] group">
+              <div>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
+                  <Stethoscope size={20} />
+                </div>
+                <div className="text-[11px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider mb-1">
+                  PHC Clinical Hub
+                </div>
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-white mb-2 leading-snug">
+                  OPD Triage & Telemetry
+                </h3>
+                <p className="text-xs text-[var(--text-muted)] leading-relaxed mb-4">
+                  Triage walk-in patients, update ward bed allocations in real time, and log medical personnel shift attendance.
+                </p>
+              </div>
+              <Link
+                id="open-doctor-portal"
+                href="/login?portal=doctor"
+                className="mt-auto flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-xs transition-all no-underline"
+              >
+                <span>Open Doctor Sign-In</span>
+                <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </article>
+
+            {/* 3. District CMO */}
+            <article className="border border-[var(--line)] rounded-2xl p-5 flex flex-col justify-between hover:shadow-xl hover:-translate-y-0.5 transition-all bg-[var(--surface)] group">
+              <div>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                  <ShieldCheck size={20} />
+                </div>
+                <div className="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1">
+                  District Health Hub
+                </div>
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-white mb-2 leading-snug">
+                  Shortages & Rebalancing
+                </h3>
+                <p className="text-xs text-[var(--text-muted)] leading-relaxed mb-4">
+                  Aggregate stockout risks across local PHCs, authorize central depot replenishment, and issue emergency POs.
+                </p>
+              </div>
+              <Link
+                id="open-cmo-portal"
+                href="/login?portal=cmo"
+                className="mt-auto flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition-all no-underline"
+              >
+                <span>Open CMO Sign-In</span>
+                <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </article>
+
+            {/* 4. State Command & AI Mesh */}
+            <article className="border border-[var(--line)] rounded-2xl p-5 flex flex-col justify-between hover:shadow-xl hover:-translate-y-0.5 transition-all bg-[var(--surface)] group">
+              <div>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                  <Cpu size={20} />
+                </div>
+                <div className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-1">
+                  MoHFW State Mesh
+                </div>
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-white mb-2 leading-snug">
+                  15m Telemetry & FedAI
+                </h3>
+                <p className="text-xs text-[var(--text-muted)] leading-relaxed mb-4">
+                  National 15-minute telemetry sync, AI epidemic demand forecasting, and cross-state federated learning rounds.
+                </p>
+              </div>
+              <Link
+                id="open-commander-portal"
+                href="/login?portal=commander"
+                className="mt-auto flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all no-underline"
+              >
+                <span>Open State Command</span>
+                <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </article>
+          </div>
         </section>
 
         {/* ── Trust row ──────────────────────────────────────────────────── */}

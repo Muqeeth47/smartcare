@@ -21,6 +21,12 @@ import type {
   FacilityTier,
   MedicineStockStatus,
   ShortageSeverity,
+  MedicalPersonnelAttendance,
+  BedCategoryBreakdown,
+  PHCFootfallTelemetry,
+  StateFederatedNode,
+  TelemetryPacket15m,
+  EpidemicForecastScenario,
 } from '@smartcare/types';
 
 // ─── Storage helpers ─────────────────────────────────────────────────────────
@@ -53,6 +59,8 @@ const PHARMACY_ORDERS_KEY = 'smartcare.pharmacyOrders';
 const SUPPLY_PROFILES_KEY = 'smartcare.supplyProfiles';
 const REDISTRIBUTION_ORDERS_KEY = 'smartcare.redistributionOrders';
 const SHORTAGE_REPORTS_KEY = 'smartcare.shortageReports';
+const FEDERATED_NODES_KEY = 'smartcare.federatedNodes';
+const TELEMETRY_PACKETS_KEY = 'smartcare.telemetryPackets';
 
 // ─── Module 2 Supply Default Data ──────────────────────────────────────────
 
@@ -71,6 +79,37 @@ const DEFAULT_SUPPLY_PROFILES: HospitalSupplyProfile[] = [
     oxygenCylindersTotal: 80,
     lastReportedAt: 'Today, 09:30 AM',
     coordinates: { lat: 17.385, lng: 78.4867 },
+    attendance: {
+      doctorsOnDuty: 24,
+      doctorsSanctioned: 26,
+      nursesOnDuty: 62,
+      nursesSanctioned: 65,
+      pharmacistsOnDuty: 6,
+      labTechsOnDuty: 8,
+      attendancePercent: 95,
+      patientToDoctorRatio: 18,
+      shiftStatus: 'Morning',
+      lastAttendanceSync: '10 mins ago',
+    },
+    bedBreakdown: {
+      generalTotal: 150,
+      generalOccupied: 128,
+      oxygenTotal: 50,
+      oxygenOccupied: 42,
+      icuTotal: 30,
+      icuOccupied: 28,
+      pediatricTotal: 12,
+      pediatricOccupied: 8,
+      traumaTotal: 8,
+      traumaOccupied: 4,
+    },
+    footfall: {
+      todayFootfall: 420,
+      hourlyInfluxRate: 38,
+      emergencyCasesToday: 19,
+      triageRedPercent: 8,
+      footfallTrend: 'increasing',
+    },
     medicines: [
       {
         id: 'med-pcm',
@@ -232,6 +271,37 @@ const DEFAULT_SUPPLY_PROFILES: HospitalSupplyProfile[] = [
     oxygenCylindersTotal: 10,
     lastReportedAt: 'Today, 10:15 AM',
     coordinates: { lat: 17.2543, lng: 78.4312 },
+    attendance: {
+      doctorsOnDuty: 2,
+      doctorsSanctioned: 3,
+      nursesOnDuty: 4,
+      nursesSanctioned: 5,
+      pharmacistsOnDuty: 1,
+      labTechsOnDuty: 1,
+      attendancePercent: 80,
+      patientToDoctorRatio: 46,
+      shiftStatus: 'Morning',
+      lastAttendanceSync: '14 mins ago',
+    },
+    bedBreakdown: {
+      generalTotal: 12,
+      generalOccupied: 10,
+      oxygenTotal: 5,
+      oxygenOccupied: 4,
+      icuTotal: 2,
+      icuOccupied: 2,
+      pediatricTotal: 1,
+      pediatricOccupied: 1,
+      traumaTotal: 0,
+      traumaOccupied: 0,
+    },
+    footfall: {
+      todayFootfall: 92,
+      hourlyInfluxRate: 14,
+      emergencyCasesToday: 4,
+      triageRedPercent: 6,
+      footfallTrend: 'increasing',
+    },
     medicines: [
       {
         id: 'med-pcm',
@@ -401,6 +471,37 @@ const DEFAULT_SUPPLY_PROFILES: HospitalSupplyProfile[] = [
     oxygenCylindersTotal: 12,
     lastReportedAt: 'Today, 08:45 AM',
     coordinates: { lat: 17.44, lng: 78.3489 },
+    attendance: {
+      doctorsOnDuty: 3,
+      doctorsSanctioned: 4,
+      nursesOnDuty: 6,
+      nursesSanctioned: 7,
+      pharmacistsOnDuty: 2,
+      labTechsOnDuty: 2,
+      attendancePercent: 86,
+      patientToDoctorRatio: 36,
+      shiftStatus: 'Morning',
+      lastAttendanceSync: '6 mins ago',
+    },
+    bedBreakdown: {
+      generalTotal: 18,
+      generalOccupied: 12,
+      oxygenTotal: 8,
+      oxygenOccupied: 6,
+      icuTotal: 4,
+      icuOccupied: 3,
+      pediatricTotal: 0,
+      pediatricOccupied: 0,
+      traumaTotal: 0,
+      traumaOccupied: 0,
+    },
+    footfall: {
+      todayFootfall: 110,
+      hourlyInfluxRate: 18,
+      emergencyCasesToday: 5,
+      triageRedPercent: 5,
+      footfallTrend: 'stable',
+    },
     medicines: [
       {
         id: 'med-pcm',
@@ -558,6 +659,37 @@ const DEFAULT_SUPPLY_PROFILES: HospitalSupplyProfile[] = [
     oxygenCylindersTotal: 120,
     lastReportedAt: 'Today, 10:00 AM',
     coordinates: { lat: 17.3616, lng: 78.4747 },
+    attendance: {
+      doctorsOnDuty: 38,
+      doctorsSanctioned: 42,
+      nursesOnDuty: 95,
+      nursesSanctioned: 100,
+      pharmacistsOnDuty: 8,
+      labTechsOnDuty: 14,
+      attendancePercent: 93,
+      patientToDoctorRatio: 22,
+      shiftStatus: 'Morning',
+      lastAttendanceSync: '2 mins ago',
+    },
+    bedBreakdown: {
+      generalTotal: 230,
+      generalOccupied: 195,
+      oxygenTotal: 100,
+      oxygenOccupied: 86,
+      icuTotal: 50,
+      icuOccupied: 41,
+      pediatricTotal: 12,
+      pediatricOccupied: 9,
+      traumaTotal: 8,
+      traumaOccupied: 4,
+    },
+    footfall: {
+      todayFootfall: 680,
+      hourlyInfluxRate: 64,
+      emergencyCasesToday: 32,
+      triageRedPercent: 9,
+      footfallTrend: 'increasing',
+    },
     medicines: [
       {
         id: 'med-pcm',
@@ -715,6 +847,37 @@ const DEFAULT_SUPPLY_PROFILES: HospitalSupplyProfile[] = [
     oxygenCylindersTotal: 400,
     lastReportedAt: 'Today, 07:00 AM',
     coordinates: { lat: 17.41, lng: 78.46 },
+    attendance: {
+      doctorsOnDuty: 0,
+      doctorsSanctioned: 0,
+      nursesOnDuty: 0,
+      nursesSanctioned: 0,
+      pharmacistsOnDuty: 14,
+      labTechsOnDuty: 6,
+      attendancePercent: 100,
+      patientToDoctorRatio: 0,
+      shiftStatus: 'Morning',
+      lastAttendanceSync: 'Just now',
+    },
+    bedBreakdown: {
+      generalTotal: 0,
+      generalOccupied: 0,
+      oxygenTotal: 0,
+      oxygenOccupied: 0,
+      icuTotal: 0,
+      icuOccupied: 0,
+      pediatricTotal: 0,
+      pediatricOccupied: 0,
+      traumaTotal: 0,
+      traumaOccupied: 0,
+    },
+    footfall: {
+      todayFootfall: 0,
+      hourlyInfluxRate: 0,
+      emergencyCasesToday: 0,
+      triageRedPercent: 0,
+      footfallTrend: 'stable',
+    },
     medicines: [
       {
         id: 'med-pcm',
@@ -1205,6 +1368,166 @@ function saveRegisteredUsers(users: Record<string, typeof DEMO_USERS[string]>): 
   const registered = Object.fromEntries(Object.entries(users).filter(([email]) => !DEMO_USERS[email]));
   writeStorage(ACCOUNTS_KEY, registered);
 }
+
+// ─── Federated Learning & Telemetry Data ─────────────────────────────────────
+
+const DEFAULT_FEDERATED_NODES: StateFederatedNode[] = [
+  {
+    stateId: 'node-tg',
+    stateName: 'Telangana',
+    capital: 'Hyderabad Control Hub',
+    activePhcs: 842,
+    localDatasetSize: '1.42M records',
+    modelAccuracy: 98.4,
+    localLoss: 0.012,
+    lastRoundTrained: 42,
+    status: 'synced',
+    gradientSignature: 'Δw_TG [0.042, -0.118, 0.891, 0.312]',
+    dominantEpidemicFactor: 'Seasonal Dengue & Viral Fever Cluster',
+    forecastConfidence: 96.2,
+  },
+  {
+    stateId: 'node-mh',
+    stateName: 'Maharashtra',
+    capital: 'Mumbai / Pune Grid Hub',
+    activePhcs: 1820,
+    localDatasetSize: '3.85M records',
+    modelAccuracy: 97.9,
+    localLoss: 0.015,
+    lastRoundTrained: 42,
+    status: 'synced',
+    gradientSignature: 'Δw_MH [0.129, 0.054, -0.221, 0.651]',
+    dominantEpidemicFactor: 'Monsoon Leptospirosis & Acute GI',
+    forecastConfidence: 94.8,
+  },
+  {
+    stateId: 'node-ka',
+    stateName: 'Karnataka',
+    capital: 'Bengaluru Directorate Hub',
+    activePhcs: 1240,
+    localDatasetSize: '2.18M records',
+    modelAccuracy: 98.1,
+    localLoss: 0.014,
+    lastRoundTrained: 42,
+    status: 'synced',
+    gradientSignature: 'Δw_KA [-0.088, 0.174, 0.442, -0.092]',
+    dominantEpidemicFactor: 'Suburban Pediatric Respiratory Spikes',
+    forecastConfidence: 95.5,
+  },
+  {
+    stateId: 'node-up',
+    stateName: 'Uttar Pradesh',
+    capital: 'Lucknow Central Hub',
+    activePhcs: 3450,
+    localDatasetSize: '6.12M records',
+    modelAccuracy: 96.8,
+    localLoss: 0.021,
+    lastRoundTrained: 41,
+    status: 'online',
+    gradientSignature: 'Δw_UP [0.215, -0.042, 0.763, 0.489]',
+    dominantEpidemicFactor: 'Viral Encephalitis & Waterborne Outbreaks',
+    forecastConfidence: 93.1,
+  },
+  {
+    stateId: 'node-tn',
+    stateName: 'Tamil Nadu',
+    capital: 'Chennai Health Directorate',
+    activePhcs: 1410,
+    localDatasetSize: '2.94M records',
+    modelAccuracy: 98.8,
+    localLoss: 0.010,
+    lastRoundTrained: 42,
+    status: 'synced',
+    gradientSignature: 'Δw_TN [0.031, -0.084, 0.512, 0.229]',
+    dominantEpidemicFactor: 'Post-Monsoon Vector Surge & Chikungunya',
+    forecastConfidence: 97.4,
+  },
+];
+
+const DEFAULT_FORECAST_SCENARIOS: EpidemicForecastScenario[] = [
+  {
+    id: 'scen-baseline',
+    name: 'Standard Baseline Operation',
+    tag: 'Normal Burn Rate',
+    description: 'Historical median outpatient footfall and routine chronic disease consumption.',
+    medicineMultiplier: 1.0,
+    bedDemandMultiplier: 1.0,
+    targetedMedicines: [],
+    riskSeverity: 'MODERATE',
+  },
+  {
+    id: 'scen-dengue',
+    name: 'Post-Monsoon Dengue Outbreak',
+    tag: 'High Vector Surge',
+    description: 'Acute platelet & fluid management crisis with +75% surge in IV Saline and Paracetamol.',
+    medicineMultiplier: 1.75,
+    bedDemandMultiplier: 1.5,
+    targetedMedicines: ['med-ns', 'med-pcm', 'med-amox'],
+    riskSeverity: 'CRITICAL',
+  },
+  {
+    id: 'scen-heatwave',
+    name: 'Extreme Summer Heatwave Surge',
+    tag: 'Dehydration Crisis',
+    description: 'Severe heat exhaustion admissions causing +85% surge in ORS sachets and IV fluids.',
+    medicineMultiplier: 1.85,
+    bedDemandMultiplier: 1.4,
+    targetedMedicines: ['med-ors', 'med-ns', 'med-insulin'],
+    riskSeverity: 'CRITICAL',
+  },
+  {
+    id: 'scen-flu',
+    name: 'Seasonal Influenza Flu Cluster',
+    tag: 'Respiratory Caseload',
+    description: 'Pediatric and elderly acute respiratory infections causing +50% antibiotic and antipyretic draw.',
+    medicineMultiplier: 1.5,
+    bedDemandMultiplier: 1.25,
+    targetedMedicines: ['med-amox', 'med-pcm', 'med-oxy'],
+    riskSeverity: 'HIGH',
+  },
+];
+
+const DEFAULT_TELEMETRY_PACKETS: TelemetryPacket15m[] = [
+  {
+    packetId: 'PKT-2026-HYD-108',
+    timestamp: 'Just now (13:15)',
+    cycleNumber: 108,
+    district: 'Hyderabad & Rangareddy Central',
+    facilitiesReporting: 5,
+    totalFootfallDelta: 34,
+    totalUnitsBurned: 48,
+    stockAlertsRaised: 2,
+    bedStatusUpdates: 4,
+    personnelCheckins: 73,
+    status: 'processed',
+  },
+  {
+    packetId: 'PKT-2026-HYD-107',
+    timestamp: '15 mins ago (13:00)',
+    cycleNumber: 107,
+    district: 'Hyderabad & Rangareddy Central',
+    facilitiesReporting: 5,
+    totalFootfallDelta: 29,
+    totalUnitsBurned: 42,
+    stockAlertsRaised: 2,
+    bedStatusUpdates: 3,
+    personnelCheckins: 73,
+    status: 'processed',
+  },
+  {
+    packetId: 'PKT-2026-HYD-106',
+    timestamp: '30 mins ago (12:45)',
+    cycleNumber: 106,
+    district: 'Hyderabad & Rangareddy Central',
+    facilitiesReporting: 5,
+    totalFootfallDelta: 41,
+    totalUnitsBurned: 56,
+    stockAlertsRaised: 1,
+    bedStatusUpdates: 6,
+    personnelCheckins: 71,
+    status: 'processed',
+  },
+];
 
 // ─── Public DB API ───────────────────────────────────────────────────────────
 
@@ -1812,6 +2135,53 @@ export const DemoDB = {
     return updatedProfile || profiles[0];
   },
 
+  updateFacilityTelemetry: (
+    hospitalId: string,
+    updates: {
+      attendance?: Partial<MedicalPersonnelAttendance>;
+      bedBreakdown?: Partial<BedCategoryBreakdown>;
+      footfall?: Partial<PHCFootfallTelemetry>;
+    }
+  ): HospitalSupplyProfile => {
+    const profiles = DemoDB.getAllSupplyProfiles();
+    let updatedProfile: HospitalSupplyProfile | null = null;
+    const newProfiles = profiles.map((facility) => {
+      const match =
+        facility.hospitalId.toLowerCase() === hospitalId.toLowerCase() ||
+        facility.hospitalName.toLowerCase().includes(hospitalId.toLowerCase());
+      if (!match) return facility;
+
+      const newAttendance = updates.attendance && facility.attendance
+        ? { ...facility.attendance, ...updates.attendance }
+        : facility.attendance;
+      const newBeds = updates.bedBreakdown && facility.bedBreakdown
+        ? { ...facility.bedBreakdown, ...updates.bedBreakdown }
+        : facility.bedBreakdown;
+      const newFootfall = updates.footfall && facility.footfall
+        ? { ...facility.footfall, ...updates.footfall }
+        : facility.footfall;
+
+      const updated: HospitalSupplyProfile = {
+        ...facility,
+        attendance: newAttendance,
+        bedBreakdown: newBeds,
+        footfall: newFootfall,
+        icuOccupied: newBeds?.icuOccupied ?? facility.icuOccupied,
+        icuTotal: newBeds?.icuTotal ?? facility.icuTotal,
+        lastReportedAt: new Date().toISOString(),
+      };
+      updatedProfile = updated;
+      return updated;
+    });
+
+    writeStorage(SUPPLY_PROFILES_KEY, newProfiles);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('smartcare:supply-updated', { detail: newProfiles }));
+      window.dispatchEvent(new CustomEvent('smartcare:telemetry-15m-sync', { detail: { cycleSeq: Date.now() } }));
+    }
+    return updatedProfile || profiles[0];
+  },
+
   getShortageReports: (): ShortageReport[] => {
     const stored = readStorage<ShortageReport[]>(SHORTAGE_REPORTS_KEY);
     if (stored && Array.isArray(stored)) {
@@ -2163,6 +2533,28 @@ export const DemoDB = {
     const criticalAlertsCount = medicineSummaries.filter((m) => m.status === 'critical').length;
     const pendingRebalances = orders.filter((o) => o.status === 'suggested').length;
 
+    // Personnel & Footfall aggregation across reporting PHCs
+    let totalFootfallToday = 0;
+    let totalDoctorsOnDuty = 0;
+    let totalDoctorsSanctioned = 0;
+    let totalNursesOnDuty = 0;
+    let totalNursesSanctioned = 0;
+
+    careFacilities.forEach((f) => {
+      if (f.footfall) totalFootfallToday += f.footfall.todayFootfall;
+      if (f.attendance) {
+        totalDoctorsOnDuty += f.attendance.doctorsOnDuty;
+        totalDoctorsSanctioned += f.attendance.doctorsSanctioned;
+        totalNursesOnDuty += f.attendance.nursesOnDuty;
+        totalNursesSanctioned += f.attendance.nursesSanctioned;
+      }
+    });
+
+    const avgPersonnelAttendancePercent =
+      totalDoctorsSanctioned + totalNursesSanctioned > 0
+        ? Math.round(((totalDoctorsOnDuty + totalNursesOnDuty) / (totalDoctorsSanctioned + totalNursesSanctioned)) * 100)
+        : 88;
+
     return {
       district: 'Hyderabad & Rangareddy Central',
       state: 'Telangana',
@@ -2177,7 +2569,151 @@ export const DemoDB = {
       facilityProfiles: profiles,
       pendingRebalances,
       lastAggregatedAt: 'Today, ' + new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+      totalFootfallToday,
+      totalDoctorsOnDuty,
+      totalDoctorsSanctioned,
+      avgPersonnelAttendancePercent,
     };
+  },
+
+  getFederatedNodes: (): StateFederatedNode[] => {
+    const saved = readStorage<StateFederatedNode[]>(FEDERATED_NODES_KEY);
+    if (Array.isArray(saved) && saved.length > 0) return saved;
+    writeStorage(FEDERATED_NODES_KEY, DEFAULT_FEDERATED_NODES);
+    return [...DEFAULT_FEDERATED_NODES];
+  },
+
+  trainFederatedRound: () => {
+    const nodes = DemoDB.getFederatedNodes();
+    const updatedNodes = nodes.map((node) => {
+      const accuracyBoost = +(Math.random() * 0.2 + 0.1).toFixed(2);
+      const lossReduction = +(node.localLoss * 0.92).toFixed(4);
+      return {
+        ...node,
+        modelAccuracy: Math.min(99.4, +(node.modelAccuracy + accuracyBoost).toFixed(2)),
+        localLoss: Math.max(0.005, lossReduction),
+        lastRoundTrained: node.lastRoundTrained + 1,
+        status: 'synced' as const,
+        gradientSignature: `Δw_${node.stateId.slice(-2).toUpperCase()} [${(Math.random() * 0.2).toFixed(3)}, ${(-Math.random() * 0.1).toFixed(3)}, ${(Math.random() * 0.9).toFixed(3)}, ${(Math.random() * 0.4).toFixed(3)}]`,
+      };
+    });
+    writeStorage(FEDERATED_NODES_KEY, updatedNodes);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('smartcare:federated-trained', { detail: updatedNodes }));
+    }
+    const avgAcc = +(updatedNodes.reduce((s, n) => s + n.modelAccuracy, 0) / updatedNodes.length).toFixed(1);
+    const avgLoss = +(updatedNodes.reduce((s, n) => s + n.localLoss, 0) / updatedNodes.length).toFixed(4);
+    return {
+      round: updatedNodes[0].lastRoundTrained,
+      newAccuracy: avgAcc,
+      newLoss: avgLoss,
+      updatedNodes,
+    };
+  },
+
+  getForecastScenarios: (): EpidemicForecastScenario[] => {
+    return DEFAULT_FORECAST_SCENARIOS;
+  },
+
+  getTelemetryPackets: (): TelemetryPacket15m[] => {
+    const saved = readStorage<TelemetryPacket15m[]>(TELEMETRY_PACKETS_KEY);
+    if (Array.isArray(saved) && saved.length > 0) return saved;
+    writeStorage(TELEMETRY_PACKETS_KEY, DEFAULT_TELEMETRY_PACKETS);
+    return [...DEFAULT_TELEMETRY_PACKETS];
+  },
+
+  trigger15mTelemetryCycle: (scenarioId = 'scen-baseline'): { packet: TelemetryPacket15m; updatedAggregate: DistrictSupplyAggregate } => {
+    const scenarios = DemoDB.getForecastScenarios();
+    const scenario = scenarios.find((s) => s.id === scenarioId) || scenarios[0];
+    const profiles = DemoDB.getAllSupplyProfiles();
+    const multiplier = scenario.medicineMultiplier || 1.0;
+
+    let totalFootfallDelta = 0;
+    let totalUnitsBurned = 0;
+    let bedStatusUpdates = 0;
+    let alertsRaised = 0;
+
+    const updatedProfiles = profiles.map((p) => {
+      if (p.tier === 'warehouse') return p;
+
+      // 1. Modulate Footfall
+      const footfallDelta = Math.floor((Math.random() * 8 + 4) * multiplier);
+      totalFootfallDelta += footfallDelta;
+      const nextFootfall = p.footfall ? {
+        ...p.footfall,
+        todayFootfall: p.footfall.todayFootfall + footfallDelta,
+        hourlyInfluxRate: Math.min(95, Math.floor(p.footfall.hourlyInfluxRate * (0.95 + Math.random() * 0.1) * multiplier)),
+        emergencyCasesToday: p.footfall.emergencyCasesToday + (Math.random() > 0.6 ? 1 : 0),
+      } : undefined;
+
+      // 2. Modulate Medicine Burn
+      const updatedMeds = p.medicines.map((m) => {
+        const isTargeted = scenario.targetedMedicines.includes(m.id);
+        const medMultiplier = isTargeted ? multiplier * 1.3 : multiplier;
+        const chunkBurn = Math.max(1, Math.round((m.dailyConsumption / 96) * medMultiplier * (Math.random() * 0.5 + 0.8)));
+        const nextStock = Math.max(0, m.currentStock - chunkBurn);
+        totalUnitsBurned += chunkBurn;
+        const daysRem = m.dailyConsumption > 0 ? Math.floor(nextStock / m.dailyConsumption) : 999;
+        const isCritical = daysRem <= 3 || nextStock === 0;
+        if (isCritical && m.status !== 'critical') {
+          alertsRaised++;
+        }
+        return {
+          ...m,
+          currentStock: nextStock,
+          daysRemaining: daysRem,
+          status: isCritical ? ('critical' as const) : daysRem <= 7 ? ('low' as const) : ('normal' as const),
+          lastUpdated: 'Just now (15m sync)',
+        };
+      });
+
+      // 3. Modulate Bed Turnover
+      const bedTurnoverDelta = Math.random() > 0.5 ? 1 : -1;
+      const nextOccupiedBeds = Math.max(0, Math.min(p.bedsTotal, p.bedsOccupied + (Math.random() > 0.4 ? bedTurnoverDelta : 0)));
+      if (nextOccupiedBeds !== p.bedsOccupied) {
+        bedStatusUpdates++;
+      }
+
+      return {
+        ...p,
+        bedsOccupied: nextOccupiedBeds,
+        medicines: updatedMeds,
+        footfall: nextFootfall,
+        lastReportedAt: 'Just now (15m cycle)',
+      };
+    });
+
+    writeStorage(SUPPLY_PROFILES_KEY, updatedProfiles);
+
+    const currentPackets = DemoDB.getTelemetryPackets();
+    const nextCycleNum = (currentPackets[0]?.cycleNumber || 108) + 1;
+    const now = new Date();
+    const timeStr = `Just now (${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')})`;
+
+    const newPacket: TelemetryPacket15m = {
+      packetId: `PKT-2026-HYD-${nextCycleNum}`,
+      timestamp: timeStr,
+      cycleNumber: nextCycleNum,
+      district: 'Hyderabad & Rangareddy Central',
+      facilitiesReporting: updatedProfiles.length,
+      totalFootfallDelta,
+      totalUnitsBurned,
+      stockAlertsRaised: alertsRaised,
+      bedStatusUpdates,
+      personnelCheckins: 73,
+      status: 'processed',
+    };
+
+    const nextPackets = [newPacket, ...currentPackets.slice(0, 19)];
+    writeStorage(TELEMETRY_PACKETS_KEY, nextPackets);
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('smartcare:supply-updated'));
+      window.dispatchEvent(new CustomEvent('smartcare:telemetry-15m-sync', { detail: newPacket }));
+    }
+
+    const updatedAggregate = DemoDB.getDistrictSupplyAggregate();
+    return { packet: newPacket, updatedAggregate };
   },
 };
 

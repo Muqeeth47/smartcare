@@ -28,6 +28,9 @@ import {
   Bed,
   Box,
   KeyRound,
+  Users,
+  UserCheck,
+  TrendingUp,
 } from 'lucide-react';
 import type {
   HospitalSupplyProfile,
@@ -359,6 +362,19 @@ export function HospitalSupplyModule() {
           <Truck className="h-4 w-4" />
           Inward Dispatches ({inwardOrders.length})
         </button>
+
+        <button
+          onClick={() => handleTabChange('resources')}
+          className={cn(
+            'flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap min-h-[44px]',
+            activeTab === 'resources'
+              ? 'bg-indigo-600 text-white shadow-md'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+          )}
+        >
+          <Activity className="h-4 w-4" />
+          Beds &amp; Personnel Telemetry
+        </button>
       </div>
 
       {/* ─── TAB 1: INVENTORY REGISTER ─────────────────────────────────────────── */}
@@ -683,6 +699,233 @@ export function HospitalSupplyModule() {
                   <p className="text-xs text-slate-400">Rebalance dispatches from the District Warehouse will appear here.</p>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── TAB 4: BEDS & PERSONNEL TELEMETRY DESK ───────────────────────────── */}
+      {activeTab === 'resources' && (
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 space-y-2 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-indigo-600" />
+                  Facility Resource Telemetry &bull; {profile.hospitalName}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Manage real-time personnel check-ins and live bed allocation. Data automatically feeds into the National Health Mesh.
+                </p>
+              </div>
+
+              <span className="text-xs font-mono px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5 self-start sm:self-auto">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                Live 15m Telemetry Connected
+              </span>
+            </div>
+          </div>
+
+          {/* Grid of 3 Telemetry Desks */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            {/* 1. Personnel Attendance Desk */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                  <UserCheck className="h-4 w-4 text-indigo-500" />
+                  Medical Personnel On Duty
+                </h4>
+                <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 font-mono">
+                  {profile.attendance?.attendancePercent || 85}% Attendance
+                </span>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between">
+                  <div>
+                    <div className="font-bold text-slate-900 dark:text-white">Medical Officers (Doctors)</div>
+                    <div className="text-[11px] text-slate-400">Sanctioned: {profile.attendance?.doctorsSanctioned || 3} positions</div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-lg font-black text-indigo-600 dark:text-indigo-400">
+                      {profile.attendance?.doctorsOnDuty || 2}
+                    </span>
+                    <span className="text-[11px] text-slate-400"> on duty</span>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between">
+                  <div>
+                    <div className="font-bold text-slate-900 dark:text-white">Staff Nurses</div>
+                    <div className="text-[11px] text-slate-400">Sanctioned: {profile.attendance?.nursesSanctioned || 5} positions</div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-lg font-black text-indigo-600 dark:text-indigo-400">
+                      {profile.attendance?.nursesOnDuty || 4}
+                    </span>
+                    <span className="text-[11px] text-slate-400"> on duty</span>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between">
+                  <div>
+                    <div className="font-bold text-slate-900 dark:text-white">Pharmacist &bull; Lab Technician</div>
+                    <div className="text-[11px] text-slate-400">Essential diagnostics &amp; dispensary</div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-base font-bold text-slate-800 dark:text-slate-200">
+                      {profile.attendance?.pharmacistsOnDuty || 1} / {profile.attendance?.labTechsOnDuty || 1}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => showToast('Staff shift biometric attendance broadcasted to District CMO.', 'success')}
+                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors min-h-[44px]"
+                >
+                  Broadcast Shift Attendance (Morning)
+                </button>
+              </div>
+            </div>
+
+            {/* 2. Bed Occupancy & Gas Bank Desk */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                  <Bed className="h-4 w-4 text-amber-500" />
+                  Ward Bed Availability Breakdown
+                </h4>
+                <span className="text-xs font-bold text-amber-600 dark:text-amber-400 font-mono">
+                  {profile.bedsOccupied} / {profile.bedsTotal} Total
+                </span>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div>
+                  <div className="flex justify-between text-slate-600 dark:text-slate-300 font-semibold mb-1">
+                    <span>General Wards</span>
+                    <span>{profile.bedBreakdown?.generalOccupied || 10} / {profile.bedBreakdown?.generalTotal || 12} Occupied</span>
+                  </div>
+                  <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-indigo-500 rounded-full"
+                      style={{
+                        width: `${Math.min(100, ((profile.bedBreakdown?.generalOccupied || 10) / (profile.bedBreakdown?.generalTotal || 12)) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-slate-600 dark:text-slate-300 font-semibold mb-1">
+                    <span>Oxygen-Supported Beds</span>
+                    <span>{profile.bedBreakdown?.oxygenOccupied || 4} / {profile.bedBreakdown?.oxygenTotal || 5} Occupied</span>
+                  </div>
+                  <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-cyan-500 rounded-full"
+                      style={{
+                        width: `${Math.min(100, ((profile.bedBreakdown?.oxygenOccupied || 4) / (profile.bedBreakdown?.oxygenTotal || 5)) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-slate-600 dark:text-slate-300 font-semibold mb-1">
+                    <span>ICU / Ventilator Beds</span>
+                    <span className={profile.icuOccupied >= profile.icuTotal ? 'text-red-600 font-bold' : ''}>
+                      {profile.icuOccupied} / {profile.icuTotal} {profile.icuOccupied >= profile.icuTotal && '(FULL)'}
+                    </span>
+                  </div>
+                  <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div
+                      className={cn(
+                        'h-full rounded-full',
+                        profile.icuOccupied >= profile.icuTotal ? 'bg-red-500' : 'bg-purple-500'
+                      )}
+                      style={{
+                        width: `${Math.min(100, (profile.icuOccupied / (profile.icuTotal || 1)) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-slate-600 dark:text-slate-300 font-semibold mb-1">
+                    <span>Medical Oxygen Bank</span>
+                    <span>{profile.oxygenCylindersAvailable} / {profile.oxygenCylindersTotal} Cylinders</span>
+                  </div>
+                  <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-teal-500 rounded-full"
+                      style={{
+                        width: `${Math.min(100, (profile.oxygenCylindersAvailable / (profile.oxygenCylindersTotal || 1)) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => showToast('Bed allocation telemetry updated and mirrored to Ambulance Dispatch network.', 'success')}
+                  className="w-full py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-xl transition-opacity hover:opacity-90 min-h-[44px]"
+                >
+                  Publish Live Bed Count
+                </button>
+              </div>
+            </div>
+
+            {/* 3. Footfall & Inflow Desk */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-emerald-500" />
+                  Outpatient Footfall Velocity
+                </h4>
+                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase font-mono">
+                  {profile.footfall?.footfallTrend || 'STABLE'}
+                </span>
+              </div>
+
+              <div className="space-y-2.5 text-xs">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 space-y-1">
+                  <div className="text-[11px] text-slate-500">Today&apos;s Cumulative OPD Footfall:</div>
+                  <div className="text-2xl font-black text-slate-900 dark:text-white">
+                    {profile.footfall?.todayFootfall || 92} patients
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 space-y-1">
+                  <div className="text-[11px] text-slate-500">Current Influx Velocity:</div>
+                  <div className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
+                    {profile.footfall?.hourlyInfluxRate || 14} patients / hour
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 space-y-1">
+                  <div className="text-[11px] text-slate-500">Emergency / Red Triage Walk-Ins:</div>
+                  <div className="text-xl font-bold text-red-600 dark:text-red-400">
+                    {profile.footfall?.emergencyCasesToday || 4} emergency cases
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => router.push('/dashboard/queue')}
+                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors min-h-[44px]"
+                >
+                  Open Live Clinical Queue Desk
+                </button>
+              </div>
             </div>
           </div>
         </div>

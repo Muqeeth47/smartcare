@@ -30,6 +30,8 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
+export const dynamic = 'force-dynamic';
+
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,

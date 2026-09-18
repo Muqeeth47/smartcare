@@ -11,6 +11,8 @@ import {
   BarChart3,
   HeartHandshake,
   Siren,
+  Activity,
+  Truck,
 } from 'lucide-react';
 import { useSession } from '@/lib/store/app-store';
 import { cn } from '@/lib/utils';
@@ -36,10 +38,10 @@ const ROLE_NAV_TABS: Record<string, NavTab[]> = {
     { label: 'Donate', href: '/dashboard/hospital/donations', icon: HeartHandshake },
   ],
   staff: [
-    { label: 'Ops', href: '/dashboard/admin', icon: LayoutDashboard, exact: true },
+    { label: 'Command', href: '/dashboard/admin?adminTab=command', icon: LayoutDashboard },
+    { label: 'Telemetry', href: '/dashboard/admin?adminTab=command&commandTab=telemetry', icon: Activity },
+    { label: 'Rebalance', href: '/dashboard/admin?adminTab=command&commandTab=redistribution', icon: Truck },
     { label: 'Queue', href: '/dashboard/queue', icon: ListOrdered },
-    { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-    { label: 'Donate', href: '/dashboard/admin/donations', icon: HeartHandshake },
   ],
 };
 

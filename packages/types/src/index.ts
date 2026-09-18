@@ -442,6 +442,40 @@ export interface MedicineItem {
   shortageReason?: string;
 }
 
+export interface MedicalPersonnelAttendance {
+  doctorsOnDuty: number;
+  doctorsSanctioned: number;
+  nursesOnDuty: number;
+  nursesSanctioned: number;
+  pharmacistsOnDuty: number;
+  labTechsOnDuty: number;
+  attendancePercent: number;
+  patientToDoctorRatio: number;
+  shiftStatus: 'Morning' | 'Evening' | 'Night';
+  lastAttendanceSync: string;
+}
+
+export interface BedCategoryBreakdown {
+  generalTotal: number;
+  generalOccupied: number;
+  oxygenTotal: number;
+  oxygenOccupied: number;
+  icuTotal: number;
+  icuOccupied: number;
+  pediatricTotal: number;
+  pediatricOccupied: number;
+  traumaTotal: number;
+  traumaOccupied: number;
+}
+
+export interface PHCFootfallTelemetry {
+  todayFootfall: number;
+  hourlyInfluxRate: number;
+  emergencyCasesToday: number;
+  triageRedPercent: number;
+  footfallTrend: 'increasing' | 'stable' | 'decreasing';
+}
+
 export interface HospitalSupplyProfile {
   hospitalId: string;
   hospitalName: string;
@@ -456,6 +490,9 @@ export interface HospitalSupplyProfile {
   oxygenCylindersTotal: number;
   medicines: MedicineItem[];
   lastReportedAt: string;
+  attendance?: MedicalPersonnelAttendance;
+  bedBreakdown?: BedCategoryBreakdown;
+  footfall?: PHCFootfallTelemetry;
   coordinates?: {
     lat: number;
     lng: number;
@@ -526,5 +563,49 @@ export interface DistrictSupplyAggregate {
   facilityProfiles: HospitalSupplyProfile[];
   pendingRebalances: number;
   lastAggregatedAt: string;
+  totalFootfallToday?: number;
+  totalDoctorsOnDuty?: number;
+  totalDoctorsSanctioned?: number;
+  avgPersonnelAttendancePercent?: number;
+}
+
+export interface StateFederatedNode {
+  stateId: string;
+  stateName: string;
+  capital: string;
+  activePhcs: number;
+  localDatasetSize: string;
+  modelAccuracy: number;
+  localLoss: number;
+  lastRoundTrained: number;
+  status: 'online' | 'training' | 'synced';
+  gradientSignature: string;
+  dominantEpidemicFactor: string;
+  forecastConfidence: number;
+}
+
+export interface TelemetryPacket15m {
+  packetId: string;
+  timestamp: string;
+  cycleNumber: number;
+  district: string;
+  facilitiesReporting: number;
+  totalFootfallDelta: number;
+  totalUnitsBurned: number;
+  stockAlertsRaised: number;
+  bedStatusUpdates: number;
+  personnelCheckins: number;
+  status: 'processed' | 'syncing';
+}
+
+export interface EpidemicForecastScenario {
+  id: string;
+  name: string;
+  tag: string;
+  description: string;
+  medicineMultiplier: number;
+  bedDemandMultiplier: number;
+  targetedMedicines: string[];
+  riskSeverity: 'CRITICAL' | 'HIGH' | 'MODERATE';
 }
 

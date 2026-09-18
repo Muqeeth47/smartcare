@@ -30,6 +30,10 @@ import {
   Ban,
   Clock,
   Check,
+  Siren,
+  Pill,
+  Droplets,
+  Sparkles,
 } from 'lucide-react';
 import type { Prescription, PatientVisit } from '@smartcare/types';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -445,6 +449,119 @@ export function PatientDashboardPage({ initialTab }: { initialTab?: string } = {
             </Link>
           </section>
         )}
+
+        {/* ── Quick Health Services Grid ── */}
+        <section aria-label="Quick health services">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold text-[#0a3b69] flex items-center gap-1.5">
+              <Sparkles size={16} className="text-[#0f5ca8]" />
+              Quick Health Services &amp; Emergency Access
+            </h2>
+            <span className="text-[11px] text-[var(--text-muted)] font-medium">National Health Stack (ABDM)</span>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <Link
+              href="/ambulance"
+              className="p-4 rounded-xl border border-rose-200 bg-rose-50/60 hover:bg-rose-100/70 transition-all group flex flex-col justify-between no-underline shadow-xs hover:shadow-sm"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="w-9 h-9 rounded-lg bg-rose-600 text-white flex items-center justify-center font-bold shadow-xs group-hover:scale-105 transition-transform">
+                  <Siren size={18} />
+                </span>
+                <span className="text-[10px] font-extrabold uppercase tracking-wide px-2 py-0.5 rounded-full bg-rose-200/80 text-rose-800">
+                  24/7 SOS
+                </span>
+              </div>
+              <div>
+                <strong className="text-sm font-bold text-rose-950 block group-hover:text-rose-700 transition-colors">
+                  Ambulance 108
+                </strong>
+                <p className="text-[11px] text-rose-800/80 mt-0.5 line-clamp-2">
+                  Live GPS tracking, emergency triage &amp; dispatch to nearest PHC.
+                </p>
+              </div>
+              <span className="text-[11px] font-bold text-rose-700 flex items-center gap-1 mt-3">
+                Request SOS <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+              </span>
+            </Link>
+
+            <Link
+              href="/pharmacy"
+              className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/60 hover:bg-emerald-100/70 transition-all group flex flex-col justify-between no-underline shadow-xs hover:shadow-sm"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold shadow-xs group-hover:scale-105 transition-transform">
+                  <Pill size={18} />
+                </span>
+                <span className="text-[10px] font-extrabold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-200/80 text-emerald-800">
+                  Affordable
+                </span>
+              </div>
+              <div>
+                <strong className="text-sm font-bold text-emerald-950 block group-hover:text-emerald-700 transition-colors">
+                  Jan Aushadhi Kendra
+                </strong>
+                <p className="text-[11px] text-emerald-800/80 mt-0.5 line-clamp-2">
+                  Generic medicines at 50-90% subsidized rates with live PHC stock check.
+                </p>
+              </div>
+              <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1 mt-3">
+                Find Medicines <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+              </span>
+            </Link>
+
+            <Link
+              href="/dashboard/patient/history"
+              className="p-4 rounded-xl border border-blue-200 bg-blue-50/60 hover:bg-blue-100/70 transition-all group flex flex-col justify-between no-underline shadow-xs hover:shadow-sm"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="w-9 h-9 rounded-lg bg-[#0a3b69] text-white flex items-center justify-center font-bold shadow-xs group-hover:scale-105 transition-transform">
+                  <QrCode size={18} />
+                </span>
+                <span className="text-[10px] font-extrabold uppercase tracking-wide px-2 py-0.5 rounded-full bg-blue-200/80 text-blue-800">
+                  ABHA Verified
+                </span>
+              </div>
+              <div>
+                <strong className="text-sm font-bold text-[#0a3b69] block group-hover:text-blue-700 transition-colors">
+                  Digital Health Passport
+                </strong>
+                <p className="text-[11px] text-blue-900/80 mt-0.5 line-clamp-2">
+                  ABDM health records, allergies, clinical lab reports &amp; QR access.
+                </p>
+              </div>
+              <span className="text-[11px] font-bold text-[#0f5ca8] flex items-center gap-1 mt-3">
+                View Records <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+              </span>
+            </Link>
+
+            <Link
+              href="/donations"
+              className="p-4 rounded-xl border border-purple-200 bg-purple-50/60 hover:bg-purple-100/70 transition-all group flex flex-col justify-between no-underline shadow-xs hover:shadow-sm"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="w-9 h-9 rounded-lg bg-purple-600 text-white flex items-center justify-center font-bold shadow-xs group-hover:scale-105 transition-transform">
+                  <Droplets size={18} />
+                </span>
+                <span className="text-[10px] font-extrabold uppercase tracking-wide px-2 py-0.5 rounded-full bg-purple-200/80 text-purple-800">
+                  Life Saving
+                </span>
+              </div>
+              <div>
+                <strong className="text-sm font-bold text-purple-950 block group-hover:text-purple-700 transition-colors">
+                  Blood &amp; Organ Network
+                </strong>
+                <p className="text-[11px] text-purple-900/80 mt-0.5 line-clamp-2">
+                  Regional blood bank inventory &amp; donor registration registry.
+                </p>
+              </div>
+              <span className="text-[11px] font-bold text-purple-700 flex items-center gap-1 mt-3">
+                Donate / Search <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+              </span>
+            </Link>
+          </div>
+        </section>
+
 
         {/* Previous visits & clinical records */}
         <section className="bg-white border border-[var(--line)] rounded-2xl p-5 shadow-sm">

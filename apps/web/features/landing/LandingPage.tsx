@@ -23,6 +23,7 @@ import {
   Sparkles,
   TrendingUp,
   ShieldAlert,
+  Presentation,
 } from 'lucide-react';
 import { Topbar } from '@/components/layout/Topbar';
 import { Footer } from '@/components/layout/Shell';
@@ -568,6 +569,30 @@ export function LandingPage() {
               </div>
             </div>
           ))}
+        </section>
+
+        {/* ── Slide Deck Presentation Launcher ── */}
+        <section className="max-w-7xl mx-auto mt-8 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-slate-900 via-[#0a2540] to-teal-950 border border-teal-500/30 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/10 rounded-full blur-2xl pointer-events-none" />
+          <div className="relative z-10 space-y-1.5">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/20 border border-teal-400/30 text-teal-300 font-mono text-xs font-bold uppercase tracking-wider">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> sudophiles presentation
+            </div>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+              Interactive Slide Deck &amp; Architecture Overview
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
+              Explore our 10-slide visual deck with JetBrains Mono design, live telemetry diagrams, FedAvg topology, and national healthcare resilience workflows.
+            </p>
+          </div>
+          <Link
+            href="/slides"
+            className="relative z-10 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-extrabold text-xs sm:text-sm transition-all shadow-lg hover:shadow-teal-500/25 shrink-0 no-underline"
+          >
+            <Presentation size={18} />
+            <span>Launch Presentation Deck</span>
+            <ArrowRight size={16} />
+          </Link>
         </section>
 
         {/* Spacer */}

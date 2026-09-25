@@ -1,0 +1,149 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function hasRole(role) {
+      return isAuthenticated() && request.auth.token.role == role;
+    }
+
+    function isHealthcareStaff() {
+      return isAuthenticated() && request.auth.token.role in ['doctor', 'nurse', 'hospital', 'admin', 'district_cmo', 'state_command'];
+    }
+
+    function isPharmacist() {
+      return isAuthenticated() && request.auth.token.role in ['pharmacy', 'pharmacist', 'hospital', 'admin'];
+    }
+
+    // ─── Users Collection ───────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated() && (request.auth.uid == userId || hasRole('admin'));
+      allow delete: if hasRole('admin');
+    }
+
+    // ─── ABHA Medical Passports ─────────────────────────────────────────────
+    match /medical_passports/{passportId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.patientId ||
+        isHealthcareStaff()
+      );
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.patientId;
+      allow update: if isAuthenticated() && (
+        request.auth.uid == resource.data.patientId ||
+        hasRole('doctor') ||
+        hasRole('admin')
+      );
+      allow delete: if hasRole('admin');
+    }
+
+    // ─── Patient OPD & Triage Queue ─────────────────────────────────────────
+    match /queue/{queueId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isHealthcareStaff();
+      allow delete: if isHealthcareStaff();
+    }
+
+    // ─── e-Prescriptions (Schedule H Compliance & One-Time Lock) ────────────
+    match /prescriptions/{rxId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.patientId ||
+        isHealthcareStaff() ||
+        isPharmacist()
+      );
+      // Only authenticated doctors and hospitals can create and cryptographically sign prescriptions
+      allow create: if isAuthenticated() && (hasRole('doctor') || hasRole('hospital') || hasRole('admin'));
+
+      // Doctors can edit draft/active prescriptions before dispensation;
+      // Pharmacists can ONLY update `isDispensed`, `dispensedAt`, and `dispensedBy` once (lock prevents duplicate dispensation)
+      allow update: if isAuthenticated() && (
+        (hasRole('doctor') && !resource.data.isDispensed) ||
+        (
+          isPharmacist() &&
+          !resource.data.isDispensed &&
+          request.resource.data.isDispensed == true
+        ) ||
+        hasRole('admin')
+      );
+      allow delete: if hasRole('admin');
+    }
+
+    // ─── Module 2: Medicine Inventory & Shortage Reports ────────────────────
+    match /shortage_reports/{reportId} {
+      allow read: if isAuthenticated() && isHealthcareStaff();
+      allow create: if isAuthenticated() && (hasRole('doctor') || hasRole('hospital') || hasRole('admin'));
+      allow update: if isAuthenticated() && (hasRole('district_cmo') || hasRole('state_command') || hasRole('admin'));
+      allow delete: if hasRole('admin');
+    }
+
+    // ─── Inter-Hospital Redistribution Orders (OTP Verification) ───────────
+    match /redistribution_orders/{orderId} {
+      allow read: if isAuthenticated() && isHealthcareStaff();
+      allow create: if isAuthenticated() && (hasRole('district_cmo') || hasRole('state_command') || hasRole('admin'));
+      allow update: if isAuthenticated() && (
+        hasRole('district_cmo') ||
+        hasRole('state_command') ||
+        hasRole('hospital') ||
+        hasRole('admin')
+      );
+      allow delete: if hasRole('admin');
+    }
+
+    // ─── 108 Emergency Ambulance Dispatches & GPS Telemetry ─────────────────
+    match /ambulance_dispatches/{dispatchId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        request.auth.uid == resource.data.patientId ||
+        request.auth.token.role in ['ambulance', 'paramedic', 'hospital', 'admin']
+      );
+      allow delete: if hasRole('admin');
+    }
+
+    // ─── Community Donations & Blood Bank Camps ─────────────────────────────
+    match /donations/{donationId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        request.auth.uid == resource.data.creatorId ||
+        hasRole('admin')
+      );
+      allow delete: if isAuthenticated() && (
+        request.auth.uid == resource.data.creatorId ||
+        hasRole('admin')
+      );
+    }
+
+    match /blood_camps/{campId} {
+      allow read: if true;
+      allow write: if isHealthcareStaff();
+    }
+
+    // ─── Public Health Infrastructure & Telemetry Nodes ─────────────────────
+    match /supply_profiles/{hospitalId} {
+      allow read: if isAuthenticated();
+      allow write: if isHealthcareStaff();
+    }
+
+    match /telemetry_packets/{packetId} {
+      allow read: if isAuthenticated() && isHealthcareStaff();
+      allow create, update: if isHealthcareStaff();
+      allow delete: if hasRole('admin');
+    }
+
+    // ─── Default Fallback ───────────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -54,9 +54,11 @@ export function HospitalSupplyModule() {
   // Tab state synced with URL: ?supplyTab=inventory | shortage | inward
   const activeTab = searchParams.get('supplyTab') || 'inventory';
 
-  // Filters
+  // Filters & Pagination
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [medPage, setMedPage] = useState<number>(1);
+  const MEDS_PER_PAGE = 6;
 
   // Stock Edit Modal State
   const [editingMedicine, setEditingMedicine] = useState<MedicineItem | null>(null);
@@ -206,26 +208,22 @@ export function HospitalSupplyModule() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* ─── Facility Context & Node Switcher ────────────────────────────────────── */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 text-white shadow-xl">
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 text-white shadow-lg">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                AushadhiNet Active Node
-              </span>
               <span className="text-xs text-slate-400 font-mono">ID: {profile.hospitalId.toUpperCase()}</span>
               <span className="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 uppercase tracking-wider font-semibold">
                 Tier: {profile.tier.replace('_', ' ')}
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-              <Building2 className="h-7 w-7 text-indigo-400 shrink-0" />
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+              <Building2 className="h-6 w-6 text-indigo-400 shrink-0" />
               {profile.hospitalName}
             </h1>
-            <p className="text-sm text-slate-300">
+            <p className="text-xs text-slate-300">
               {profile.district} District, {profile.state} &bull; Clinical Inventory &amp; SOS Shortage Register
             </p>
           </div>
@@ -301,7 +299,7 @@ export function HospitalSupplyModule() {
       {criticalCount > 0 && (
         <div className="bg-red-500/10 border-2 border-red-500/30 rounded-2xl p-4 sm:p-5 text-red-900 dark:text-red-200">
           <div className="flex items-start gap-3">
-            <Flame className="h-6 w-6 text-red-600 dark:text-red-400 shrink-0 mt-0.5 animate-bounce" />
+            <Flame className="h-6 w-6 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
             <div className="space-y-1 text-sm">
               <h3 className="font-bold text-base text-red-700 dark:text-red-300">
                 Critical Supply Alert: {criticalCount} Item(s) with &le; 3 Days Remaining
@@ -387,7 +385,10 @@ export function HospitalSupplyModule() {
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setMedPage(1);
+                }}
                 placeholder="Search medicine name, batch, category..."
                 className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[44px]"
               />
@@ -398,7 +399,10 @@ export function HospitalSupplyModule() {
               {['ALL', 'Critical Supplies', 'Antibiotics', 'Chronic Care', 'Emergency & IV', 'Vaccines'].map((cat) => (
                 <button
                   key={cat}
-                  onClick={() => setCategoryFilter(cat)}
+                  onClick={() => {
+                    setCategoryFilter(cat);
+                    setMedPage(1);
+                  }}
                   className={cn(
                     'px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap min-h-[38px]',
                     categoryFilter === cat
@@ -413,8 +417,14 @@ export function HospitalSupplyModule() {
           </div>
 
           {/* Medicines Grid / Table */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredMedicines.map((med) => {
+          {(() => {
+            const totalMedPages = Math.ceil(filteredMedicines.length / MEDS_PER_PAGE) || 1;
+            const paginatedMedicines = filteredMedicines.slice((medPage - 1) * MEDS_PER_PAGE, medPage * MEDS_PER_PAGE);
+
+            return (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {paginatedMedicines.map((med) => {
               const isCritical = med.status === 'critical';
               const isLow = med.status === 'low';
 
@@ -514,8 +524,41 @@ export function HospitalSupplyModule() {
               );
             })}
           </div>
-        </div>
-      )}
+
+          {totalMedPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-200 dark:border-slate-800 text-xs">
+              <span className="text-slate-500 font-medium">
+                Showing {Math.min((medPage - 1) * MEDS_PER_PAGE + 1, filteredMedicines.length)}–
+                {Math.min(medPage * MEDS_PER_PAGE, filteredMedicines.length)} of {filteredMedicines.length} medicines
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={medPage === 1}
+                  onClick={() => setMedPage((p) => Math.max(1, p - 1))}
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold text-slate-700 dark:text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                >
+                  Previous
+                </button>
+                <span className="font-semibold text-slate-700 dark:text-slate-300 px-1">
+                  Page {medPage} of {totalMedPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={medPage >= totalMedPages}
+                  onClick={() => setMedPage((p) => Math.min(totalMedPages, p + 1))}
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold text-slate-700 dark:text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      );
+    })()}
+  </div>
+)}
 
       {/* ─── TAB 2: SHORTAGE REPORTING ─────────────────────────────────────────── */}
       {activeTab === 'shortage' && (
@@ -632,7 +675,7 @@ export function HospitalSupplyModule() {
                               isDelivered
                                 ? 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
                                 : isInTransit
-                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 animate-pulse'
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
                                 : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
                             )}
                           >
@@ -720,8 +763,8 @@ export function HospitalSupplyModule() {
                 </p>
               </div>
 
-              <span className="text-xs font-mono px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5 self-start sm:self-auto">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs font-mono px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5 self-start sm:self-auto">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
                 Live 15m Telemetry Connected
               </span>
             </div>

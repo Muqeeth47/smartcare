@@ -175,11 +175,11 @@ export function AmbulancePage({ embedded = false }: { embedded?: boolean }) {
   const pageContent = (
     <div className={cn('max-w-5xl mx-auto w-full space-y-6', embedded ? 'py-4 sm:py-6 px-3 sm:px-4' : 'py-6 sm:py-10 px-4 sm:px-6')}>
       {/* Headline */}
-      <div className="text-center space-y-2 max-w-2xl mx-auto">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50">
-          <Zap size={14} className="animate-pulse" /> 24/7 SmartCare Emergency Trauma Fleet
-        </span>
-        <h1 className="text-2xl sm:text-4xl font-extrabold text-[var(--ink)] tracking-tight">
+      <div className="text-center space-y-1 max-w-2xl mx-auto">
+        <div className="text-xs font-semibold uppercase tracking-wider text-rose-600 dark:text-rose-400 flex items-center justify-center gap-1.5">
+          <Zap size={14} /> 24/7 SmartCare Emergency Trauma Fleet
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--ink)] tracking-tight leading-tight">
           Book an Emergency Ambulance
         </h1>
         <p className="text-xs sm:text-sm text-[var(--muted)]">
@@ -194,7 +194,7 @@ export function AmbulancePage({ embedded = false }: { embedded?: boolean }) {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[var(--line)]">
               <div className="flex items-center gap-3">
                 <span className="w-12 h-12 rounded-2xl bg-rose-500 text-white flex items-center justify-center shrink-0 shadow-md">
-                  <Siren size={26} className="animate-bounce" />
+                  <Siren size={26} />
                 </span>
                 <div>
                   <span className="inline-block text-[11px] font-extrabold px-2.5 py-0.5 rounded-md bg-rose-600 text-white uppercase tracking-wider">
@@ -214,7 +214,7 @@ export function AmbulancePage({ embedded = false }: { embedded?: boolean }) {
                     {String(Math.floor(etaSecondsLeft / 60)).padStart(2, '0')}:{String(etaSecondsLeft % 60).padStart(2, '0')}
                   </strong>
                 ) : etaSecondsLeft === 0 ? (
-                  <strong className="text-xl sm:text-2xl font-extrabold text-emerald-600 animate-pulse">Arrived</strong>
+                  <strong className="text-xl sm:text-2xl font-extrabold text-emerald-600">Arrived</strong>
                 ) : (
                   <strong className="text-2xl sm:text-3xl font-extrabold text-rose-600">~{activeBooking.etaMinutes} min</strong>
                 )}

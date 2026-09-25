@@ -144,7 +144,7 @@ export function DonationsPage({ role: roleProp }: DonationsPageProps) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[var(--line)]">
           <div>
             <div className="flex items-center gap-2 text-xs font-bold text-[var(--teal)] uppercase tracking-wider mb-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
               Blood Bank &amp; Organ Network
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--ink)] tracking-tight">

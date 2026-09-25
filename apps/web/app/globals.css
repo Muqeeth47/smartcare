@@ -3265,3 +3265,93 @@ fieldset.field {
     min-height: 48px;
   }
 }
+
+/* ─── Production Print Engine (Spec §4.2) ─────────────────────────────────── */
+@media print {
+  @page {
+    margin: 10mm 12mm;
+    size: auto;
+  }
+
+  *, *::before, *::after {
+    background: transparent !important;
+    color: #111827 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    filter: none !important;
+  }
+
+  body, html {
+    background: #ffffff !important;
+    color: #111827 !important;
+    font-size: 11pt !important;
+    line-height: 1.35 !important;
+  }
+
+  /* Hide navigation, chrome, actions, interactive controls */
+  header,
+  footer,
+  nav,
+  .topbar,
+  .workspace-sidebar,
+  .workspace-drawer-backdrop,
+  .mobile-bottom-nav,
+  .sidebar-collapse-btn,
+  .modal-actions,
+  .no-print,
+  button,
+  input,
+  select {
+    display: none !important;
+  }
+
+  /* Reset modal overlays for paper */
+  .fixed,
+  .modal-backdrop,
+  .modal-overlay {
+    position: static !important;
+    background: none !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block !important;
+  }
+
+  .modal-container,
+  .modal-box,
+  .printable-document {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Prevent awkward page cutoffs */
+  table, tr, td, th, .card, .slip, .printable-slip {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Sharp borders */
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  th, td {
+    border: 1px solid #d1d5db !important;
+    padding: 6px 8px !important;
+  }
+
+  a, a:visited {
+    text-decoration: underline !important;
+    color: #111827 !important;
+  }
+}
+

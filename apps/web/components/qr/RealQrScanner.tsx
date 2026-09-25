@@ -261,15 +261,15 @@ export function RealQrScanner({
               <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-emerald-400 rounded-bl-lg" />
               <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-emerald-400 rounded-br-lg" />
 
-              {/* Animated Laser Scanning Line */}
+              {/* Laser Scanning Line */}
               {!scannedResult && (
-                <div className="absolute left-2 right-2 h-0.5 bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-bounce" />
+                <div className="absolute left-2 right-2 h-0.5 bg-emerald-400" />
               )}
 
               {/* Scanned Confirmation Overlay */}
               {scannedResult && (
                 <div className="absolute inset-0 bg-emerald-600/90 rounded-2xl flex flex-col items-center justify-center text-white p-4 text-center animate-in zoom-in-95">
-                  <CheckCircle2 className="w-10 h-10 mb-1 animate-bounce" />
+                  <CheckCircle2 className="w-10 h-10 mb-1" />
                   <span className="text-xs font-bold uppercase tracking-wider">QR Code Recognized!</span>
                   <span className="text-sm font-mono font-extrabold mt-1 break-all bg-black/30 px-2.5 py-1 rounded-lg">
                     {scannedResult}
@@ -279,8 +279,8 @@ export function RealQrScanner({
             </div>
 
             {/* Live Camera Badge */}
-            <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-xs text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-white/20">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <div className="absolute top-3 left-3 bg-black/80 text-white text-[11px] font-bold px-2.5 py-1 rounded-md flex items-center gap-1.5 border border-white/20">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
               <span>LIVE OPTICAL SCANNER</span>
             </div>
 

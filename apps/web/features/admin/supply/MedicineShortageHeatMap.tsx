@@ -214,7 +214,7 @@ export function MedicineShortageHeatMap({
           <div className="font-bold text-slate-700 dark:text-slate-300">Depletion Severity Scale:</div>
           <div className="flex flex-wrap items-center gap-4 text-[11px]">
             <span className="flex items-center gap-1.5 text-red-600 dark:text-red-400 font-bold">
-              <span className="h-3 w-3 rounded-full bg-red-600 animate-pulse" />
+              <span className="h-3 w-3 rounded-full bg-red-600" />
               Critical Lack (0-2 Days)
             </span>
             <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-semibold">
@@ -241,11 +241,7 @@ export function MedicineShortageHeatMap({
       {viewMode === 'spatial' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* Spatial Heat Canvas */}
-          <div className="lg:col-span-2 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-5 text-white shadow-xl relative overflow-hidden min-h-[460px] flex flex-col justify-between">
-            {/* Ambient heat glow behind severe shortage nodes */}
-            <div className="absolute right-10 bottom-10 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute right-20 top-20 w-48 h-48 bg-red-600/10 rounded-full blur-2xl pointer-events-none" />
-
+          <div className="lg:col-span-2 bg-slate-950 border border-slate-800 rounded-2xl p-5 text-white shadow-xl relative overflow-hidden min-h-[460px] flex flex-col justify-between">
             <div className="flex items-center justify-between z-10 border-b border-slate-800/80 pb-3">
               <div className="flex items-center gap-2">
                 <Navigation className="h-4 w-4 text-indigo-400" />
@@ -312,7 +308,7 @@ export function MedicineShortageHeatMap({
                     )}
                   >
                     <div className="flex items-center gap-1.5">
-                      <span className={cn('h-2.5 w-2.5 rounded-full', isCrit ? 'bg-red-500 animate-ping' : 'bg-emerald-400')} />
+                      <span className={cn('h-2.5 w-2.5 rounded-full', isCrit ? 'bg-red-500' : 'bg-emerald-400')} />
                       <span className="font-bold text-xs text-white">PHC Gachibowli</span>
                     </div>
                     <div className="text-[10px] text-slate-300 mt-0.5">
@@ -346,7 +342,7 @@ export function MedicineShortageHeatMap({
                     )}
                   >
                     <div className="flex items-center gap-1.5">
-                      <Flame className="h-4 w-4 text-red-500 animate-bounce" />
+                      <Flame className="h-4 w-4 text-red-500" />
                       <span className="font-bold text-xs text-white">SmartCare Community</span>
                     </div>
                     <div className="text-[10px] text-red-300 font-bold mt-0.5">
@@ -414,7 +410,7 @@ export function MedicineShortageHeatMap({
                     )}
                   >
                     <div className="flex items-center gap-1.5">
-                      <Flame className="h-4 w-4 text-red-500 animate-pulse" />
+                      <Flame className="h-4 w-4 text-red-500" />
                       <span className="font-extrabold text-xs text-white">PHC Shamshabad</span>
                     </div>
                     <div className="text-[10px] text-red-200 font-black mt-0.5">

@@ -29,21 +29,14 @@ export default function NotFound() {
       {/* Main 404 Hero Container */}
       <main className="flex-1 flex items-center justify-center px-4 py-10 sm:py-16 my-auto">
         <div className="w-full max-w-2xl bg-[var(--surface)] border border-[var(--line)] rounded-3xl p-6 sm:p-12 shadow-xl relative overflow-hidden">
-          {/* Subtle Ambient Radial Glow */}
-          <div
-            className="absolute -right-20 -top-20 w-64 h-64 rounded-full pointer-events-none opacity-20 blur-3xl"
-            style={{ background: 'var(--teal)' }}
-            aria-hidden="true"
-          />
-
           {/* Badge & Icon Row */}
-          <div className="flex items-center justify-between gap-4 mb-6">
-            <div className="w-16 h-16 rounded-2xl bg-[var(--mint)] text-[var(--teal)] flex items-center justify-center shadow-xs border border-[var(--line)]">
-              <SearchX size={34} strokeWidth={2} />
+          <div className="flex items-center justify-between gap-4 mb-5">
+            <div className="w-14 h-14 rounded-xl bg-[var(--mint)] text-[var(--teal)] flex items-center justify-center border border-[var(--line)]">
+              <SearchX size={28} strokeWidth={2} />
             </div>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-extrabold uppercase tracking-wider bg-[var(--mint)] text-[var(--teal)] border border-[#a5d2f6]">
-              Error 404 · Route Missing
-            </span>
+            <div className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--teal)]">
+              Error 404 / Route Missing
+            </div>
           </div>
 
           {/* Heading */}

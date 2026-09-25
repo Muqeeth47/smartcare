@@ -254,12 +254,12 @@ export function DonationFinderPage() {
           <div>
             {/* Intro & Tab Switch */}
             <div className="mb-6">
-              <div className="w-full sm:w-auto inline-flex bg-[var(--surface-sunken)] border border-[var(--line)] rounded-full p-1 gap-1 mb-3">
+              <div className="w-full sm:w-auto inline-flex bg-[var(--surface-sunken)] border border-[var(--line)] rounded-xl p-1 gap-1 mb-3">
                 <button
                   type="button"
                   onClick={() => handleTabChange('blood')}
-                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all min-h-[44px] cursor-pointer ${
-                    activeTab === 'blood' ? 'bg-[var(--teal)] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--teal)]'
+                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all min-h-[44px] cursor-pointer ${
+                    activeTab === 'blood' ? 'bg-[var(--teal)] text-white shadow-xs' : 'text-[var(--text-muted)] hover:text-[var(--teal)]'
                   }`}
                 >
                   <Droplets size={14} /> Blood
@@ -267,8 +267,8 @@ export function DonationFinderPage() {
                 <button
                   type="button"
                   onClick={() => handleTabChange('organ')}
-                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all min-h-[44px] cursor-pointer ${
-                    activeTab === 'organ' ? 'bg-[var(--teal)] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--teal)]'
+                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all min-h-[44px] cursor-pointer ${
+                    activeTab === 'organ' ? 'bg-[var(--teal)] text-white shadow-xs' : 'text-[var(--text-muted)] hover:text-[var(--teal)]'
                   }`}
                 >
                   <HeartHandshake size={14} /> Organ
@@ -546,7 +546,7 @@ export function DonationFinderPage() {
               <MapPin size={15} className="text-[var(--teal)]" />
               <span>OpenStreetMap Live Blood & Organ Network</span>
             </div>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--mint)] text-[var(--teal)]">
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--mint)] text-[var(--teal)]">
               {centres.length} centres mapped
             </span>
           </div>

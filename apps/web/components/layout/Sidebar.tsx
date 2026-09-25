@@ -75,7 +75,6 @@ const SIDEBAR_ITEMS: Record<string, RoleConfig> = {
     sections: [
       {
         title: 'Module 1: Patient & Doctor',
-        badge: 'Clinical',
         items: [
           { label: 'Clinical Queue & eRx', href: '/dashboard/hospital?module=clinical', icon: Stethoscope },
           { label: 'Queue Workspace', href: '/dashboard/queue', icon: ListOrdered },
@@ -85,7 +84,6 @@ const SIDEBAR_ITEMS: Record<string, RoleConfig> = {
       },
       {
         title: 'Module 2: Hospital & State Mesh',
-        badge: 'Supply',
         items: [
           { label: 'Medicine Stock Register', href: '/dashboard/hospital?module=supply&supplyTab=inventory', icon: Pill },
           { label: 'SOS Shortage Desk', href: '/dashboard/hospital?module=supply&supplyTab=shortage', icon: ShieldAlert },
@@ -101,7 +99,6 @@ const SIDEBAR_ITEMS: Record<string, RoleConfig> = {
     sections: [
       {
         title: 'State Health Command',
-        badge: 'MoHFW Mesh',
         items: [
           { label: 'Command Overview', href: '/dashboard/admin?adminTab=command&commandTab=summary', icon: Building2 },
           { label: 'PHC Telemetry (Beds & Staff)', href: '/dashboard/admin?adminTab=command&commandTab=telemetry', icon: Activity },
@@ -203,11 +200,6 @@ export function DesktopSidebar({
               <span className="sidebar-section-title text-[9px] font-black uppercase tracking-wider text-[var(--teal)] truncate">
                 {section.title}
               </span>
-              {section.badge && (
-                <span className="sidebar-section-badge text-[8px] font-extrabold uppercase px-1 py-0.5 rounded bg-[var(--teal)]/10 text-[var(--teal)]">
-                  {section.badge}
-                </span>
-              )}
             </div>
           )}
 
@@ -357,11 +349,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   <span className="text-[10px] font-black uppercase tracking-wider text-[var(--teal)]">
                     {section.title}
                   </span>
-                  {section.badge && (
-                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-[var(--teal)]/10 text-[var(--teal)]">
-                      {section.badge}
-                    </span>
-                  )}
                 </div>
               )}
 

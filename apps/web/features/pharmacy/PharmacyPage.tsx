@@ -23,6 +23,8 @@ import {
   BadgeCheck,
   Search,
   Filter,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 interface MedicineCatalogItem {
@@ -162,6 +164,8 @@ export function PharmacyPage({ variant = 'landing' }: { variant?: 'landing' | 'p
   const [fulfillmentType, setFulfillmentType] = useState<'counter' | 'delivery'>('counter');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [pharmacyPage, setPharmacyPage] = useState<number>(1);
+  const PHARMACY_PER_PAGE = 4;
   const [deliveryAddress, setDeliveryAddress] = useState(
     patientData.city ? `Near ${patientData.hospital || 'SmartCare Hospital'}, ${patientData.city}` : 'Flat 402, Aditya Towers, Gachibowli, Hyderabad'
   );
@@ -241,16 +245,13 @@ export function PharmacyPage({ variant = 'landing' }: { variant?: 'landing' | 'p
   const pageContent = (
     <div className="max-w-6xl w-full mx-auto px-2 sm:px-4 py-6 text-[var(--text)]">
       {/* Pharmacy Header & View Switcher */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5">
         <div>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[var(--mint)] text-[var(--teal)] border border-[var(--line)] mb-2">
-            <Store className="w-3.5 h-3.5 text-[var(--teal)]" />
-            SmartCare Hospital In-House Pharmacy Counter #02
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--text)] tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-[var(--text)] tracking-tight flex items-center gap-2">
+            <Store className="w-5 h-5 text-[var(--teal)]" />
             Prescription Pharmacy &amp; Pickup
           </h1>
-          <p className="text-sm text-[var(--text-muted)] mt-1">
+          <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-0.5">
             Skip outpatient billing lines. Verified medications dispensed directly from hospital inventory.
           </p>
         </div>
@@ -278,7 +279,7 @@ export function PharmacyPage({ variant = 'landing' }: { variant?: 'landing' | 'p
             }`}
           >
             Hospital Dispensary Queue
-            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-[var(--mint)] text-[var(--teal)] font-bold">
+            <span className="px-1.5 py-0.5 rounded text-[10px] bg-[var(--mint)] text-[var(--teal)] font-bold">
               {pharmacyOrders.length}
             </span>
           </button>
@@ -319,7 +320,7 @@ export function PharmacyPage({ variant = 'landing' }: { variant?: 'landing' | 'p
                 <strong className="text-sm font-bold text-[var(--text)]">
                   Jan Aushadhi Generic Drug Subsidy
                 </strong>
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
                   Save up to 60%
                 </span>
               </div>
@@ -383,14 +384,20 @@ export function PharmacyPage({ variant = 'landing' }: { variant?: 'landing' | 'p
                   <input
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setPharmacyPage(1);
+                    }}
                     placeholder="Search by generic salt name, brand alternative, or symptom..."
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] text-xs sm:text-sm text-[var(--text)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--teal)] transition"
                   />
                   {searchQuery && (
                     <button
                       type="button"
-                      onClick={() => setSearchQuery('')}
+                      onClick={() => {
+                        setSearchQuery('');
+                        setPharmacyPage(1);
+                      }}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--text-muted)] hover:text-[var(--text)] px-1.5 py-0.5 rounded bg-[var(--surface-sunken)]"
                     >
                       Clear
@@ -412,7 +419,10 @@ export function PharmacyPage({ variant = 'landing' }: { variant?: 'landing' | 'p
                     <button
                       key={cat.id}
                       type="button"
-                      onClick={() => setSelectedCategory(cat.id)}
+                      onClick={() => {
+                        setSelectedCategory(cat.id);
+                        setPharmacyPage(1);
+                      }}
                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer min-h-[32px] ${
                         selectedCategory === cat.id
                           ? 'bg-[var(--teal)] text-white shadow-xs'
@@ -425,8 +435,8 @@ export function PharmacyPage({ variant = 'landing' }: { variant?: 'landing' | 'p
                 </div>
               </div>
 
-              <div className="space-y-3">
-                {CATALOG_ITEMS.filter((item) => {
+              {(() => {
+                const filteredCatalog = CATALOG_ITEMS.filter((item) => {
                   const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
                   const q = searchQuery.toLowerCase().trim();
                   const matchesQuery =
@@ -435,75 +445,118 @@ export function PharmacyPage({ variant = 'landing' }: { variant?: 'landing' | 'p
                     item.brandedName.toLowerCase().includes(q) ||
                     item.dosage.toLowerCase().includes(q);
                   return matchesCategory && matchesQuery;
-                }).map((item) => {
-                  const inCart = cart.find((c) => c.id === item.id);
-                  const currentPrice = useGeneric ? item.genericPrice : item.brandedPrice;
-                  const displayName = useGeneric ? item.genericName : item.brandedName;
-                  const savings = item.mrp - currentPrice;
+                });
+                const totalCatalogPages = Math.ceil(filteredCatalog.length / PHARMACY_PER_PAGE) || 1;
+                const paginatedCatalog = filteredCatalog.slice(
+                  (pharmacyPage - 1) * PHARMACY_PER_PAGE,
+                  pharmacyPage * PHARMACY_PER_PAGE
+                );
 
-                  return (
-                    <div
-                      key={item.id}
-                      className="bg-[var(--surface)] rounded-2xl border border-[var(--line)] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs hover:border-[var(--teal)] transition-all"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <strong className="text-sm sm:text-base font-bold text-[var(--text)]">
-                            {displayName}
-                          </strong>
-                          {item.isRx && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
-                              Rx Required
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                          Dosage: {item.dosage} · Brand alt:{' '}
-                          <span className="font-medium text-[var(--text)]">{item.brandedName}</span>
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <strong className="text-base font-bold text-[var(--teal)]">
-                            ₹{currentPrice}
-                          </strong>
-                          <del className="text-xs text-[var(--text-muted)]">₹{item.mrp}</del>
-                          {savings > 0 && (
-                            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded border border-emerald-500/30">
-                              Save ₹{savings}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                return (
+                  <div className="space-y-3">
+                    {paginatedCatalog.map((item) => {
+                      const inCart = cart.find((c) => c.id === item.id);
+                      const currentPrice = useGeneric ? item.genericPrice : item.brandedPrice;
+                      const displayName = useGeneric ? item.genericName : item.brandedName;
+                      const savings = item.mrp - currentPrice;
 
-                      <div className="flex items-center gap-2 shrink-0">
-                        {inCart ? (
-                          <div className="flex items-center gap-2">
-                            <span className="px-3 py-1.5 rounded-xl bg-[var(--mint)] text-[var(--teal)] text-xs font-bold border border-[var(--line)]">
-                              Added ({inCart.qty})
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => addToCart(item)}
-                              className="p-2 rounded-xl bg-[var(--surface-sunken)] hover:bg-[var(--mint)] text-[var(--text)] transition min-h-[44px] min-w-[44px] flex items-center justify-center border border-[var(--line)] cursor-pointer"
-                              title="Add another"
-                            >
-                              <Plus className="w-4 h-4" />
-                            </button>
+                      return (
+                        <div
+                          key={item.id}
+                          className="bg-[var(--surface)] rounded-2xl border border-[var(--line)] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs hover:border-[var(--teal)] transition-all"
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <strong className="text-sm sm:text-base font-bold text-[var(--text)]">
+                                {displayName}
+                              </strong>
+                              {item.isRx && (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
+                                  Rx Required
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                              Dosage: {item.dosage} · Brand alt:{' '}
+                              <span className="font-medium text-[var(--text)]">{item.brandedName}</span>
+                            </p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <strong className="text-base font-bold text-[var(--teal)]">
+                                ₹{currentPrice}
+                              </strong>
+                              <del className="text-xs text-[var(--text-muted)]">₹{item.mrp}</del>
+                              {savings > 0 && (
+                                <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded border border-emerald-500/30">
+                                  Save ₹{savings}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        ) : (
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            {inCart ? (
+                              <div className="flex items-center gap-2">
+                                <span className="px-3 py-1.5 rounded-xl bg-[var(--mint)] text-[var(--teal)] text-xs font-bold border border-[var(--line)]">
+                                  Added ({inCart.qty})
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => addToCart(item)}
+                                  className="p-2 rounded-xl bg-[var(--surface-sunken)] hover:bg-[var(--mint)] text-[var(--text)] transition min-h-[44px] min-w-[44px] flex items-center justify-center border border-[var(--line)] cursor-pointer"
+                                  title="Add another"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => addToCart(item)}
+                                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--teal)] hover:opacity-90 text-white text-xs font-semibold transition shadow-xs min-h-[48px] cursor-pointer"
+                              >
+                                <Plus className="w-4 h-4" />
+                                Add to Order
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {totalCatalogPages > 1 && (
+                      <div className="flex items-center justify-between pt-3 px-1">
+                        <span className="text-xs text-[var(--text-muted)]">
+                          Showing {(pharmacyPage - 1) * PHARMACY_PER_PAGE + 1}–
+                          {Math.min(pharmacyPage * PHARMACY_PER_PAGE, filteredCatalog.length)} of {filteredCatalog.length}
+                        </span>
+                        <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => addToCart(item)}
-                            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--teal)] hover:opacity-90 text-white text-xs font-semibold transition shadow-xs min-h-[48px] cursor-pointer"
+                            disabled={pharmacyPage <= 1}
+                            onClick={() => setPharmacyPage((p) => Math.max(1, p - 1))}
+                            className="p-1.5 rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed transition"
+                            title="Previous page"
                           >
-                            <Plus className="w-4 h-4" />
-                            Add to Order
+                            <ChevronLeft className="w-4 h-4" />
                           </button>
-                        )}
+                          <span className="text-xs font-bold text-[var(--text)]">
+                            {pharmacyPage} / {totalCatalogPages}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={pharmacyPage >= totalCatalogPages}
+                            onClick={() => setPharmacyPage((p) => Math.min(totalCatalogPages, p + 1))}
+                            className="p-1.5 rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed transition"
+                            title="Next page"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Order Checkout & Fulfillment Card (1 col) */}
@@ -676,7 +729,7 @@ export function PharmacyPage({ variant = 'landing' }: { variant?: 'landing' | 'p
                         <td className="py-3 pr-4 font-bold text-[var(--text)]">₹{order.total}</td>
                         <td className="py-3">
                           <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold ${
                               order.status === 'ready'
                                 ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
                                 : order.status === 'completed'
@@ -725,7 +778,7 @@ export function PharmacyPage({ variant = 'landing' }: { variant?: 'landing' | 'p
                 Live queue for hospital pharmacists to prepare medicines, call tokens, and dispense Schedule H drugs.
               </p>
             </div>
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-[var(--mint)] text-[var(--teal)] border border-[var(--line)] self-start sm:self-auto">
+            <span className="px-3 py-1 rounded text-xs font-bold bg-[var(--mint)] text-[var(--teal)] border border-[var(--line)] self-start sm:self-auto">
               {pharmacyOrders.length} Prescriptions In Queue
             </span>
           </div>
@@ -775,7 +828,7 @@ export function PharmacyPage({ variant = 'landing' }: { variant?: 'landing' | 'p
                       </td>
                       <td className="py-4 pr-4">
                         <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
+                          className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-bold ${
                             order.status === 'ready'
                               ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
                               : order.status === 'completed'

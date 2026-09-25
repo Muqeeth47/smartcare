@@ -180,19 +180,16 @@ export function LandingPage() {
                 <span className="flex items-center gap-1.5"><Accessibility size={14} /> Mobile-first controls</span>
               </div>
 
-              {/* Live health system status pill */}
+              {/* Live health system status alert */}
               {criticalAlerts > 0 && (
                 <div
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mt-6"
-                  style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)' }}
+                  className="inline-flex items-center gap-2 px-2.5 py-1 rounded mt-5 border border-red-500/40 bg-red-950/40 text-red-200 text-xs font-semibold uppercase tracking-wider"
                 >
-                  <ShieldAlert size={13} style={{ color: '#fca5a5' }} />
-                  <span style={{ color: '#fca5a5', fontSize: '.68rem', fontWeight: 800, letterSpacing: '.08em' }}>
+                  <ShieldAlert size={13} className="text-red-400" />
+                  <span>
                     {criticalAlerts} critical stock shortages active across {facilitiesCount} facilities
                   </span>
-                  <span
-                    style={{ display: 'inline-block', width: '.4rem', height: '.4rem', borderRadius: '50%', background: '#f87171', animation: 'pulse 1.5s ease-in-out infinite' }}
-                  />
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
                 </div>
               )}
 
@@ -289,7 +286,7 @@ export function LandingPage() {
 
                         {/* Wait badge */}
                         <span
-                          className="shrink-0 text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-1 rounded-full"
+                          className="shrink-0 text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-1 rounded"
                           style={{
                             background: h.waitColor === 'green' ? 'rgba(74,222,128,0.2)' : 'rgba(251,191,36,0.2)',
                             color: h.waitColor === 'green' ? '#86efac' : '#fde68a',

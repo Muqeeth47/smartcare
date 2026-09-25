@@ -88,10 +88,14 @@ export function StateCommandSupplyModule() {
   const [isTrainingFederated, setIsTrainingFederated] = useState<boolean>(false);
   const [activeProjectionRange, setActiveProjectionRange] = useState<'7d' | '14d' | '30d'>('14d');
 
-  // Search & Filters
+  // Search, Filters & Pagination
   const [medFilter, setMedFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [summaryPage, setSummaryPage] = useState<number>(1);
+  const SUMMARIES_PER_PAGE = 6;
+  const [manifestPage, setManifestPage] = useState<number>(1);
+  const MANIFEST_PER_PAGE = 5;
 
   const loadData = useCallback(() => {
     setIsRefreshing(true);
@@ -258,6 +262,11 @@ export function StateCommandSupplyModule() {
     });
   }, [aggregate, medFilter, searchQuery]);
 
+  const totalSummaryPages = Math.ceil(filteredSummaries.length / SUMMARIES_PER_PAGE) || 1;
+  const paginatedSummaries = useMemo(() => {
+    return filteredSummaries.slice((summaryPage - 1) * SUMMARIES_PER_PAGE, summaryPage * SUMMARIES_PER_PAGE);
+  }, [filteredSummaries, summaryPage]);
+
   if (!aggregate) {
     return (
       <div className="p-12 text-center text-slate-500">
@@ -268,40 +277,29 @@ export function StateCommandSupplyModule() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* ─── State Command Center Header ────────────────────────────────────────── */}
-      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 border border-slate-800 rounded-2xl p-5 sm:p-7 text-white shadow-xl relative overflow-hidden">
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-          <div className="space-y-1.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                <ShieldCheck className="h-3.5 w-3.5 text-indigo-400" />
-                MoHFW &bull; NITI Aayog Health Mesh
-              </span>
-              <span className="text-xs px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
-                Live Federated Sync
-              </span>
-            </div>
-
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2.5">
-              <Network className="h-8 w-8 text-indigo-400 shrink-0" />
+      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 border border-slate-800 rounded-2xl p-4 sm:p-5 text-white shadow-lg relative overflow-hidden">
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white flex items-center gap-2">
+              <Network className="h-6 w-6 text-indigo-400 shrink-0" />
               AushadhiNet State Command Center
             </h1>
-            <p className="text-sm text-slate-300 max-w-2xl">
+            <p className="text-xs text-slate-300 max-w-2xl">
               Real-time health resource pooling, inter-hospital shortage aggregation, and AI-governed surplus redistribution
               for {aggregate.state} ({aggregate.district}).
             </p>
           </div>
 
           {/* Quick Actions & District Switcher */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <div className="bg-slate-800/80 backdrop-blur border border-slate-700 rounded-xl p-2 flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+            <div className="bg-slate-800/80 backdrop-blur border border-slate-700 rounded-xl p-1.5 flex items-center gap-2">
               <span className="text-xs text-slate-400 font-medium pl-2">District:</span>
               <select
                 value={selectedDistrict}
                 onChange={(e) => setSelectedDistrict(e.target.value)}
-                className="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2 min-h-[40px] focus:ring-2 focus:ring-indigo-500 focus:outline-none font-semibold"
+                className="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 min-h-[38px] focus:ring-2 focus:ring-indigo-500 focus:outline-none font-semibold"
               >
                 <option value="Hyderabad & Rangareddy Central">Hyderabad &amp; Rangareddy Central</option>
                 <option value="Warangal Urban & Rural">Warangal Urban &amp; Rural</option>
@@ -313,70 +311,70 @@ export function StateCommandSupplyModule() {
             <button
               onClick={loadData}
               disabled={isRefreshing}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all min-h-[44px]"
+              className="flex items-center justify-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all min-h-[40px]"
             >
-              <RefreshCw className={cn('h-4 w-4', isRefreshing && 'animate-spin')} />
+              <RefreshCw className={cn('h-3.5 w-3.5', isRefreshing && 'animate-spin')} />
               Refresh Aggregate
             </button>
           </div>
         </div>
 
         {/* ─── Real-Time District Averages Aggregator Banner ─────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-6 pt-6 border-t border-slate-800">
-          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 space-y-1">
-            <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
-              <Pill className="h-3.5 w-3.5 text-indigo-400" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 mt-4 pt-4 border-t border-slate-800">
+          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 space-y-0.5">
+            <div className="text-[10px] text-slate-400 font-medium flex items-center gap-1.5">
+              <Pill className="h-3 w-3 text-indigo-400" />
               District Stock Avg
             </div>
-            <div className="text-2xl font-black text-white">{aggregate.avgStockDaysRemaining} Days</div>
-            <div className="text-[10px] text-slate-400">Mean burn buffer across facilities</div>
+            <div className="text-xl font-black text-white">{aggregate.avgStockDaysRemaining} Days</div>
+            <div className="text-[9px] text-slate-400">Mean burn buffer</div>
           </div>
 
-          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 space-y-1">
-            <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
-              <Flame className="h-3.5 w-3.5 text-red-400" />
+          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 space-y-0.5">
+            <div className="text-[10px] text-slate-400 font-medium flex items-center gap-1.5">
+              <Flame className="h-3 w-3 text-red-400" />
               Critical Shortages
             </div>
-            <div className={cn('text-2xl font-black', aggregate.criticalAlertsCount > 0 ? 'text-red-400' : 'text-emerald-400')}>
+            <div className={cn('text-xl font-black', aggregate.criticalAlertsCount > 0 ? 'text-red-400' : 'text-emerald-400')}>
               {aggregate.criticalAlertsCount} Alert{aggregate.criticalAlertsCount === 1 ? '' : 's'}
             </div>
-            <div className="text-[10px] text-slate-400">Facilities with &le; 3 days stock</div>
+            <div className="text-[9px] text-slate-400">&le; 3 days stock</div>
           </div>
 
-          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 space-y-1">
-            <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
-              <Bed className="h-3.5 w-3.5 text-amber-400" />
+          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 space-y-0.5">
+            <div className="text-[10px] text-slate-400 font-medium flex items-center gap-1.5">
+              <Bed className="h-3 w-3 text-amber-400" />
               Hospital Beds Avg
             </div>
-            <div className="text-2xl font-black text-white">{aggregate.totalBedsOccupancyPercent}%</div>
-            <div className="text-[10px] text-slate-400">Occupancy rate across 4 facilities</div>
+            <div className="text-xl font-black text-white">{aggregate.totalBedsOccupancyPercent}%</div>
+            <div className="text-[9px] text-slate-400">4 facilities load</div>
           </div>
 
-          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 space-y-1">
-            <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
-              <Activity className="h-3.5 w-3.5 text-purple-400" />
+          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 space-y-0.5">
+            <div className="text-[10px] text-slate-400 font-medium flex items-center gap-1.5">
+              <Activity className="h-3 w-3 text-purple-400" />
               ICU Bed Load
             </div>
-            <div className="text-2xl font-black text-purple-300">{aggregate.totalIcuOccupancyPercent}%</div>
-            <div className="text-[10px] text-slate-400">74 / 86 Critical care beds</div>
+            <div className="text-xl font-black text-purple-300">{aggregate.totalIcuOccupancyPercent}%</div>
+            <div className="text-[9px] text-slate-400">74 / 86 Beds</div>
           </div>
 
-          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 space-y-1">
-            <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
-              <Building2 className="h-3.5 w-3.5 text-cyan-400" />
+          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 space-y-0.5">
+            <div className="text-[10px] text-slate-400 font-medium flex items-center gap-1.5">
+              <Building2 className="h-3 w-3 text-cyan-400" />
               Oxygen Bank
             </div>
-            <div className="text-2xl font-black text-cyan-300">{aggregate.oxygenAvailabilityPercent}%</div>
-            <div className="text-[10px] text-slate-400">538 Cylinders ready in district</div>
+            <div className="text-xl font-black text-cyan-300">{aggregate.oxygenAvailabilityPercent}%</div>
+            <div className="text-[9px] text-slate-400">538 Cylinders</div>
           </div>
 
-          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 space-y-1">
-            <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
-              <Truck className="h-3.5 w-3.5 text-emerald-400" />
+          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 space-y-0.5">
+            <div className="text-[10px] text-slate-400 font-medium flex items-center gap-1.5">
+              <Truck className="h-3 w-3 text-emerald-400" />
               AI Rebalances
             </div>
-            <div className="text-2xl font-black text-emerald-300">{aggregate.pendingRebalances} Ready</div>
-            <div className="text-[10px] text-slate-400">Awaiting CMO dispatch order</div>
+            <div className="text-xl font-black text-emerald-300">{aggregate.pendingRebalances} Ready</div>
+            <div className="text-[9px] text-slate-400">Pending dispatch</div>
           </div>
         </div>
       </div>
@@ -386,13 +384,12 @@ export function StateCommandSupplyModule() {
         <div className="flex items-center gap-3">
           <div className="relative flex items-center justify-center h-10 w-10 rounded-xl bg-indigo-600/20 border border-indigo-500/40 text-indigo-400 shrink-0">
             <Timer className="h-5 w-5" />
-            <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-500 animate-ping" />
             <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-500" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1">
-                <Radio className="h-3 w-3 animate-pulse text-emerald-400" />
+                <Radio className="h-3 w-3 text-emerald-400" />
                 15-Min PHC Telemetry Cycle
               </span>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">
@@ -512,7 +509,7 @@ export function StateCommandSupplyModule() {
                         f.tier === 'warehouse'
                           ? 'bg-blue-500'
                           : isShortage
-                          ? 'bg-red-500 animate-ping'
+                          ? 'bg-red-500'
                           : 'bg-emerald-500'
                       )}
                     />
@@ -556,7 +553,10 @@ export function StateCommandSupplyModule() {
                 {['ALL', 'Critical Supplies', 'Antibiotics', 'Chronic Care', 'Emergency & IV', 'Vaccines'].map((cat) => (
                   <button
                     key={cat}
-                    onClick={() => setMedFilter(cat)}
+                    onClick={() => {
+                      setMedFilter(cat);
+                      setSummaryPage(1);
+                    }}
                     className={cn(
                       'px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap min-h-[38px]',
                       medFilter === cat
@@ -586,7 +586,7 @@ export function StateCommandSupplyModule() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {filteredSummaries.map((med) => {
+                  {paginatedSummaries.map((med) => {
                     const isCritical = med.status === 'critical';
                     const isLow = med.status === 'low';
 
@@ -669,6 +669,36 @@ export function StateCommandSupplyModule() {
                 </tbody>
               </table>
             </div>
+
+            {totalSummaryPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 mt-1 border-t border-slate-200 dark:border-slate-800 text-xs">
+                <span className="text-slate-500 font-medium">
+                  Showing {Math.min((summaryPage - 1) * SUMMARIES_PER_PAGE + 1, filteredSummaries.length)}–
+                  {Math.min(summaryPage * SUMMARIES_PER_PAGE, filteredSummaries.length)} of {filteredSummaries.length} essentials
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={summaryPage === 1}
+                    onClick={() => setSummaryPage((p) => Math.max(1, p - 1))}
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold text-slate-700 dark:text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    Previous
+                  </button>
+                  <span className="font-semibold text-slate-700 dark:text-slate-300 px-1">
+                    Page {summaryPage} of {totalSummaryPages}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={summaryPage >= totalSummaryPages}
+                    onClick={() => setSummaryPage((p) => Math.min(totalSummaryPages, p + 1))}
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold text-slate-700 dark:text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -677,15 +707,11 @@ export function StateCommandSupplyModule() {
       {activeTab === 'telemetry' && (
         <div className="space-y-6">
           {/* Header Banner */}
-          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl border border-slate-800 p-5 sm:p-6 text-white space-y-4 shadow-xl">
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl border border-slate-800 p-4 sm:p-5 text-white space-y-3 shadow-lg">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                  <Activity className="h-3.5 w-3.5 text-indigo-400" />
-                  National Health Mission &bull; PHC Telemetry Mesh
-                </div>
-                <h3 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2.5">
-                  <Activity className="h-6 w-6 text-indigo-400" />
+                <h3 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-indigo-400" />
                   PHC Resource Telemetry &bull; Beds, Staff &amp; Footfall
                 </h3>
                 <p className="text-xs text-slate-300 max-w-2xl">
@@ -698,8 +724,8 @@ export function StateCommandSupplyModule() {
                 <div className="text-right">
                   <div className="text-[10px] text-slate-400 font-mono">Telemetry Status</div>
                   <div className="text-xs font-bold text-emerald-400 flex items-center justify-end gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-                    Continuous 15m Pulse Active
+                    <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                    Continuous 15m Telemetry Active
                   </div>
                 </div>
                 <button
@@ -836,7 +862,7 @@ export function StateCommandSupplyModule() {
                           </h5>
                         </div>
                         <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 font-semibold flex items-center gap-1">
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                           {facility.lastReportedAt}
                         </span>
                       </div>
@@ -1036,15 +1062,11 @@ export function StateCommandSupplyModule() {
       {activeTab === 'forecasting' && (
         <div className="space-y-6">
           {/* Header Banner */}
-          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl border border-slate-800 p-5 sm:p-6 text-white space-y-4 shadow-xl">
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl border border-slate-800 p-4 sm:p-5 text-white space-y-3 shadow-lg">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                  <TrendingUp className="h-3.5 w-3.5 text-indigo-400" />
-                  Predictive Epidemiological Modeling &bull; MoHFW Forecaster
-                </div>
-                <h3 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2.5">
-                  <TrendingUp className="h-6 w-6 text-indigo-400" />
+                <h3 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-indigo-400" />
                   AI Demand Surge Forecaster &bull; Early Warning Stock-Out Mesh
                 </h3>
                 <p className="text-xs text-slate-300 max-w-2xl">
@@ -1423,7 +1445,7 @@ export function StateCommandSupplyModule() {
 
                         {isInTransit && (
                           <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5 bg-emerald-100 dark:bg-emerald-950/40 px-3 py-2 rounded-xl">
-                            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
+                            <span className="h-2 w-2 rounded-full bg-emerald-500" />
                             Vehicle en route to destination facility
                           </span>
                         )}
@@ -1446,16 +1468,12 @@ export function StateCommandSupplyModule() {
 
       {/* ─── TAB: MULTI-STATE FEDERATED AI & SHARED PREDICTIVE MODELLING ────────── */}
       {activeTab === 'federated' && (
-        <div className="space-y-6">
-          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl border border-slate-800 p-6 text-white space-y-5 shadow-xl">
+        <div className="space-y-4">
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl border border-slate-800 p-4 sm:p-5 text-white space-y-4 shadow-lg">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <div className="space-y-1.5">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                  <Cpu className="h-3.5 w-3.5 text-indigo-400" />
-                  MoHFW &bull; NITI Aayog Federated Intelligence Mesh
-                </div>
-                <h3 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2.5">
-                  <Network className="h-7 w-7 text-indigo-400" />
+              <div className="space-y-1">
+                <h3 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
+                  <Network className="h-6 w-6 text-indigo-400" />
                   Multi-State Shared Predictive Modelling Hub
                 </h3>
                 <p className="text-xs text-slate-300 max-w-2xl">
@@ -1533,7 +1551,7 @@ export function StateCommandSupplyModule() {
                         <div className="text-[11px] text-slate-400">{node.capital}</div>
                       </div>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                         SYNCED
                       </span>
                     </div>
@@ -1601,69 +1619,101 @@ export function StateCommandSupplyModule() {
               </span>
             </div>
 
-            <div className="space-y-3">
-              {orders.map((o) => (
-                <div
-                  key={o.id}
-                  className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <strong className="font-mono text-indigo-600 dark:text-indigo-400">{o.orderNumber}</strong>
-                      <span className="font-bold text-slate-900 dark:text-white">
-                        {o.quantity} {o.unit} of {o.medicineName}
+            {(() => {
+              const totalManifestPages = Math.ceil(orders.length / MANIFEST_PER_PAGE) || 1;
+              const paginatedOrders = orders.slice((manifestPage - 1) * MANIFEST_PER_PAGE, manifestPage * MANIFEST_PER_PAGE);
+
+              return (
+                <>
+                  <div className="space-y-2.5">
+                    {paginatedOrders.map((o) => (
+                      <div
+                        key={o.id}
+                        className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <strong className="font-mono text-indigo-600 dark:text-indigo-400">{o.orderNumber}</strong>
+                            <span className="font-bold text-slate-900 dark:text-white">
+                              {o.quantity} {o.unit} of {o.medicineName}
+                            </span>
+                          </div>
+                          <div className="text-slate-500">
+                            {o.sourceHospitalName} &rarr; <strong>{o.targetHospitalName}</strong> &bull; {o.routeDistanceKm} km
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <div className="text-[10px] uppercase text-slate-400">Digital OTP</div>
+                            <div className="font-mono font-bold text-slate-800 dark:text-slate-200">{o.otpCode}</div>
+                          </div>
+
+                          <span
+                            className={cn(
+                              'px-2.5 py-1 rounded text-[11px] font-bold uppercase',
+                              o.status === 'delivered'
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300'
+                                : o.status === 'in_transit'
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'
+                                : 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'
+                            )}
+                          >
+                            {o.status.replace('_', ' ')}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {totalManifestPages > 1 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-200 dark:border-slate-800 text-xs">
+                      <span className="text-slate-500 font-medium">
+                        Showing {Math.min((manifestPage - 1) * MANIFEST_PER_PAGE + 1, orders.length)}–
+                        {Math.min(manifestPage * MANIFEST_PER_PAGE, orders.length)} of {orders.length} transfers
                       </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={manifestPage === 1}
+                          onClick={() => setManifestPage((p) => Math.max(1, p - 1))}
+                          className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold text-slate-700 dark:text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                        >
+                          Previous
+                        </button>
+                        <span className="font-semibold text-slate-700 dark:text-slate-300 px-1">
+                          Page {manifestPage} of {totalManifestPages}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={manifestPage >= totalManifestPages}
+                          onClick={() => setManifestPage((p) => Math.min(totalManifestPages, p + 1))}
+                          className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold text-slate-700 dark:text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                        >
+                          Next
+                        </button>
+                      </div>
                     </div>
-                    <div className="text-slate-500">
-                      {o.sourceHospitalName} &rarr; <strong>{o.targetHospitalName}</strong> &bull; {o.routeDistanceKm} km
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <div className="text-[10px] uppercase text-slate-400">Digital OTP</div>
-                      <div className="font-mono font-bold text-slate-800 dark:text-slate-200">{o.otpCode}</div>
-                    </div>
-
-                    <span
-                      className={cn(
-                        'px-2.5 py-1 rounded-full text-[11px] font-bold uppercase',
-                        o.status === 'delivered'
-                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300'
-                          : o.status === 'in_transit'
-                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 animate-pulse'
-                          : 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'
-                      )}
-                    >
-                      {o.status.replace('_', ' ')}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
 
       {/* ─── TAB 6: EMERGENCY SOS ESCALATION & SUPPLIER DISPATCH DESK ──────────── */}
       {activeTab === 'escalation' && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Header Protocol Card */}
-          <div className="bg-gradient-to-r from-red-950 via-slate-900 to-red-950 border-2 border-red-500/40 rounded-2xl p-5 sm:p-6 text-white shadow-xl relative overflow-hidden">
+          <div className="bg-gradient-to-r from-red-950 via-slate-900 to-red-950 border border-red-500/40 rounded-2xl p-4 sm:p-5 text-white shadow-lg relative overflow-hidden">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-300 border border-red-500/40 animate-pulse">
-                    <AlertOctagon className="h-3.5 w-3.5 text-red-400" />
-                    MoHFW Critical Shortage SOP Active
-                  </span>
-                  <span className="text-xs text-slate-400 font-mono">Protocol: NHM-SOP-SEC-9</span>
-                </div>
-                <h3 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2.5">
-                  <ShieldAlert className="h-6 w-6 text-red-400 shrink-0" />
+              <div className="space-y-1">
+                <h3 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
+                  <ShieldAlert className="h-5 w-5 text-red-400 shrink-0" />
                   State Emergency Shortage Escalation Desk
                 </h3>
-                <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
+                <p className="text-xs text-slate-300 max-w-2xl">
                   When primary health facilities breach critical safety buffers (&le; 3 days), the State Commander triggers a 4-tier public health intervention across District CMOs, State Rate-Contract suppliers, and the National Central Reserve.
                 </p>
               </div>

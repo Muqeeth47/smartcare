@@ -435,13 +435,13 @@ export function AnalyticsDashboardPage() {
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {crit > 0 && (
-                          <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 text-[11px] font-bold">{crit} critical</span>
+                          <span className="px-2 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 text-[11px] font-bold">{crit} critical</span>
                         )}
                         {low > 0 && (
-                          <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 text-[11px] font-bold">{low} low</span>
+                          <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 text-[11px] font-bold">{low} low</span>
                         )}
                         {crit === 0 && low === 0 && (
-                          <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 text-[11px] font-bold">
+                          <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 text-[11px] font-bold">
                             <CheckCircle2 size={10} /> All clear
                           </span>
                         )}
@@ -487,7 +487,7 @@ export function AnalyticsDashboardPage() {
                           {cat.totalStock.toLocaleString('en-IN')}
                         </span>
                         {cat.hospitalsInShortage > 0 && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 shrink-0">
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 shrink-0">
                             {cat.hospitalsInShortage} critical
                           </span>
                         )}
@@ -630,8 +630,8 @@ export function AnalyticsDashboardPage() {
                         <p className="text-[11px] text-slate-400">{stateCity}</p>
                       </div>
                       <span className={cn(
-                        'text-[10px] font-bold px-2 py-0.5 rounded-full',
-                        status === 'Active' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300 animate-pulse'
+                        'text-[10px] font-bold px-2 py-0.5 rounded',
+                        status === 'Active' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
                       )}>
                         {status}
                       </span>

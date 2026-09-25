@@ -112,7 +112,7 @@ export function LiveQueueTriageVisualizer({
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
-              <Siren className="w-5 h-5 animate-pulse" />
+              <Siren className="w-5 h-5" />
             </div>
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] block">
@@ -218,7 +218,7 @@ export function LiveQueueTriageVisualizer({
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[var(--line)]">
           <div>
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
               <span className="text-xs font-black uppercase tracking-wider text-[var(--teal)]">
                 Live OPD Calling Board
               </span>
@@ -278,7 +278,7 @@ export function LiveQueueTriageVisualizer({
               )}
               title="Call next patient with audio chime"
             >
-              <Volume2 className={cn('w-4 h-4 text-[var(--teal)]', chimePlayed && 'animate-bounce text-white')} />
+              <Volume2 className={cn('w-4 h-4 text-[var(--teal)]', chimePlayed && 'text-white')} />
               <span>{currentPatient?.status === 'called' ? 'Start Consultation' : 'Call Next Patient'}</span>
             </button>
           </div>

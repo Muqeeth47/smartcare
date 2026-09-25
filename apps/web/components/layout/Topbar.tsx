@@ -99,22 +99,21 @@ export function Topbar({
   const ThemeIcon = theme === 'dark' ? Moon : Sun;
   const themeLabel = theme === 'dark' ? 'Dark' : 'Light';
 
-  // ── Persistent Glowing SOS Ambulance Button ────────────────────────────────
+  // ── Persistent SOS Ambulance Button ────────────────────────────────────────
   const SosBeaconButton = !isAmbulancePage ? (
     <Link
       id="global-sos-ambulance-btn"
       href="/ambulance"
       className={cn(
-        "items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black text-white bg-red-600 hover:bg-red-700 transition shadow-md shrink-0 no-underline",
+        "items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black text-white bg-red-600 hover:bg-red-700 active:bg-red-800 transition shadow-xs shrink-0 no-underline border border-red-700",
         variant === 'landing' ? "inline-flex" : "hidden sm:inline-flex"
       )}
       style={{
-        boxShadow: '0 0 12px rgba(229, 62, 62, 0.65)',
         minHeight: '34px',
       }}
       title="Emergency Ambulance Dispatch"
     >
-      <Siren className="w-3.5 h-3.5 animate-pulse text-white" />
+      <Siren className="w-3.5 h-3.5 text-white" />
       <span className="tracking-wide uppercase text-[11px] font-black">SOS Ambulance</span>
     </Link>
   ) : null;
@@ -293,15 +292,15 @@ export function Topbar({
 
         {/* 4. Mobile Quick Actions & Hamburger (Visible only on < 1024px) */}
         <div className="flex lg:hidden items-center gap-1.5 shrink-0">
-          {/* Mobile SOS Pill */}
+          {/* Mobile SOS */}
           {!isAmbulancePage && (
             <Link
               href="/ambulance"
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black text-white bg-red-600 hover:bg-red-700 transition shadow-sm no-underline shrink-0"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-black text-white bg-red-600 hover:bg-red-700 active:bg-red-800 transition shadow-xs no-underline shrink-0 border border-red-700"
               style={{ minHeight: '32px' }}
               title="Emergency Ambulance"
             >
-              <Siren className="w-3 h-3 animate-pulse text-white" />
+              <Siren className="w-3 h-3 text-white" />
               <span className="tracking-wide uppercase">SOS</span>
             </Link>
           )}
@@ -364,7 +363,7 @@ export function Topbar({
                   <Siren className="w-4 h-4 text-red-600" />
                   Ambulance Emergency
                 </span>
-                <span className="text-[10px] uppercase font-black bg-red-600 text-white px-2 py-0.5 rounded-full">
+                <span className="text-[10px] uppercase font-black bg-red-600 text-white px-2 py-0.5 rounded">
                   24/7
                 </span>
               </Link>

@@ -47,8 +47,12 @@ export function QueueWorkspacePage() {
     statusParam && ['waiting', 'called', 'in_progress', 'completed'].includes(statusParam) ? statusParam : 'all'
   );
 
+  const [queuePage, setQueuePage] = useState(1);
+  const QUEUE_PER_PAGE = 6;
+
   const handlePriorityFilterChange = (priority: 'all' | 'Red' | 'Yellow' | 'Green') => {
     setPriorityFilter(priority);
+    setQueuePage(1);
     const params = new URLSearchParams(searchParams.toString());
     if (priority === 'all') params.delete('priority');
     else params.set('priority', priority);
@@ -57,6 +61,7 @@ export function QueueWorkspacePage() {
 
   const handleStatusFilterChange = (status: 'all' | 'waiting' | 'called' | 'in_progress' | 'completed') => {
     setStatusFilter(status);
+    setQueuePage(1);
     const params = new URLSearchParams(searchParams.toString());
     if (status === 'all') params.delete('status');
     else params.set('status', status);
@@ -187,7 +192,7 @@ export function QueueWorkspacePage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[var(--line)]">
           <div>
             <div className="flex items-center gap-2 text-xs font-bold text-[var(--teal)] uppercase tracking-wider mb-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
               Shared Queue
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--ink)] tracking-tight">
@@ -342,14 +347,20 @@ export function QueueWorkspacePage() {
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setQueuePage(1);
+                }}
                 placeholder="Search patient, symptoms, or ID..."
                 className="w-full pl-10 pr-3 py-2.5 min-h-[44px] text-xs sm:text-sm rounded-xl border border-[var(--line)] bg-[var(--surface)] focus:outline-none focus:border-[var(--teal)] transition-colors"
               />
               {searchQuery && (
                 <button
                   type="button"
-                  onClick={() => setSearchQuery('')}
+                  onClick={() => {
+                    setSearchQuery('');
+                    setQueuePage(1);
+                  }}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--ink)] p-1 min-h-[32px] min-w-[32px] flex items-center justify-center"
                 >
                   <X size={14} />
@@ -402,6 +413,7 @@ export function QueueWorkspacePage() {
                     setSearchQuery('');
                     setPriorityFilter('all');
                     setStatusFilter('all');
+                    setQueuePage(1);
                   }}
                   className="mt-3 px-3 py-1.5 text-xs font-bold text-[var(--teal)] hover:underline"
                 >
@@ -411,40 +423,47 @@ export function QueueWorkspacePage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredQueue.map((item, index) => {
-                const status = queueStatus(item);
-                const canAdvance = ['waiting', 'called', 'in_progress'].includes(status);
-                const actionData = ({
-                  waiting: { label: 'Call next', icon: PhoneCall, variant: 'teal' },
-                  called: { label: 'Start visit', icon: Stethoscope, variant: 'amber' },
-                  in_progress: { label: 'Complete visit', icon: CheckCircle2, variant: 'emerald' },
-                } as Record<string, { label: string; icon: any; variant: string }>)[status];
+              {(() => {
+                const totalQueuePages = Math.ceil(filteredQueue.length / QUEUE_PER_PAGE) || 1;
+                const paginatedQueue = filteredQueue.slice((queuePage - 1) * QUEUE_PER_PAGE, queuePage * QUEUE_PER_PAGE);
 
                 return (
-                  <div
-                    key={item.id}
-                    className={cn(
-                      'p-4 sm:p-5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs',
-                      status === 'in_progress'
-                        ? 'bg-emerald-50/40 border-emerald-300 dark:bg-emerald-950/20'
-                        : status === 'called'
-                        ? 'bg-amber-50/40 border-amber-300 dark:bg-amber-950/20'
-                        : status === 'completed'
-                        ? 'bg-[var(--surface-sunken)]/30 border-[var(--line)] opacity-80'
-                        : 'bg-[var(--surface)] border-[var(--line)] hover:border-[var(--teal)]/40'
-                    )}
-                  >
-                    {/* Left: Position & Patient Info */}
-                    <div className="flex items-start gap-3 min-w-0">
-                      <span className="w-8 h-8 rounded-full bg-[var(--surface-sunken)] border border-[var(--line)] flex items-center justify-center text-xs font-extrabold text-[var(--muted)] shrink-0">
-                        {index + 1}
-                      </span>
+                  <>
+                    <div className="space-y-3">
+                      {paginatedQueue.map((item, index) => {
+                        const status = queueStatus(item);
+                        const canAdvance = ['waiting', 'called', 'in_progress'].includes(status);
+                        const actionData = ({
+                          waiting: { label: 'Call next', icon: PhoneCall, variant: 'teal' },
+                          called: { label: 'Start visit', icon: Stethoscope, variant: 'amber' },
+                          in_progress: { label: 'Complete visit', icon: CheckCircle2, variant: 'emerald' },
+                        } as Record<string, { label: string; icon: any; variant: string }>)[status];
+
+                        return (
+                          <div
+                            key={item.id}
+                            className={cn(
+                              'p-4 sm:p-5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs',
+                              status === 'in_progress'
+                                ? 'bg-emerald-50/40 border-emerald-300 dark:bg-emerald-950/20'
+                                : status === 'called'
+                                ? 'bg-amber-50/40 border-amber-300 dark:bg-amber-950/20'
+                                : status === 'completed'
+                                ? 'bg-[var(--surface-sunken)]/30 border-[var(--line)] opacity-80'
+                                : 'bg-[var(--surface)] border-[var(--line)] hover:border-[var(--teal)]/40'
+                            )}
+                          >
+                            {/* Left: Position & Patient Info */}
+                            <div className="flex items-start gap-3 min-w-0">
+                              <span className="w-8 h-8 rounded-full bg-[var(--surface-sunken)] border border-[var(--line)] flex items-center justify-center text-xs font-extrabold text-[var(--muted)] shrink-0">
+                                {(queuePage - 1) * QUEUE_PER_PAGE + index + 1}
+                              </span>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <strong className="text-sm sm:text-base font-extrabold text-[var(--ink)]">
                             {item.name}
                           </strong>
-                          <span className={cn('status-pill text-[10px] font-extrabold px-2 py-0.5 rounded-full', getTriageColor(item.triage))}>
+                          <span className={cn('status-pill text-[10px] font-extrabold px-2 py-0.5 rounded', getTriageColor(item.triage))}>
                             {item.triage}
                           </span>
                           <span
@@ -506,9 +525,43 @@ export function QueueWorkspacePage() {
                 );
               })}
             </div>
-          )}
-        </div>
+
+              {totalQueuePages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-[var(--line)] text-xs">
+                  <span className="text-[var(--muted)] font-medium">
+                    Showing {Math.min((queuePage - 1) * QUEUE_PER_PAGE + 1, filteredQueue.length)}–
+                    {Math.min(queuePage * QUEUE_PER_PAGE, filteredQueue.length)} of {filteredQueue.length} patients
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={queuePage === 1}
+                      onClick={() => setQueuePage((p) => Math.max(1, p - 1))}
+                      className="px-3 py-1.5 rounded-lg border border-[var(--line)] bg-[var(--surface)] font-semibold text-[var(--ink)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--surface-sunken)] transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <span className="font-semibold text-[var(--ink)] px-1">
+                      Page {queuePage} of {totalQueuePages}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={queuePage >= totalQueuePages}
+                      onClick={() => setQueuePage((p) => Math.min(totalQueuePages, p + 1))}
+                      className="px-3 py-1.5 rounded-lg border border-[var(--line)] bg-[var(--surface)] font-semibold text-[var(--ink)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--surface-sunken)] transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          );
+        })()}
       </div>
+    )}
+  </div>
+</div>
 
       {/* QR Scanner / Lookup Modal with Real Optical Camera */}
       {showQRModal && (

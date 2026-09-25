@@ -335,29 +335,29 @@ export function LoginPage() {
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10">
         {/* Page Header */}
-        <div className="text-center max-w-2xl mx-auto mb-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 text-teal-700 dark:text-teal-300 text-xs font-bold uppercase tracking-wider mb-3">
-            <Sparkles className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400 animate-pulse" />
-            National Health Mesh Authentication Gateway
+        <div className="text-center max-w-2xl mx-auto mb-6">
+          <div className="text-xs font-semibold uppercase tracking-wider text-teal-700 dark:text-teal-300 mb-2 flex items-center justify-center gap-2">
+            <Sparkles className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
+            National Health Mesh / Authentication Gateway
           </div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
             Unified Public Health Sign-In
           </h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1.5">
             Secure, role-aware access for Citizens, Primary Health Centres, District Health Directorates, and State Command.
           </p>
         </div>
 
         {/* 2-Column Responsive Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column: Instant 1-Click Role Launchers (Desktop 5 cols, Mobile full) */}
-          <div className="lg:col-span-5 flex flex-col gap-4">
+          <div className="lg:col-span-5 flex flex-col gap-3">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <h2 className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-amber-500" />
                 Instant 1-Click Demo Launchers
               </h2>
-              <span className="text-[11px] font-semibold text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/40 px-2 py-0.5 rounded-full border border-teal-200 dark:border-teal-800">
+              <span className="text-[11px] font-semibold text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/40 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800">
                 Direct Bypass
               </span>
             </div>

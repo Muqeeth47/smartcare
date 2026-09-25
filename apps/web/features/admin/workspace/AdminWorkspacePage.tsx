@@ -180,7 +180,7 @@ export function AdminWorkspacePage() {
           </div>
 
           <div className="text-xs text-slate-500 px-3 hidden md:flex items-center gap-1.5 font-medium">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
             District CMO &amp; State Command Active
           </div>
         </div>

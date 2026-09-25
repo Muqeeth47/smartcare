@@ -92,7 +92,7 @@ export function MobileBottomNav() {
         aria-label="SOS Ambulance Dispatch"
         aria-current={pathname.startsWith('/ambulance') ? 'page' : undefined}
       >
-        <Siren size={19} className="shrink-0 animate-pulse text-rose-600" />
+        <Siren size={19} className="shrink-0 text-rose-600" />
         <span className="font-extrabold text-rose-600">SOS</span>
       </Link>
     </nav>

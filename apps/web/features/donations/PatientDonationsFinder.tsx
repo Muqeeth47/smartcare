@@ -622,7 +622,7 @@ export function PatientDonationsFinder() {
                     <span className="flex items-center gap-1.5">
                       <ClipboardList size={14} /> Your Active Donation Posts
                     </span>
-                    <span className="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 px-2 py-0.5 rounded-full font-black">
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 px-2 py-0.5 rounded font-black">
                       {myRegistrations.length} Active
                     </span>
                   </div>

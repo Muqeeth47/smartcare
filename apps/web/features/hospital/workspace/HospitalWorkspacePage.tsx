@@ -302,18 +302,18 @@ export function HospitalWorkspacePage() {
           <>
             {/* Incoming Emergency Trauma Alert Banner */}
             {activeAmbulance && activeAmbulance.status === 'dispatched' && (
-          <div className="emergency-trauma-banner bg-red-50 border-2 border-red-300 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md animate-pulse">
+          <div className="emergency-trauma-banner bg-red-50 border-2 border-red-300 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
             <div className="flex items-start sm:items-center gap-3.5">
               <div className="w-12 h-12 rounded-2xl bg-red-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                <Siren className="w-6 h-6 animate-bounce" />
+                <Siren className="w-6 h-6" />
               </div>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <strong className="text-red-700 text-sm sm:text-base font-extrabold uppercase tracking-wide flex items-center gap-1.5">
-                    <Siren className="w-4 h-4 text-red-600 animate-pulse shrink-0" />
+                    <Siren className="w-4 h-4 text-red-600 shrink-0" />
                     INCOMING EMERGENCY TRAUMA ALERT ({activeAmbulance.typeLabel})
                   </strong>
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-200">
+                  <span className="px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-800 border border-red-200">
                     ICU Bed #03 Held
                   </span>
                 </div>

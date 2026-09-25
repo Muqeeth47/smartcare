@@ -189,8 +189,8 @@ export function InfoPage({ page: initialPage }: InfoPageProps) {
                   key={p}
                   type="button"
                   onClick={() => handleTabSwitch(p)}
-                  className={`flex-1 sm:flex-initial px-3 sm:px-4 py-1.5 rounded-xl sm:rounded-full text-xs font-bold transition-all text-center ${
-                    currentPage === p ? 'bg-[#0a3b69] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[#0a3b69]'
+                  className={`flex-1 sm:flex-initial px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-center ${
+                    currentPage === p ? 'bg-[#0a3b69] text-white shadow-xs' : 'text-[var(--text-muted)] hover:text-[#0a3b69]'
                   }`}
                 >
                   {labels[p]}
@@ -226,7 +226,7 @@ export function InfoPage({ page: initialPage }: InfoPageProps) {
             {content.badges.map((b) => (
               <span
                 key={b.text}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-[#f0f7fc] text-[#0a3b69] border border-[#c2dcf3]"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded bg-[#f0f7fc] text-[#0a3b69] border border-[#c2dcf3]"
               >
                 <b.icon size={13} className="text-[#0f5ca8]" />
                 <span>{b.text}</span>

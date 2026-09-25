@@ -87,15 +87,15 @@ export function VerifyRxPage({ embedded = false }: { embedded?: boolean }) {
 
       <div>
         {/* Header */}
-        <div className="text-center mb-8">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[var(--mint)] text-[var(--teal)] border border-[var(--line)] mb-3">
+        <div className="text-center mb-6">
+          <div className="text-xs font-semibold uppercase tracking-wider text-[var(--teal)] mb-2 flex items-center justify-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-[var(--teal)]" />
-            Official Tamper-Proof Cryptographic Verification
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--text)] tracking-tight">
+            Official Tamper-Proof / Cryptographic Verification
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--text)] tracking-tight leading-tight">
             Verify Medical Prescription
           </h1>
-          <p className="mt-2 text-sm text-[var(--text-muted)] max-w-xl mx-auto">
+          <p className="mt-1.5 text-xs sm:text-sm text-[var(--text-muted)] max-w-xl mx-auto">
             Authorized pharmacists and care providers can verify authenticity directly against issuing hospital records and enforce one-time dispensation under Schedule H regulations.
           </p>
         </div>
@@ -164,7 +164,7 @@ export function VerifyRxPage({ embedded = false }: { embedded?: boolean }) {
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold tracking-wide ${
+                        className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-bold tracking-wide ${
                           rxRecord.status === 'dispensed'
                             ? 'bg-rose-600 text-white'
                             : 'bg-emerald-600 text-white'

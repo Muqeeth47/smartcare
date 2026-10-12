@@ -149,7 +149,7 @@ export function AdminWorkspacePage() {
       <div className="max-w-6xl mx-auto py-6 space-y-6">
         {/* Module Switcher: Module 2 (State & District Command Center) vs Operations */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-2 sm:p-2.5 shadow-sm">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             <button
               type="button"
               onClick={() => handleTabChange('command')}

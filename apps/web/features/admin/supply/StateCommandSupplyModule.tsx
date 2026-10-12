@@ -294,12 +294,12 @@ export function StateCommandSupplyModule() {
 
           {/* Quick Actions & District Switcher */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-            <div className="bg-slate-800/80 backdrop-blur border border-slate-700 rounded-xl p-1.5 flex items-center gap-2">
+            <div className="bg-slate-800/80 backdrop-blur border border-slate-700 rounded-xl p-1.5 flex items-center gap-2 max-w-full w-full sm:w-auto">
               <span className="text-xs text-slate-400 font-medium pl-2">District:</span>
               <select
                 value={selectedDistrict}
                 onChange={(e) => setSelectedDistrict(e.target.value)}
-                className="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 min-h-[38px] focus:ring-2 focus:ring-indigo-500 focus:outline-none font-semibold"
+                className="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 min-h-[38px] focus:ring-2 focus:ring-indigo-500 focus:outline-none font-semibold max-w-full w-full sm:w-auto truncate"
               >
                 <option value="Hyderabad & Rangareddy Central">Hyderabad &amp; Rangareddy Central</option>
                 <option value="Warangal Urban & Rural">Warangal Urban &amp; Rural</option>
@@ -404,8 +404,8 @@ export function StateCommandSupplyModule() {
         </div>
 
         {/* Epidemic Scenario Switcher & Manual Pulse Trigger */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <div className="flex items-center gap-1.5 bg-slate-950/80 border border-slate-800 rounded-xl px-2.5 py-1.5">
+        <div className="flex flex-wrap items-center gap-2.5 max-w-full">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 bg-slate-950/80 border border-slate-800 rounded-xl px-2.5 py-1.5 max-w-full w-full sm:w-auto">
             <span className="text-[11px] text-slate-400 font-semibold whitespace-nowrap">Epidemic Surge Factor:</span>
             <select
               value={activeScenarioId}
@@ -413,7 +413,7 @@ export function StateCommandSupplyModule() {
                 setActiveScenarioId(e.target.value);
                 trigger15mSync(e.target.value);
               }}
-              className="bg-transparent text-xs font-bold text-indigo-300 focus:outline-none cursor-pointer"
+              className="bg-transparent text-xs font-bold text-indigo-300 focus:outline-none cursor-pointer max-w-full w-full sm:max-w-[280px] truncate"
             >
               {scenarios.map((scen) => (
                 <option key={scen.id} value={scen.id} className="bg-slate-900 text-white">

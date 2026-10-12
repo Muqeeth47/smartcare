@@ -200,13 +200,13 @@ export function Topbar({
     return (
       <header
         data-topbar
-        className="flex items-center justify-between gap-3 h-14 bg-[var(--surface)] border-b border-[var(--line)] sticky top-0 z-[100]"
+        className="flex items-center justify-between gap-2 sm:gap-3 h-14 bg-[var(--surface)] border-b border-[var(--line)] sticky top-0 z-[100] px-2.5 sm:px-4"
         style={{
-          paddingLeft: 'max(1.15rem, calc(0.85rem + env(safe-area-inset-left, 0px)))',
-          paddingRight: 'max(1.15rem, calc(0.85rem + env(safe-area-inset-right, 0px)))',
+          paddingLeft: 'max(0.65rem, calc(0.5rem + env(safe-area-inset-left, 0px)))',
+          paddingRight: 'max(0.65rem, calc(0.5rem + env(safe-area-inset-right, 0px)))',
         }}
       >
-        <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
           {/* Sidebar toggle button positioned on top-left BEFORE the logo */}
           {onMenuClick && (
             <button
@@ -216,7 +216,7 @@ export function Topbar({
               aria-label={isSidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
               aria-expanded={!isSidebarCollapsed}
               title={isSidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
-              className="topbar-control-btn flex items-center justify-center min-w-[38px] min-h-[38px] w-9 h-9 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-[var(--teal)] hover:bg-[var(--mint)] active:scale-95 transition-all cursor-pointer shrink-0"
+              className="topbar-control-btn flex items-center justify-center min-w-[36px] min-h-[36px] sm:min-w-[38px] sm:min-h-[38px] w-9 h-9 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-[var(--teal)] hover:bg-[var(--mint)] active:scale-95 transition-all cursor-pointer shrink-0"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
@@ -224,9 +224,9 @@ export function Topbar({
             </button>
           )}
 
-          <Link href="/" className="brand-lockup flex items-center gap-2.5 no-underline shrink-0">
-            <span className="brand-mark w-9 h-9 rounded-[0.8rem] flex items-center justify-center text-white shrink-0" style={{ background: 'var(--teal-dark)', boxShadow: '0 8px 18px rgba(18,61,53,.20)' }}>
-              <HeartPulse size={19} />
+          <Link href="/" className="brand-lockup flex items-center gap-2 sm:gap-2.5 no-underline shrink-0">
+            <span className="brand-mark w-8 h-8 sm:w-9 sm:h-9 rounded-[0.8rem] flex items-center justify-center text-white shrink-0" style={{ background: 'var(--teal-dark)', boxShadow: '0 8px 18px rgba(18,61,53,.20)' }}>
+              <HeartPulse size={18} />
             </span>
             <span className="hidden sm:flex flex-col">
               <span className="brand-name text-[0.9rem] font-extrabold text-[var(--text)] leading-none">SmartCare</span>
@@ -236,7 +236,7 @@ export function Topbar({
           {title && <span className="text-[0.8rem] text-[var(--text-muted)] truncate hidden md:block">/ {title}</span>}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {Controls}
         </div>
       </header>

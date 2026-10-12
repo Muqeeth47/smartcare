@@ -229,12 +229,12 @@ export function HospitalSupplyModule() {
           </div>
 
           {/* Quick Facility Switcher for Demo Testing */}
-          <div className="bg-slate-800/80 backdrop-blur border border-slate-700 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <div className="text-xs text-slate-300 font-medium">Switch Facility Node:</div>
+          <div className="bg-slate-800/80 backdrop-blur border border-slate-700 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center gap-3 max-w-full w-full sm:w-auto">
+            <div className="text-xs text-slate-300 font-medium whitespace-nowrap">Switch Facility Node:</div>
             <select
               value={profile.hospitalId}
               onChange={(e) => handleFacilityChange(e.target.value)}
-              className="bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg px-3 py-2 min-h-[44px] focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              className="bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg px-3 py-2 min-h-[44px] focus:ring-2 focus:ring-indigo-500 focus:outline-none w-full max-w-full sm:max-w-xs truncate"
             >
               {profiles
                 .filter((p) => p.tier !== 'warehouse')

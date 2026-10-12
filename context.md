@@ -1,6 +1,6 @@
 # SmartCare — Project Architecture & Context
 
-> Last updated: 2026-09-25  
+> Last updated: 2026-10-12  
 > Active Git Branch: `sudophiles` (`Muqeeth47/smartcare`)  
 > Production Live URL: [https://smartcare-omega-two.vercel.app](https://smartcare-omega-two.vercel.app)  
 > Firebase Project: `studio-5671575350-61bbd` (Google Cloud / Firestore deployed)
@@ -73,12 +73,12 @@ SmartCare is a high-reliability, production-grade digital public health and emer
 
 ---
 
-## 4. Route Architecture (All 32 Next.js Routes)
+## 4. Route Architecture (All 33 Next.js Routes)
 
 | Route | View Component | Access Role | Description |
 |---|---|---|---|
 | `/` | `LandingPage` | Public | Platform overview, live facility telemetry cards, service entry points |
-| `/login` | `LoginPage` | Public | 4-tier authenticated login with single-click demo autofills |
+| `/login` | `LoginPage` / `MorphingAuthCard` | Public | 4-tier authenticated morphing login with role switcher & single-click demo autofills |
 | `/dashboard/patient` | `PatientDashboardPage` | Patient | Active appointments, health passport summary, emergency shortcuts |
 | `/dashboard/patient/apply/[step]` | `BookingWizard` | Patient | Multi-step booking (1: Reason, 2: Hospital Map, 3: Doctor Slot, 4: Pass) |
 | `/dashboard/patient/visits` | `PatientVisitsPage` | Patient | Digital OPD tokens, printable visit slip modal with QR code |
@@ -95,24 +95,40 @@ SmartCare is a high-reliability, production-grade digital public health and emer
 | `/verify-rx` | `VerifyRxPage` | Pharmacist | Cryptographic prescription verification, doctor credentials, dispensing lock |
 | `/donate` | `DonationFinderPage` | Public | Blood bank directory (8 blood groups) & organ donor pledge form |
 | `/about`, `/terms`, `/privacy` | `InfoPage` | Public | Institutional governance, Ayushman Bharat compliance, privacy policies |
+| `/slides` | `SlidesPresentationPage` | Public | High-resolution 16:9 executive presentation deck & printable PDF report |
 
 ---
 
-## 5. UI Ergonomics & Compact Standards
+## 5. UI Ergonomics & Mobile Responsiveness Standards
 
-1. **Clean Minimalist Aesthetic**:
-   - Redundant rectangular pill badges (e.g. `MoHFW • NITI Aayog Health Mesh`, `Live Federated Sync`) removed across headers and tabs for a crisp, space-efficient interface.
+1. **Mobile Viewport Optimization (320px, 360px, 390px, 430px)**:
+   - Automated crawler verified across all 33 routes with **0px horizontal document overflow** (`maxScroll === clientWidth`).
+   - Role selectors on `/login` use a 2-column layout (`grid-cols-2`) ensuring full text visibility for:
+     - `Doctor / PHC`
+     - `District CMO`
+     - `State Command`
+     - `Patient`
+   - State Command epidemic factor dropdown and facility switchers constrained with `w-full max-w-full sm:max-w-[280px] truncate`.
+   - `.room-grid` responsive single-column layout on viewports $< 640\text{px}$, eliminating room-item card overflow.
+   - Floating header/dock collision prevention on `/slides` with compact mobile actions and responsive margins.
+   - Workspace topbar horizontal padding adaptive to ultra-narrow $320\text{px}$ viewports.
+
+2. **Clean Minimalist Aesthetic**:
+   - Redundant rectangular pill badges removed across headers and tabs for a crisp, space-efficient interface.
    - Header paddings and margins compacted (`text-xl sm:text-2xl font-bold`, tight metadata rows).
-2. **Pagination Across High-Volume Lists**:
+
+3. **Pagination Across High-Volume Lists**:
    - **Hospital Stock Register**: 6 items per page with Previous/Next controls and page counter.
    - **State Command District Matrix**: 6 facilities per page with Previous/Next controls.
    - **Logistics Transit Manifest**: 5 shipments per page with Previous/Next controls.
    - **OPD Queue Workspace**: 6 patients per page with Previous/Next controls.
    - **Jan Aushadhi Pharmacy Formulary**: 4 medicines per page with live search/category pagination reset.
-3. **Strict Touch Target Compliance**:
+
+4. **Strict Touch Target Compliance**:
    - All interactive controls $\ge 44\text{px}$ on tablet, $\ge 48\text{px}$ on mobile.
    - Bottom-sheet drawers and modals with reverse button stacking on mobile screens.
-4. **Zero-Emoji Policy**:
+
+5. **Zero-Emoji Policy**:
    - All UI graphics and indicators exclusively utilize Lucide React icons.
 
 ---

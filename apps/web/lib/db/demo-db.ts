@@ -1553,9 +1553,17 @@ export const DemoDB = {
     }
 
     const users = getAllUsers();
-    const user = users[email.toLowerCase()];
-    const hospitalMatches = role === 'patient' || !hospital || String(user?.hospital || '').toLowerCase() === String(hospital).toLowerCase();
-    if (user && user.password === password && user.role === role && hospitalMatches) {
+    const normalizedEmail = email.toLowerCase() === 'patient@gmail.com'
+      ? 'patient@smartcare.demo'
+      : email.toLowerCase() === 'hospital@gmail.com'
+      ? 'hospital@smartcare.demo'
+      : email.toLowerCase() === 'admin@gmail.com'
+      ? 'cmo@district.gov.in'
+      : email.toLowerCase();
+    const user = users[normalizedEmail] || users[email.toLowerCase()];
+    const hospitalMatches = role === 'patient' || !hospital || !user?.hospital || String(user?.hospital || '').toLowerCase() === String(hospital).toLowerCase();
+    const passwordMatches = user && (user.password === password || (user.password === 'demo1234' && password === '1234') || (user.password === '1234' && password === 'demo1234'));
+    if (user && passwordMatches && user.role === role && hospitalMatches) {
       return { success: true, user: { email: user.email, role: user.role, hospital: user.hospital || '', country: user.country, state: user.state || '', city: user.city || '', name: user.name } };
     }
     return { success: false, error: 'The email, password, portal, or care centre does not match this account.' };

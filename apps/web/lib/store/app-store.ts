@@ -117,8 +117,8 @@ export const emptyPatientData = (): AppointmentBooking => ({
 });
 
 const DEMO_VISITS: PatientVisit[] = [
-  { id: 'visit-demo-001', hospital: 'SmartCare Community Hospital', city: 'Hyderabad', reason: 'General consultation', date: '18 Jul 2026', status: 'Completed', reference: 'SC-DEMO18' },
-  { id: 'visit-demo-002', hospital: 'Green Cross Medical Centre', city: 'Hyderabad', reason: 'Follow-up consultation', date: '04 Jun 2026', status: 'Completed', reference: 'SC-DEMO04' },
+  { id: 'visit-demo-001', hospital: 'Osmania General Hospital', city: 'Hyderabad', reason: 'General consultation', date: '18 Jul 2026', status: 'Completed', reference: 'SC-DEMO18' },
+  { id: 'visit-demo-002', hospital: 'Gandhi Hospital & Medical College', city: 'Hyderabad', reason: 'Follow-up consultation', date: '04 Jun 2026', status: 'Completed', reference: 'SC-DEMO04' },
 ];
 
 export const CARE_TEAM: CareTeamMember[] = [

@@ -58,17 +58,101 @@ interface CentreListing {
   lng: number;
   type: string;
   openingHours: string;
-  source: 'SmartCare Care Network' | 'OpenStreetMap';
+  source: 'SmartCare Care Network' | 'OpenStreetMap' | 'Govt. Hospital Network';
   distance?: number;
 }
 
 const DEFAULT_CENTRES: CentreListing[] = [
-  { id: 'sc-1', name: 'SmartCare Community Hospital', lat: 17.4126, lng: 78.4482, type: 'General hospital', openingHours: '24/7', source: 'SmartCare Care Network' },
-  { id: 'sc-2', name: 'Apollo Health City', lat: 17.4239, lng: 78.4101, type: 'Multi-speciality hospital', openingHours: '24/7', source: 'OpenStreetMap' },
-  { id: 'sc-3', name: 'Care Hospital Banjara Hills', lat: 17.4185, lng: 78.4489, type: 'Super speciality centre', openingHours: '24/7', source: 'OpenStreetMap' },
-  { id: 'sc-4', name: 'Yashoda Hospital Secunderabad', lat: 17.4399, lng: 78.4983, type: 'General hospital', openingHours: '24/7', source: 'OpenStreetMap' },
-  { id: 'sc-5', name: 'Rainbow Children’s Clinic', lat: 17.4150, lng: 78.4420, type: 'Paediatric clinic', openingHours: '08:00–21:00', source: 'OpenStreetMap' },
-  { id: 'sc-6', name: 'Continental Care Centre', lat: 17.4190, lng: 78.3470, type: 'Care centre', openingHours: '24/7', source: 'OpenStreetMap' },
+  {
+    id: 'ogh-1',
+    name: 'Osmania General Hospital',
+    lat: 17.3789,
+    lng: 78.4735,
+    type: 'Govt. Tertiary & Teaching Hospital',
+    openingHours: '24/7',
+    source: 'Govt. Hospital Network',
+  },
+  {
+    id: 'gandhi-2',
+    name: 'Gandhi Hospital & Medical College',
+    lat: 17.4239,
+    lng: 78.5039,
+    type: 'Govt. Tertiary General Hospital',
+    openingHours: '24/7',
+    source: 'Govt. Hospital Network',
+  },
+  {
+    id: 'nims-3',
+    name: "Nizam's Institute of Medical Sciences (NIMS)",
+    lat: 17.4227,
+    lng: 78.4526,
+    type: 'Autonomous Super Speciality Hospital',
+    openingHours: '24/7',
+    source: 'Govt. Hospital Network',
+  },
+  {
+    id: 'niloufer-4',
+    name: 'Niloufer Hospital for Women & Children',
+    lat: 17.3963,
+    lng: 78.4619,
+    type: 'Govt. Maternity & Paediatric Hospital',
+    openingHours: '24/7',
+    source: 'Govt. Hospital Network',
+  },
+  {
+    id: 'sd-eye-5',
+    name: 'Sarojini Devi Eye Hospital',
+    lat: 17.3917,
+    lng: 78.4414,
+    type: 'Govt. Tertiary Eye Hospital',
+    openingHours: '24/7',
+    source: 'Govt. Hospital Network',
+  },
+  {
+    id: 'gmh-6',
+    name: 'Government Maternity Hospital, Sultan Bazar',
+    lat: 17.3875,
+    lng: 78.4831,
+    type: 'Govt. Maternity Hospital',
+    openingHours: '24/7',
+    source: 'Govt. Hospital Network',
+  },
+  {
+    id: 'gent-7',
+    name: 'Government ENT Hospital, Koti',
+    lat: 17.3912,
+    lng: 78.4867,
+    type: 'Govt. Speciality Hospital',
+    openingHours: '24/7',
+    source: 'Govt. Hospital Network',
+  },
+  {
+    id: 'ah-kndp-8',
+    name: 'District Area Hospital Kondapur',
+    lat: 17.4654,
+    lng: 78.3587,
+    type: 'Govt. Area Hospital',
+    openingHours: '24/7',
+    source: 'Govt. Hospital Network',
+  },
+  {
+    id: 'uphc-khrt-9',
+    name: 'Urban Primary Health Centre (UPHC Khairatabad)',
+    lat: 17.4126,
+    lng: 78.4482,
+    type: 'Primary Health Centre (PHC)',
+    openingHours: '09:00–16:00',
+    source: 'SmartCare Care Network',
+  },
+  {
+    id: 'chc-glc-10',
+    name: 'Community Health Centre (CHC) Golconda',
+    lat: 17.3833,
+    lng: 78.4011,
+    type: 'Community Health Centre (CHC)',
+    openingHours: '24/7',
+    source: 'Govt. Hospital Network',
+  },
 ];
 
 const COMMON_SYMPTOMS = [
@@ -90,6 +174,111 @@ function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: numb
     Math.sin(dLat / 2) ** 2 +
     Math.cos(a.lat * radians) * Math.cos(b.lat * radians) * Math.sin(dLng / 2) ** 2;
   return 6371 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
+}
+
+// Live geocoding via Nominatim
+async function geocodeQuery(query: string, signal?: AbortSignal) {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&q=${encodeURIComponent(query)}`,
+      { signal }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data || !data.length) return null;
+    const first = data[0];
+    const addr = first.address || {};
+    return {
+      lat: Number(first.lat),
+      lng: Number(first.lon),
+      displayName: first.display_name,
+      city: addr.city || addr.town || addr.village || addr.suburb || addr.county || query,
+      state: addr.state || addr.region || '',
+      country: addr.country || '',
+    };
+  } catch {
+    return null;
+  }
+}
+
+// Live reverse geocoding via Nominatim
+async function reverseGeocode(lat: number, lng: number, signal?: AbortSignal) {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&addressdetails=1&lat=${lat}&lon=${lng}&zoom=14`,
+      { signal }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const addr = data?.address || {};
+    return {
+      displayName: data?.display_name || '',
+      city: addr.city || addr.town || addr.village || addr.suburb || addr.county || 'Hyderabad',
+      state: addr.state || addr.region || 'Telangana',
+      country: addr.country || 'India',
+    };
+  } catch {
+    return null;
+  }
+}
+
+// Live nearby hospital query via OpenStreetMap Overpass API
+async function fetchNearbyOverpassHospitals(
+  lat: number,
+  lng: number,
+  signal?: AbortSignal
+): Promise<CentreListing[]> {
+  const radii = [6000, 15000, 30000];
+  for (const radius of radii) {
+    try {
+      const query = `[out:json][timeout:10];(nwr["amenity"="hospital"](around:${radius},${lat},${lng});nwr["healthcare"="hospital"](around:${radius},${lat},${lng});nwr["amenity"="clinic"](around:${radius},${lat},${lng});nwr["healthcare"="clinic"](around:${radius},${lat},${lng}););out center 20;`;
+      const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`, {
+        signal,
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const elements: any[] = data?.elements || [];
+      const seen = new Set<string>();
+      const results: CentreListing[] = [];
+
+      for (const el of elements) {
+        const itemLat = el.lat || el.center?.lat;
+        const itemLng = el.lon || el.center?.lon;
+        const tags = el.tags || {};
+        const name = tags.name || tags['name:en'] || tags['addr:housename'];
+        if (!itemLat || !itemLng || !name || name === 'Medical Center' || name === 'Hospital') continue;
+
+        const coordKey = `${itemLat.toFixed(3)},${itemLng.toFixed(3)}`;
+        if (seen.has(coordKey) || seen.has(name.toLowerCase())) continue;
+        seen.add(coordKey);
+        seen.add(name.toLowerCase());
+
+        let rawType = tags.healthcare || tags.amenity || 'General hospital';
+        if (rawType === 'hospital') rawType = 'General hospital';
+        if (rawType === 'clinic') rawType = 'Primary Clinic';
+
+        const dist = distanceKm({ lat, lng }, { lat: itemLat, lng: itemLng });
+
+        results.push({
+          id: `osm-${el.id}`,
+          name,
+          lat: itemLat,
+          lng: itemLng,
+          type: rawType,
+          openingHours: tags.opening_hours || '24/7',
+          source: 'OpenStreetMap',
+          distance: dist,
+        });
+      }
+
+      if (results.length > 0) {
+        return results.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+      }
+    } catch (e) {
+      if (signal?.aborted) throw e;
+    }
+  }
+  return [];
 }
 
 interface BookingWizardProps {
@@ -202,13 +391,13 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
       updatePatientData('consultationType', 'In-person consultation');
     }
     if (!patientData.hospital) {
-      updatePatientData('hospital', 'SmartCare Community Hospital');
+      updatePatientData('hospital', 'Osmania General Hospital');
     }
   }, [departments, departmentDoctors, appointmentSlots, patientData, updatePatientData]);
 
   // Populate centres with distances based on current coordinates
   useEffect(() => {
-    const baseCoords = userCoords || { lat: 17.4126, lng: 78.4482 };
+    const baseCoords = userCoords || { lat: 17.3789, lng: 78.4735 };
     const mapped = DEFAULT_CENTRES.map((c) => ({
       ...c,
       distance: distanceKm(baseCoords, c),
@@ -250,13 +439,13 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
       markDraft();
       showToast('Profile demo loaded (Asha Rao, 32)', 'info');
     } else if (currentStep === 2) {
-      updatePatientData('hospital', 'SmartCare Community Hospital');
+      updatePatientData('hospital', 'Osmania General Hospital');
       updatePatientData('city', 'Hyderabad');
       updatePatientData('state', 'Telangana');
       updatePatientData('country', 'India');
       setValidationError('');
       markDraft();
-      showToast('Care centre demo loaded (SmartCare Community Hospital)', 'info');
+      showToast('Care centre demo loaded (Osmania General Hospital)', 'info');
     } else if (currentStep === 3) {
       const s = new Set(selectedSymptoms);
       s.add('Fever');
@@ -287,47 +476,151 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
     goToStep(2);
   };
 
-  // Step 2 Device Location
+  // Step 2 Device Location with Live Overpass & Nominatim Reverse Geocoding
   const handleDetectLocation = () => {
     if (!navigator.geolocation) {
       setMapStatus('Location not available in this browser. Search for a city instead.');
       return;
     }
     setLocating(true);
-    setMapStatus('Requesting device location...');
+    setMapStatus('Requesting GPS device location...');
+
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
-        setUserCoords({ lat, lng });
-        updatePatientData('city', 'Hyderabad');
-        updatePatientData('state', 'Telangana');
-        updatePatientData('country', 'India');
-        setLocating(false);
-        setMapStatus('Location detected. Showing nearby care centres.');
+        const coords = { lat, lng };
+        setUserCoords(coords);
+        setMapStatus('GPS detected. Searching live OpenStreetMap & verified hospitals...');
+
         if (mapInstanceRef.current) {
           mapInstanceRef.current.setView([lat, lng], 13);
+        }
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+        try {
+          const rev = await reverseGeocode(lat, lng, controller.signal);
+          if (rev) {
+            if (rev.city) updatePatientData('city', rev.city);
+            if (rev.state) updatePatientData('state', rev.state);
+            if (rev.country) updatePatientData('country', rev.country);
+          }
+        } catch {
+          // ignore reverse geocode timeout
+        }
+
+        try {
+          const osmHospitals = await fetchNearbyOverpassHospitals(lat, lng, controller.signal);
+          clearTimeout(timeoutId);
+
+          if (osmHospitals.length > 0) {
+            setHospitals(osmHospitals);
+            setMapStatus(`${osmHospitals.length} live OpenStreetMap care facilities found near you.`);
+            if (!patientData.hospital) {
+              updatePatientData('hospital', osmHospitals[0].name);
+            }
+          } else {
+            const sorted = DEFAULT_CENTRES.map((c) => ({
+              ...c,
+              distance: distanceKm(coords, c),
+            })).sort((a, b) => (a.distance || 0) - (b.distance || 0));
+            setHospitals(sorted);
+            setMapStatus(`${sorted.length} verified government hospitals sorted by distance.`);
+            if (!patientData.hospital) {
+              updatePatientData('hospital', sorted[0].name);
+            }
+          }
+        } catch {
+          const sorted = DEFAULT_CENTRES.map((c) => ({
+            ...c,
+            distance: distanceKm(coords, c),
+          })).sort((a, b) => (a.distance || 0) - (b.distance || 0));
+          setHospitals(sorted);
+          setMapStatus(`${sorted.length} verified government hospitals near your location.`);
+          if (!patientData.hospital) {
+            updatePatientData('hospital', sorted[0].name);
+          }
+        } finally {
+          setLocating(false);
         }
       },
       () => {
         setLocating(false);
-        setMapStatus('Location permission denied. Search for a city instead.');
-      }
+        setMapStatus('Location permission denied. Search for a city or area instead.');
+      },
+      { timeout: 10000, enableHighAccuracy: true }
     );
   };
 
-  // Step 2 Search Location
-  const handleLocationSearch = (e: React.FormEvent) => {
+  // Step 2 Search Location with Nominatim Geocoding + Live Overpass query
+  const handleLocationSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchQuery.trim()) {
+    const query = searchQuery.trim();
+    if (!query) {
       setValidationError('Enter a city, neighbourhood or PIN code first.');
       return;
     }
     setValidationError('');
-    setMapStatus(`Finding care centres near ${searchQuery}...`);
-    updatePatientData('city', searchQuery);
-    setTimeout(() => {
-      setMapStatus(`6 centres found near ${searchQuery}.`);
-    }, 400);
+    setLocating(true);
+    setMapStatus(`Locating "${query}" on map...`);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 9000);
+
+    try {
+      const geo = await geocodeQuery(query, controller.signal);
+      if (geo) {
+        const coords = { lat: geo.lat, lng: geo.lng };
+        setUserCoords(coords);
+        if (geo.city) updatePatientData('city', geo.city);
+        if (geo.state) updatePatientData('state', geo.state);
+        if (geo.country) updatePatientData('country', geo.country);
+
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.setView([geo.lat, geo.lng], 13);
+        }
+
+        setMapStatus(`Found "${geo.city || query}". Searching live care facilities...`);
+
+        const osmHospitals = await fetchNearbyOverpassHospitals(geo.lat, geo.lng, controller.signal);
+        clearTimeout(timeoutId);
+
+        if (osmHospitals.length > 0) {
+          setHospitals(osmHospitals);
+          setMapStatus(`${osmHospitals.length} live healthcare centres found near ${geo.city || query}.`);
+          updatePatientData('hospital', osmHospitals[0].name);
+        } else {
+          const sorted = DEFAULT_CENTRES.map((c) => ({
+            ...c,
+            distance: distanceKm(coords, c),
+          })).sort((a, b) => (a.distance || 0) - (b.distance || 0));
+          setHospitals(sorted);
+          setMapStatus(`${sorted.length} verified public hospitals displayed near ${geo.city || query}.`);
+          updatePatientData('hospital', sorted[0].name);
+        }
+      } else {
+        const matched = DEFAULT_CENTRES.filter((c) =>
+          c.name.toLowerCase().includes(query.toLowerCase()) ||
+          c.type.toLowerCase().includes(query.toLowerCase())
+        );
+        if (matched.length > 0) {
+          setHospitals(matched);
+          setMapStatus(`${matched.length} verified hospitals matching "${query}".`);
+          updatePatientData('hospital', matched[0].name);
+          if (mapInstanceRef.current) {
+            mapInstanceRef.current.setView([matched[0].lat, matched[0].lng], 13);
+          }
+        } else {
+          setMapStatus(`No specific location found for "${query}". Showing verified public hospitals.`);
+        }
+      }
+    } catch {
+      setMapStatus('Search completed. Showing verified government & tertiary hospitals.');
+    } finally {
+      clearTimeout(timeoutId);
+      setLocating(false);
+    }
   };
 
   // Step 2 Select Hospital
@@ -355,7 +648,9 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
 
       const centerCoords: [number, number] = userCoords
         ? [userCoords.lat, userCoords.lng]
-        : [17.4126, 78.4482];
+        : hospitals[0]
+        ? [hospitals[0].lat, hospitals[0].lng]
+        : [17.3789, 78.4735];
 
       const map = window.L.map(mapContainerRef.current, {
         center: centerCoords,
@@ -381,17 +676,18 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
       // Add hospital markers
       markersRef.current = [];
       hospitals.forEach((h, index) => {
+        const isSelected = patientData.hospital === h.name;
         const markerIcon = window.L.divIcon({
           className: 'smartcare-hospital-marker',
           iconSize: [32, 32],
-          html: `<div style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#0a3b69;color:#fff;font-size:12px;font-weight:800;border:2px solid #fff;box-shadow:0 3px 10px rgba(10,59,105,0.3);cursor:pointer;">${index + 1}</div>`,
+          html: `<div style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:${isSelected ? '#059669' : '#0a3b69'};color:#fff;font-size:12px;font-weight:800;border:2px solid #fff;box-shadow:0 3px 10px rgba(10,59,105,0.3);cursor:pointer;">${index + 1}</div>`,
         });
         const marker = window.L.marker([h.lat, h.lng], { icon: markerIcon }).addTo(map);
         marker.bindPopup(`
           <div style="font-family:inherit;padding:4px 2px;">
             <strong style="display:block;color:#0a3b69;font-size:13px;line-height:1.2;">${h.name}</strong>
             <span style="display:block;color:#64748b;font-size:11px;margin-top:2px;">${h.type} · ${h.openingHours}</span>
-            <span style="display:block;color:#0f5ca8;font-size:11px;font-weight:700;margin-top:3px;">${(h.distance || 1.8).toFixed(1)} km straight-line</span>
+            <span style="display:block;color:#0f5ca8;font-size:11px;font-weight:700;margin-top:3px;">${(h.distance || 1.8).toFixed(1)} km</span>
           </div>
         `);
         marker.on('click', () => handleSelectHospital(h));
@@ -430,7 +726,7 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
         mapInstanceRef.current = null;
       }
     };
-  }, [currentStep, userCoords, hospitals]);
+  }, [currentStep, userCoords, hospitals, patientData.hospital]);
 
   // Step 3 Symptoms toggle
   const toggleSymptom = (sym: string) => {
@@ -551,7 +847,7 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
   };
 
   const handleSharePass = async () => {
-    const text = `SmartCare Care Pass:\nToken: ${bookingId || 'SC-DEMO8924'}\nPatient: ${patientData.name || 'Patient'}\nHospital: ${patientData.hospital || 'SmartCare Community Hospital'}\nClinician: ${currentDoctor?.name || 'Assigned Clinician'}\nSlot: ${currentSlot?.label || 'Today'}\nStatus: ${isPaid ? 'Fee Paid (₹125)' : 'Payment Pending'}`;
+    const text = `SmartCare Care Pass:\nToken: ${bookingId || 'SC-DEMO8924'}\nPatient: ${patientData.name || 'Patient'}\nHospital: ${patientData.hospital || 'Osmania General Hospital'}\nClinician: ${currentDoctor?.name || 'Assigned Clinician'}\nSlot: ${currentSlot?.label || 'Today'}\nStatus: ${isPaid ? 'Fee Paid (₹125)' : 'Payment Pending'}`;
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({
@@ -855,7 +1151,8 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
                       type="button"
                       onClick={() => {
                         if (mapInstanceRef.current) {
-                          mapInstanceRef.current.setView([17.4126, 78.4482], 13);
+                          const base = userCoords || (hospitals[0] ? { lat: hospitals[0].lat, lng: hospitals[0].lng } : { lat: 17.3789, lng: 78.4735 });
+                          mapInstanceRef.current.setView([base.lat, base.lng], 13);
                         }
                       }}
                     >
@@ -959,23 +1256,17 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
                           </button>
                           <div className="hospital-card-meta">
                             <span className="hospital-tag">
-                              {isPublicListing ? (
-                                <MapPin size={11} className="inline mr-1" />
-                              ) : (
-                                <FlaskConical size={11} className="inline mr-1" />
-                              )}
-                              {isPublicListing ? 'Public listing' : 'Demo centre'}
+                              <MapPin size={11} className="inline mr-1" />
+                              {hospital.source === 'OpenStreetMap' ? 'OpenStreetMap' : 'Govt. Hospital Network'}
                             </span>
-                            {isPublicListing && (
-                              <a
-                                className="hospital-ext-nav"
-                                href={`https://www.google.com/maps/dir/?api=1&destination=${hospital.lat},${hospital.lng}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                <Navigation size={11} className="inline mr-1" /> Directions
-                              </a>
-                            )}
+                            <a
+                              className="hospital-ext-nav"
+                              href={`https://www.google.com/maps/dir/?api=1&destination=${hospital.lat},${hospital.lng}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <Navigation size={11} className="inline mr-1" /> Directions
+                            </a>
                             {isSelected && (
                               <span className="badge-selected">
                                 <Check size={11} className="inline mr-1" /> Selected
@@ -1383,7 +1674,7 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
                         <HospitalIcon size={13} /> Care centre
                       </span>
                       <h2 className="pass-hospital">
-                        {patientData.hospital || 'SmartCare Community Hospital'}
+                        {patientData.hospital || 'Osmania General Hospital'}
                       </h2>
                       <small className="pass-dept">
                         {patientData.department || 'General medicine'}
@@ -1633,7 +1924,7 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
               </div>
               <div className="demo-routing-note compact flex items-center gap-2 p-2 bg-blue-50 text-blue-800 text-xs rounded mt-2">
                 <Sparkles size={14} className="shrink-0" />
-                <span>Mirrored in SmartCare Community Hospital workspace.</span>
+                <span>Mirrored in {patientData.hospital || 'hospital'} workspace.</span>
               </div>
             </div>
             <div className="modal-actions">

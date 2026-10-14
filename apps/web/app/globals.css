@@ -1620,16 +1620,128 @@ fieldset.field {
     font-size: 0.8rem;
     min-height: 2.45rem;
 }
+/* ─── Symptom Picker & Medical Chips ────────────────────────────── */
+.symptom-picker {
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+.symptom-picker legend {
+    float: left;
+    width: 100%;
+    margin-bottom: 0.45rem;
+    padding: 0;
+}
+.symptom-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+.symptom-suggestion {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.85rem;
+    border-radius: 9999px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--text-secondary, #334155);
+    background-color: var(--surface-raised, #f1f5f9);
+    border: 1px solid var(--line, #cbd5e1);
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+    user-select: none;
+    outline: none;
+}
+.symptom-suggestion:hover {
+    background-color: #e2e8f0;
+    color: var(--text, #0f172a);
+    border-color: #94a3b8;
+    transform: translateY(-1px);
+}
+.symptom-suggestion:active {
+    transform: scale(0.97);
+}
+.symptom-suggestion.active {
+    background: linear-gradient(135deg, #0f5ca8 0%, #0d4f91 100%) !important;
+    color: #ffffff !important;
+    border-color: #0f5ca8 !important;
+    font-weight: 600;
+    box-shadow: 0 3px 8px rgba(15, 92, 168, 0.28);
+}
+.symptom-suggestion.active:hover {
+    background: #0d4f91 !important;
+    box-shadow: 0 4px 12px rgba(15, 92, 168, 0.38);
+}
+.custom-symptom-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    align-items: center;
+    margin-top: 0.35rem;
+}
+.custom-symptom-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.775rem;
+    font-weight: 600;
+    color: #0284c7;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.custom-symptom-tag:hover {
+    background: #fef2f2;
+    color: #dc2626;
+    border-color: #fecaca;
+}
 .compact-symptom-form {
     display: flex;
     align-items: center;
-    gap: 0.45rem;
-    margin-top: 0.45rem;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
 }
 .compact-symptom-form input {
-    min-height: 2.35rem;
-    padding: 0.45rem 0.7rem;
-    font-size: 0.8rem;
+    flex: 1;
+    min-height: 2.45rem;
+    padding: 0.45rem 0.85rem;
+    font-size: 0.8125rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--line, #cbd5e1);
+    background: var(--surface, #ffffff);
+    color: var(--text, #0f172a);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.compact-symptom-form input:focus {
+    border-color: #0f5ca8;
+    box-shadow: 0 0 0 3px rgba(15, 92, 168, 0.15);
+    outline: none;
+}
+.compact-symptom-form button {
+    height: 2.45rem;
+    padding: 0 0.95rem;
+    border-radius: 0.75rem;
+}
+.symptom-review-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 9999px;
+    font-size: 0.775rem;
+    font-weight: 600;
+    background: #eff6ff;
+    color: #0f5ca8;
+    border: 1px solid #bfdbfe;
 }
 .symptom-custom-field textarea {
     min-height: 56px;
@@ -3083,6 +3195,55 @@ fieldset.field {
 [data-theme="dark"] .pm-tab.active {
   background: var(--teal) !important;
   color: #fff !important;
+}
+
+[data-theme="dark"] .symptom-suggestion,
+.dark .symptom-suggestion {
+  background-color: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+
+[data-theme="dark"] .symptom-suggestion:hover,
+.dark .symptom-suggestion:hover {
+  background-color: #334155 !important;
+  color: #ffffff !important;
+  border-color: #475569 !important;
+}
+
+[data-theme="dark"] .symptom-suggestion.active,
+.dark .symptom-suggestion.active {
+  background: linear-gradient(135deg, #0f5ca8 0%, #1473cc 100%) !important;
+  color: #ffffff !important;
+  border-color: #3b82f6 !important;
+}
+
+[data-theme="dark"] .custom-symptom-tag,
+.dark .custom-symptom-tag {
+  background: rgba(14, 165, 233, 0.15) !important;
+  color: #7dd3fc !important;
+  border-color: rgba(14, 165, 233, 0.35) !important;
+}
+
+[data-theme="dark"] .custom-symptom-tag:hover,
+.dark .custom-symptom-tag:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+}
+
+[data-theme="dark"] .symptom-review-badge,
+.dark .symptom-review-badge {
+  background: rgba(15, 92, 168, 0.25) !important;
+  color: #7dd3fc !important;
+  border-color: rgba(56, 189, 248, 0.35) !important;
+}
+
+[data-theme="dark"] .compact-symptom-form input,
+.dark .compact-symptom-form input {
+  background: #0f172a !important;
+  color: #f1f5f9 !important;
+  border-color: #334155 !important;
 }
 
 /* Print Stylesheet for Appointment Boarding Pass */

@@ -137,6 +137,11 @@ SmartCare is a high-reliability, production-grade digital public health and emer
 5. **Zero-Emoji Policy**:
    - All UI graphics and indicators exclusively utilize Lucide React icons.
 
+6. **Medical Chips & Clinical Form Controls**:
+   - **Symptom Picker & Reason for Visit**: Replaced browser-default unstyled HTML form controls with interactive medical chips/pills (`.symptom-suggestion` / `.symptom-picker`) featuring clean unselected states (`bg-slate-100`, border) and active states (`bg-[#0f5ca8]`, white text, `Check` icon).
+   - **Review Modal & Boarding Pass Symptoms**: Parsed semicolon-separated symptom strings into individual rounded clinical badges (`.symptom-review-badge`) with dark-mode support and custom notes blocks.
+   - **Modal Opacity Assurance**: Enforced opaque background styles (`var(--surface, #ffffff)` / dark mode `#0e1724`) and high z-index depth to prevent any modal transparency.
+
 ---
 
 ## 6. Demo Accounts (4-Tier Public Health Logins)

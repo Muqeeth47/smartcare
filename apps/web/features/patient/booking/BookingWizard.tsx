@@ -779,6 +779,24 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
     markDraft();
   };
 
+  const currentSymptomsList = useMemo(() => {
+    const list: string[] = [];
+    selectedSymptoms.forEach((s) => list.push(s));
+    customTags.forEach((t) => {
+      if (!list.includes(t)) list.push(t);
+    });
+    if (list.length === 0 && patientData.symptoms) {
+      patientData.symptoms
+        .split(';')
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .forEach((s) => {
+          if (!list.includes(s)) list.push(s);
+        });
+    }
+    return list;
+  }, [selectedSymptoms, customTags, patientData.symptoms]);
+
   // Step 3 Review & Reservation
   const handleReviewStep = () => {
     if (!patientData.symptoms?.trim() && !selectedSymptoms.size && !customTags.length && !additionalNotes.trim()) {
@@ -1473,61 +1491,80 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
 
                   {/* Reason for visit & Symptoms */}
                   <div className="field symptom-search-field mt-4">
-                    <fieldset className="symptom-picker">
-                      <legend className="font-bold text-xs text-[var(--teal-dark)] mb-2 uppercase tracking-wide">
-                        Reason for visit / symptoms <span>*</span>
-                      </legend>
-                      <div className="symptom-suggestions flex flex-wrap gap-1.5" role="group">
+                    <fieldset className="symptom-picker border-0 p-0 m-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <legend className="font-bold text-xs text-[#0f5ca8] dark:text-sky-300 uppercase tracking-wider flex items-center gap-1.5 p-0 m-0">
+                          <HeartPulse size={14} className="text-[#0f5ca8] dark:text-sky-400" />
+                          <span>Reason for visit / symptoms</span>
+                          <span className="text-rose-500 font-bold">*</span>
+                        </legend>
+                        <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium hidden sm:inline">
+                          Select all that apply
+                        </span>
+                      </div>
+
+                      <div className="symptom-suggestions flex flex-wrap gap-2" role="group" aria-label="Common symptoms">
                         {COMMON_SYMPTOMS.map((sym) => {
                           const isSelected = selectedSymptoms.has(sym);
                           return (
                             <button
                               key={sym}
                               type="button"
-                              className={`symptom-suggestion ${isSelected ? 'active' : ''}`}
+                              className={`symptom-suggestion inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs sm:text-[13px] font-semibold transition-all duration-150 cursor-pointer select-none min-h-[38px] ${
+                                isSelected
+                                  ? 'active bg-[#0f5ca8] text-white shadow-md shadow-[#0f5ca8]/25 border border-[#0f5ca8] ring-2 ring-[#0f5ca8]/20'
+                                  : 'bg-slate-100 hover:bg-slate-200/90 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                              }`}
                               onClick={() => toggleSymptom(sym)}
                               aria-pressed={isSelected}
                             >
-                              {isSelected ? <Check size={13} /> : <Plus size={13} />}
+                              {isSelected ? (
+                                <Check size={14} strokeWidth={2.5} className="text-white shrink-0" />
+                              ) : (
+                                <Plus size={14} className="text-slate-400 dark:text-slate-400 shrink-0" />
+                              )}
                               <span>{sym}</span>
                             </button>
                           );
                         })}
                       </div>
 
-                      <form onSubmit={addCustomTag} className="compact-symptom-form">
-                        <input
-                          id="symptom-search"
-                          type="search"
-                          maxLength={60}
-                          autoComplete="off"
-                          placeholder="Add custom symptom..."
-                          value={customSymptomInput}
-                          onChange={(e) => setCustomSymptomInput(e.target.value)}
-                        />
+                      <form onSubmit={addCustomTag} className="compact-symptom-form flex items-center gap-2 mt-3">
+                        <div className="relative flex-1">
+                          <input
+                            id="symptom-search"
+                            type="search"
+                            maxLength={60}
+                            autoComplete="off"
+                            placeholder="Add other symptoms (e.g. Back pain, Dizziness)..."
+                            value={customSymptomInput}
+                            onChange={(e) => setCustomSymptomInput(e.target.value)}
+                            className="w-full h-10 px-3.5 rounded-xl text-xs sm:text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0f5ca8]/20 focus:border-[#0f5ca8] transition-all"
+                          />
+                        </div>
                         <button
                           id="add-custom-symptom"
-                          className="btn-secondary btn-icon btn-compact"
+                          className="btn-secondary inline-flex items-center gap-1.5 h-10 px-4 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                           type="submit"
                           disabled={!customSymptomInput.trim()}
                         >
-                          <Plus size={14} /> Add
+                          <Plus size={14} /> <span>Add</span>
                         </button>
                       </form>
 
                       {/* Custom Tags */}
                       {customTags.length > 0 && (
-                        <div id="custom-symptom-tags" className="custom-symptom-tags mt-2 flex flex-wrap gap-1.5">
+                        <div id="custom-symptom-tags" className="custom-symptom-tags mt-2.5 flex flex-wrap gap-1.5">
                           {customTags.map((tag) => (
                             <button
                               key={tag}
                               type="button"
-                              className="custom-symptom-tag"
+                              className="custom-symptom-tag inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-sky-50 dark:bg-sky-950/60 text-[#0a4b82] dark:text-sky-300 border border-sky-200/80 dark:border-sky-800/70 hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-950/40 dark:hover:text-red-300 dark:hover:border-red-900/60 transition-all cursor-pointer group"
                               onClick={() => removeCustomTag(tag)}
                               aria-label={`Remove custom symptom ${tag}`}
                             >
                               <span>{tag}</span>
-                              <X size={13} />
+                              <X size={12} className="opacity-70 group-hover:opacity-100 group-hover:scale-110 transition-transform" />
                             </button>
                           ))}
                         </div>
@@ -1611,7 +1648,11 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
                       </div>
                       <div className="summary-row">
                         <span>Centre</span>
-                        <strong>{patientData.hospital || 'SmartCare Community Hospital'}</strong>
+                        <strong>
+                          {patientData.hospital && patientData.hospital !== 'SmartCare Community Hospital'
+                            ? patientData.hospital
+                            : 'Osmania General Hospital'}
+                        </strong>
                       </div>
                       <div className="summary-row">
                         <span>Department</span>
@@ -1629,6 +1670,22 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
                         <span>Slot</span>
                         <strong>{currentSlot?.label}</strong>
                       </div>
+                      {currentSymptomsList.length > 0 && (
+                        <div className="summary-row summary-row-symptoms flex flex-col gap-1 items-start py-2 border-t border-slate-200/60 dark:border-slate-800">
+                          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Symptoms</span>
+                          <div className="flex flex-wrap gap-1 mt-0.5 w-full">
+                            {currentSymptomsList.map((sym, i) => (
+                              <span
+                                key={i}
+                                className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 dark:bg-blue-950/60 text-[#0f5ca8] dark:text-sky-300 border border-blue-200/80 dark:border-blue-800/60"
+                              >
+                                <Check size={10} className="text-[#0f5ca8] dark:text-sky-400" />
+                                {sym}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="summary-fee-strip">
                       <div>
@@ -1722,6 +1779,22 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
                       <small>Scheduled slot</small>
                       <strong>{currentSlot?.label}</strong>
                     </div>
+                    {currentSymptomsList.length > 0 && (
+                      <div className="pass-field col-span-2 pt-2 border-t border-dashed border-slate-200 dark:border-slate-700/60 mt-1">
+                        <small className="text-[11px] uppercase tracking-wider font-semibold text-slate-500">Reason for visit</small>
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {currentSymptomsList.map((sym, idx) => (
+                            <span
+                              key={idx}
+                              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/60 text-[#0f5ca8] dark:text-sky-300 border border-blue-200/80 dark:border-blue-800/60"
+                            >
+                              <Check size={11} className="text-[#0f5ca8] dark:text-sky-400" />
+                              {sym}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Pass Tear Line */}
@@ -1895,6 +1968,7 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="booking-review-title"
+            style={{ backgroundColor: 'var(--surface, #ffffff)', color: 'var(--text, #0f172a)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="modal-heading flex items-start justify-between gap-4 p-5 bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800">
@@ -1944,11 +2018,39 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
                 <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0">Time</span>
                 <strong className="text-slate-900 dark:text-slate-100 font-bold text-right">{currentSlot?.label || 'Today - next available'}</strong>
               </div>
-              <div className="summary-row summary-row-stacked flex flex-col items-start gap-1 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/80 dark:border-slate-700/60 text-xs sm:text-sm">
-                <span className="text-slate-500 dark:text-slate-400 font-medium text-[11px] uppercase tracking-wider">Reason for visit</span>
-                <strong className="text-slate-900 dark:text-slate-100 font-bold text-left leading-relaxed">
-                  {patientData.symptoms || 'General consultation'}
-                </strong>
+              <div className="summary-row summary-row-stacked flex flex-col items-start gap-2 p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700/60 text-xs sm:text-sm w-full">
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-slate-500 dark:text-slate-400 font-semibold text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+                    <HeartPulse size={13} className="text-[#0f5ca8] dark:text-sky-400" />
+                    Reason for visit / symptoms
+                  </span>
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                    {currentSymptomsList.length > 0 ? `${currentSymptomsList.length} noted` : 'General consultation'}
+                  </span>
+                </div>
+                {currentSymptomsList.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5 w-full">
+                    {currentSymptomsList.map((sym, idx) => (
+                      <span
+                        key={idx}
+                        className="symptom-review-badge inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/70 text-[#0f5ca8] dark:text-sky-300 border border-blue-200/90 dark:border-blue-800/70 shadow-2xs"
+                      >
+                        <Check size={11} strokeWidth={2.5} className="text-[#0f5ca8] dark:text-sky-400 shrink-0" />
+                        {sym}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <strong className="text-slate-900 dark:text-slate-100 font-bold text-left leading-relaxed">
+                    General consultation
+                  </strong>
+                )}
+                {additionalNotes.trim() && (
+                  <div className="text-xs text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900/60 p-2.5 rounded-lg border border-slate-200/60 dark:border-slate-800 w-full italic">
+                    <span className="font-semibold not-italic text-slate-500 dark:text-slate-400 text-[11px] block mb-0.5">Note:</span>
+                    "{additionalNotes.trim()}"
+                  </div>
+                )}
               </div>
               <div className="demo-routing-note compact flex items-center gap-2 p-3 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 text-blue-900 dark:text-blue-300 text-xs rounded-xl mt-1">
                 <Sparkles size={15} className="shrink-0 text-blue-600 dark:text-blue-400" />

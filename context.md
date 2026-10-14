@@ -1,6 +1,6 @@
 # SmartCare — Project Architecture & Context
 
-> Last updated: 2026-10-12  
+> Last updated: 2026-10-14  
 > Active Git Branch: `sudophiles` (`Muqeeth47/smartcare`)  
 > Production Live URL: [https://smartcare-omega-two.vercel.app](https://smartcare-omega-two.vercel.app)  
 > Firebase Project: `studio-5671575350-61bbd` (Google Cloud / Firestore deployed)
@@ -15,10 +15,16 @@ SmartCare is a high-reliability, production-grade digital public health and emer
 1. **Module 1: Clinical Operations & Digital Public Health**
    - OPD Queue management with dynamic emergency triage (Red / Yellow / Green).
    - Real-time device camera QR ticket & Medical Passport scanner powered by `jsQR`.
+   - **Real Government Hospital Network & Live GIS Mapping**:
+     - Verified real government and tertiary facilities: Osmania General Hospital (lead/default), Gandhi Hospital & Medical College, NIMS, Niloufer Hospital, Sarojini Devi Eye Hospital, Government Maternity Hospital (Sultan Bazar), Government ENT Hospital (Koti), District Area Hospital Kondapur, UPHC Khairatabad, and CHC Golconda.
+     - Live OpenStreetMap Overpass API integration querying real hospitals and clinics within dynamic search radii (6km–30km) with automatic timeout protection.
+     - Nominatim forward geocoding (searching localities/PIN codes) and reverse geocoding on GPS auto-detect, calculating straight-line Haversine distance and linking Google Maps turn-by-turn navigation.
+     - Universal demo clinician binding: The complete roster of demo clinicians (`CARE_TEAM`) is seamlessly linked to whichever real hospital is chosen.
    - Multi-step appointment booking wizard with interactive Leaflet GIS facility mapping.
    - Emergency ambulance dispatch (ALS, BLS, Patient Transport) with real-time GPS ETA tracking.
    - Digital e-Prescriptions with bio-equivalent generic Jan Aushadhi (PMBJP) drug price comparison.
    - Verified digital Medical Passport (`SC-PASSPORT-8924`) with emergency allergies, critical conditions, and crisis protocols.
+   - Exportable downloadable PDF medical reports and printable appointment boarding slips (`@media print` formatted).
    - Open-source blood bank and organ donation directory with geographic radius search.
 
 2. **Module 2: AushadhiNet Federated Supply Chain & Shortage Mesh**
@@ -80,7 +86,7 @@ SmartCare is a high-reliability, production-grade digital public health and emer
 | `/` | `LandingPage` | Public | Platform overview, live facility telemetry cards, service entry points |
 | `/login` | `LoginPage` / `MorphingAuthCard` | Public | 4-tier authenticated morphing login with role switcher & single-click demo autofills |
 | `/dashboard/patient` | `PatientDashboardPage` | Patient | Active appointments, health passport summary, emergency shortcuts |
-| `/dashboard/patient/apply/[step]` | `BookingWizard` | Patient | Multi-step booking (1: Reason, 2: Hospital Map, 3: Doctor Slot, 4: Pass) |
+| `/dashboard/patient/apply/[step]` | `BookingWizard` | Patient | Multi-step booking (1: Reason, 2: Real Hospital Map & OSM Overpass, 3: Demo Clinician Slot, 4: Pass & Payment) |
 | `/dashboard/patient/visits` | `PatientVisitsPage` | Patient | Digital OPD tokens, printable visit slip modal with QR code |
 | `/dashboard/patient/history` | `MedicalHistoryPage` | Patient | Medical Passport, allergies, conditions, and exportable QR passport |
 | `/dashboard/patient/donations` | `PatientDonationsFinder` | Patient | Live Leaflet map, GPS proximity blood bank & organ registry finder |

@@ -246,7 +246,12 @@ export const useAppStore = create<AppState & AppActions>()(
               ? [...DEMO_VISITS]
               : [];
             const draft = JSON.parse(localStorage.getItem(draftKey) || 'null');
-            if (draft?.patientData) patientData = { ...emptyPatientData(), ...draft.patientData };
+            if (draft?.patientData) {
+              patientData = { ...emptyPatientData(), ...draft.patientData };
+            }
+            if (!patientData.hospital || patientData.hospital === 'SmartCare Community Hospital') {
+              patientData.hospital = 'Osmania General Hospital';
+            }
           } catch {}
         }
 

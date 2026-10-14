@@ -640,6 +640,14 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
 
     function initMap() {
       if (!active || !mapContainerRef.current || !window.L) return;
+      if (window.L.Icon && window.L.Icon.Default) {
+        delete (window.L.Icon.Default.prototype as any)._getIconUrl;
+        window.L.Icon.Default.mergeOptions({
+          iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+          iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+          shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        });
+      }
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -777,6 +785,9 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
       setValidationError('Select at least one symptom or describe your reason for visit.');
       return;
     }
+    if (!patientData.hospital || patientData.hospital === 'SmartCare Community Hospital') {
+      updatePatientData('hospital', 'Osmania General Hospital');
+    }
     setValidationError('');
     setShowReviewModal(true);
   };
@@ -785,8 +796,14 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
     setShowReviewModal(false);
     try {
       const slot = currentSlot;
+      const chosenHospital =
+        patientData.hospital && patientData.hospital !== 'SmartCare Community Hospital'
+          ? patientData.hospital
+          : 'Osmania General Hospital';
+
       const refId = await DemoDB.addPatient({
         ...patientData,
+        hospital: chosenHospital,
         doctorName: currentDoctor.name,
         department: patientData.department || currentDoctor.department,
         appointmentDate: slot.date,
@@ -799,7 +816,7 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
 
       const visit: PatientVisit = {
         id: refId,
-        hospital: patientData.hospital || 'SmartCare Community Hospital',
+        hospital: chosenHospital,
         city: patientData.city || 'Hyderabad',
         reason: patientData.symptoms || 'General consultation',
         date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
@@ -1869,21 +1886,28 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
 
       {/* Review Modal Dialog */}
       {showReviewModal && (
-        <div className="modal-backdrop" onClick={() => setShowReviewModal(false)}>
+        <div
+          className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm overflow-y-auto"
+          onClick={() => setShowReviewModal(false)}
+        >
           <section
-            className="modal-card booking-review-modal"
+            className="modal-card booking-review-modal bg-white dark:bg-[#0e1724] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden max-w-[500px] w-full text-slate-900 dark:text-slate-100 animate-in fade-in zoom-in-95 duration-150"
             role="dialog"
             aria-modal="true"
             aria-labelledby="booking-review-title"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="modal-heading">
+            <div className="modal-heading flex items-start justify-between gap-4 p-5 bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800">
               <div>
-                <h2 id="booking-review-title">Confirm booking details</h2>
-                <p>Review information before adding this visit to queue.</p>
+                <h2 id="booking-review-title" className="text-base sm:text-lg font-extrabold text-[#0a3b69] dark:text-sky-300">
+                  Confirm booking details
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Review information before adding this visit to queue.
+                </p>
               </div>
               <button
-                className="btn-ghost modal-close-button"
+                className="btn-ghost modal-close-button text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
                 type="button"
                 onClick={() => setShowReviewModal(false)}
                 aria-label="Close booking review"
@@ -1891,52 +1915,58 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
                 <X size={18} />
               </button>
             </div>
-            <div className="booking-review-list">
-              <div className="summary-row">
-                <span>Patient</span>
-                <strong>
-                  {patientData.name}, {patientData.age}
+            <div className="booking-review-list p-5 flex flex-col gap-2.5 overflow-y-auto max-h-[60vh] bg-white dark:bg-[#0e1724]">
+              <div className="summary-row flex items-center justify-between gap-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/80 dark:border-slate-700/60 text-xs sm:text-sm">
+                <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0">Patient</span>
+                <strong className="text-slate-900 dark:text-slate-100 font-bold text-right">
+                  {patientData.name || 'Patient'}, {patientData.age || '32'}
                 </strong>
               </div>
-              <div className="summary-row">
-                <span>Care centre</span>
-                <strong>{patientData.hospital}</strong>
+              <div className="summary-row flex items-center justify-between gap-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/80 dark:border-slate-700/60 text-xs sm:text-sm">
+                <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0">Care centre</span>
+                <strong className="text-[#0f5ca8] dark:text-sky-400 font-bold text-right">
+                  {patientData.hospital && patientData.hospital !== 'SmartCare Community Hospital' ? patientData.hospital : 'Osmania General Hospital'}
+                </strong>
               </div>
-              <div className="summary-row">
-                <span>Department</span>
-                <strong>{patientData.department}</strong>
+              <div className="summary-row flex items-center justify-between gap-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/80 dark:border-slate-700/60 text-xs sm:text-sm">
+                <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0">Department</span>
+                <strong className="text-slate-900 dark:text-slate-100 font-bold text-right">{patientData.department || departments[0]}</strong>
               </div>
-              <div className="summary-row">
-                <span>Clinician</span>
-                <strong>{currentDoctor?.name}</strong>
+              <div className="summary-row flex items-center justify-between gap-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/80 dark:border-slate-700/60 text-xs sm:text-sm">
+                <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0">Clinician</span>
+                <strong className="text-slate-900 dark:text-slate-100 font-bold text-right">{currentDoctor?.name || 'Assigned Clinician'}</strong>
               </div>
-              <div className="summary-row">
-                <span>Consultation</span>
-                <strong>{patientData.consultationType}</strong>
+              <div className="summary-row flex items-center justify-between gap-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/80 dark:border-slate-700/60 text-xs sm:text-sm">
+                <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0">Consultation</span>
+                <strong className="text-slate-900 dark:text-slate-100 font-bold text-right">{patientData.consultationType || 'In-person consultation'}</strong>
               </div>
-              <div className="summary-row">
-                <span>Time</span>
-                <strong>{currentSlot?.label}</strong>
+              <div className="summary-row flex items-center justify-between gap-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/80 dark:border-slate-700/60 text-xs sm:text-sm">
+                <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0">Time</span>
+                <strong className="text-slate-900 dark:text-slate-100 font-bold text-right">{currentSlot?.label || 'Today - next available'}</strong>
               </div>
-              <div className="summary-row summary-row-stacked">
-                <span>Reason for visit</span>
-                <strong>{patientData.symptoms || 'General consultation'}</strong>
+              <div className="summary-row summary-row-stacked flex flex-col items-start gap-1 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/80 dark:border-slate-700/60 text-xs sm:text-sm">
+                <span className="text-slate-500 dark:text-slate-400 font-medium text-[11px] uppercase tracking-wider">Reason for visit</span>
+                <strong className="text-slate-900 dark:text-slate-100 font-bold text-left leading-relaxed">
+                  {patientData.symptoms || 'General consultation'}
+                </strong>
               </div>
-              <div className="demo-routing-note compact flex items-center gap-2 p-2 bg-blue-50 text-blue-800 text-xs rounded mt-2">
-                <Sparkles size={14} className="shrink-0" />
-                <span>Mirrored in {patientData.hospital || 'hospital'} workspace.</span>
+              <div className="demo-routing-note compact flex items-center gap-2 p-3 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 text-blue-900 dark:text-blue-300 text-xs rounded-xl mt-1">
+                <Sparkles size={15} className="shrink-0 text-blue-600 dark:text-blue-400" />
+                <span>
+                  Mirrored in <strong>{patientData.hospital && patientData.hospital !== 'SmartCare Community Hospital' ? patientData.hospital : 'Osmania General Hospital'}</strong> OPD clinical workspace.
+                </span>
               </div>
             </div>
-            <div className="modal-actions">
+            <div className="modal-actions flex items-center justify-end gap-3 p-4 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-800">
               <button
-                className="btn-secondary"
+                className="btn-secondary min-h-[42px] px-4 rounded-xl text-xs sm:text-sm font-semibold"
                 type="button"
                 onClick={() => setShowReviewModal(false)}
               >
                 Edit details
               </button>
               <button
-                className="btn-primary btn-icon"
+                className="btn-primary btn-icon min-h-[42px] px-4 rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-[#0f5ca8]/20"
                 id="confirm-reservation"
                 type="button"
                 onClick={handleConfirmReservation}
@@ -2018,7 +2048,7 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
                     </div>
                     <div className="receipt-row">
                       <span>Hospital</span>
-                      <strong>{patientData.hospital || 'SmartCare Community Hospital'}</strong>
+                      <strong>{patientData.hospital && patientData.hospital !== 'SmartCare Community Hospital' ? patientData.hospital : 'Osmania General Hospital'}</strong>
                     </div>
                     <div className="receipt-row">
                       <span>Booking Reference</span>

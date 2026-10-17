@@ -42,6 +42,15 @@ const nextConfig = {
     config.resolve.alias['@smartcare/types'] = path.resolve(__dirname, '../../packages/types/src/index.ts');
     return config;
   },
+  async redirects() {
+    return [
+      {
+        source: '/donations',
+        destination: '/dashboard/patient/donations',
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       { source: '/:path*', headers: securityHeaders },

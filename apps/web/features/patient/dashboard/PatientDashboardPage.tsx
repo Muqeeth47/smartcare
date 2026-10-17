@@ -532,7 +532,7 @@ export function PatientDashboardPage({ initialTab }: { initialTab?: string } = {
             </Link>
 
             <Link
-              href="/donations"
+              href="/dashboard/patient/donations"
               className="p-4 rounded-xl border border-purple-200 bg-purple-50/60 hover:bg-purple-100/70 transition-all group flex flex-col justify-between no-underline shadow-xs hover:shadow-sm"
             >
               <div className="flex items-center justify-between mb-2">

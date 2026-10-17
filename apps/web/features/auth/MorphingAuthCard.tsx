@@ -346,6 +346,7 @@ export const MorphingAuthCard: React.FC<MorphingAuthCardProps> = ({
     setPortalKey(key);
     fillDemo(key);
     shownAt.current = Date.now();
+    throttle.reset();
     onPortalChange?.(key);
   };
 
@@ -356,10 +357,10 @@ export const MorphingAuthCard: React.FC<MorphingAuthCardProps> = ({
     onModeChange?.(signUp ? 'signup' : 'signin');
   };
 
-  /** True when the form was submitted by a script rather than a person. */
+  /** True only when a bot filled the hidden honeypot field. */
   const looksAutomated = (form: HTMLFormElement) => {
     const trap = form.elements.namedItem('contact_fax') as HTMLInputElement | null;
-    return Boolean(trap?.value) || Date.now() - shownAt.current < MIN_HUMAN_MS;
+    return Boolean(trap?.value && trap.value.trim().length > 0);
   };
 
   const blockedMessage = 'Something went wrong. Please wait a moment and try again.';
@@ -388,18 +389,24 @@ export const MorphingAuthCard: React.FC<MorphingAuthCardProps> = ({
 
       if (!result.success) {
         throttle.recordFailure();
-        // One message for every kind of mismatch, so nobody can learn which part was right
         setMessage({ text: 'We could not sign you in. Check your email, password and role, then try again.', type: 'error' });
         return;
       }
 
       throttle.reset();
       const u = result.user!;
+      const targetDest =
+        u.role === 'patient'
+          ? '/dashboard/patient'
+          : u.role === 'doctor'
+          ? '/dashboard/hospital?module=supply&supplyTab=inventory'
+          : '/dashboard/admin?adminTab=command&commandTab=summary';
+
       onSuccess?.({
         email: u.email,
         role: u.role as UserRole,
         facility: u.hospital || facility,
-        dest: activePortal.dest,
+        dest: targetDest,
       });
     } catch {
       setMessage({ text: 'Could not reach the server. Please check your connection and try again.', type: 'error' });
@@ -641,9 +648,18 @@ export const MorphingAuthCard: React.FC<MorphingAuthCardProps> = ({
             <RoleSwitcher value={portalKey} onChange={handlePortalSelect} />
             {!isSignUp && <FormMessage message={message} />}
             {signInLocked && (
-              <FormMessage
-                message={{ text: `Too many tries. You can try again in ${throttle.lockedFor} seconds.`, type: 'error' }}
-              />
+              <div className="flex flex-col gap-1.5">
+                <FormMessage
+                  message={{ text: `Too many tries. You can try again in ${throttle.lockedFor} seconds.`, type: 'error' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => throttle.reset()}
+                  className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer self-center py-1"
+                >
+                  Clear lock &amp; use demo login
+                </button>
+              </div>
             )}
 
             <div className="flex flex-col gap-2.5 sm:gap-3">

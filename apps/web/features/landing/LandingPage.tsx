@@ -211,17 +211,11 @@ export function LandingPage() {
             {/* ── Right: Interactive Live Care Network Panel ──────────── */}
             <div className="hero-side relative z-10 flex items-center justify-center w-full min-w-0">
               <div
-                className="care-panel w-full"
-                style={{
-                  maxWidth: 520,
-                  padding: '1.15rem',
-                  border: '1px solid rgba(255,255,255,.18)',
-                  borderRadius: '1.35rem',
-                  background: '#0e4d86',
-                }}
+                className="care-panel w-full p-4 sm:p-5 rounded-2xl bg-[#0e4d86] border border-white/20 shadow-xl"
+                style={{ maxWidth: 520 }}
               >
                 {/* Panel head */}
-                <div className="care-panel-head flex justify-between gap-2 sm:gap-4 items-start" style={{ padding: '.25rem .25rem .9rem' }}>
+                <div className="care-panel-head flex justify-between gap-2 sm:gap-4 items-start pb-3.5 mb-3 border-b border-white/10">
                   <div>
                     <span
                       className="care-tag flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider mb-1"
@@ -229,19 +223,18 @@ export function LandingPage() {
                     >
                       <MapPin size={12} style={{ color: '#b8daf5' }} /> Live Care Network
                     </span>
-                    <p className="care-panel-title m-0 font-extrabold" style={{ fontSize: '1rem', color: '#fff' }}>Verified Care Centres</p>
+                    <p className="care-panel-title m-0 font-extrabold text-base sm:text-lg text-white">Verified Care Centres</p>
                   </div>
                   <span
-                    className="status-eyebrow flex items-center gap-1.5 shrink-0"
-                    style={{ color: '#b8daf5', fontSize: '.67rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.12em', whiteSpace: 'nowrap' }}
+                    className="status-eyebrow flex items-center gap-1.5 shrink-0 text-[11px] font-extrabold uppercase tracking-wider text-blue-200 whitespace-nowrap"
                   >
-                    <span style={{ display: 'inline-block', width: '.45rem', height: '.45rem', borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 0 .25rem rgba(74,222,128,.2)', animation: 'pulse 2s ease-in-out infinite' }} />
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(74,222,128,0.25)] animate-pulse inline-block" />
                     Live queue
                   </span>
                 </div>
 
                 {/* Hospital Cards — clickable toggle */}
-                <div className="care-panel-body flex flex-col gap-2.5">
+                <div className="care-panel-body flex flex-col gap-3">
                   {HOSPITALS.map((h) => {
                     const isActive = selectedHospital === h.id;
                     return (
@@ -249,54 +242,46 @@ export function LandingPage() {
                         key={h.id}
                         type="button"
                         onClick={() => setSelectedHospital(h.id)}
-                        className="care-hosp-preview w-full text-left flex items-center gap-2.5 sm:gap-3 transition-all"
-                        style={{
-                          padding: '0.75rem 0.85rem sm:0.85rem 1rem',
-                          borderRadius: '0.9rem',
-                          border: isActive ? '2px solid rgba(255,255,255,0.55)' : '1.5px solid rgba(255,255,255,0.14)',
-                          background: isActive ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.07)',
-                          cursor: 'pointer',
-                          boxShadow: isActive ? '0 4px 18px rgba(0,0,0,0.18)' : 'none',
-                          transform: isActive ? 'translateY(-1px)' : 'none',
-                          transition: 'all 0.18s ease',
-                        }}
+                        className={`care-hosp-preview w-full text-left flex items-center gap-3 sm:gap-3.5 px-3.5 py-3 sm:px-4 sm:py-3.5 rounded-xl transition-all cursor-pointer min-h-[64px] ${
+                          isActive
+                            ? 'bg-white/20 border-2 border-white/60 shadow-md translate-y-[-1px]'
+                            : 'bg-white/10 hover:bg-white/15 border border-white/15 hover:border-white/30'
+                        }`}
                         aria-pressed={isActive}
                       >
                         {/* Icon */}
-                        <span style={{
-                          width: '2.2rem', height: '2.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          background: isActive ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.1)',
-                          borderRadius: '0.65rem', flexShrink: 0, color: '#fff',
-                        }}>
-                          <h.Icon size={16} />
+                        <span
+                          className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                            isActive ? 'bg-white/25 text-white' : 'bg-white/10 text-white/90'
+                          }`}
+                        >
+                          <h.Icon size={18} />
                         </span>
 
                         {/* Info */}
-                        <div className="flex-1 min-w-0">
-                          <strong className="block text-xs sm:text-sm font-extrabold truncate" style={{ color: '#fff', lineHeight: 1.3 }}>
+                        <div className="flex-1 min-w-0 pr-1">
+                          <strong className="block text-xs sm:text-sm font-bold text-white truncate leading-snug">
                             {h.name}
                           </strong>
-                          <span className="block text-[11px] sm:text-xs mt-0.5 truncate" style={{ color: '#c2dcf3' }}>
+                          <span className="block text-[11px] sm:text-xs text-blue-100/90 mt-0.5 truncate">
                             {h.area} · {h.icuBeds} ICU beds · {h.distance}
                           </span>
                         </div>
 
                         {/* Wait badge */}
                         <span
-                          className="shrink-0 text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-1 rounded"
-                          style={{
-                            background: h.waitColor === 'green' ? 'rgba(74,222,128,0.2)' : 'rgba(251,191,36,0.2)',
-                            color: h.waitColor === 'green' ? '#86efac' : '#fde68a',
-                            border: h.waitColor === 'green' ? '1px solid rgba(74,222,128,0.35)' : '1px solid rgba(251,191,36,0.35)',
-                            whiteSpace: 'nowrap',
-                          }}
+                          className={`shrink-0 text-[11px] sm:text-xs font-bold px-2.5 py-1 rounded-lg border whitespace-nowrap ${
+                            h.waitColor === 'green'
+                              ? 'bg-emerald-400/20 text-emerald-200 border-emerald-400/35'
+                              : 'bg-amber-400/20 text-amber-200 border-amber-400/35'
+                          }`}
                         >
                           ~{h.waitMins}m wait
                         </span>
 
                         {/* Selected check */}
                         {isActive && (
-                          <CheckCircle2 size={16} style={{ color: '#86efac', flexShrink: 0 }} />
+                          <CheckCircle2 size={18} className="text-emerald-300 shrink-0" />
                         )}
                       </button>
                     );

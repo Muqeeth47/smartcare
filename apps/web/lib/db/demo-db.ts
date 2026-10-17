@@ -18,9 +18,7 @@ import type {
   RedistributionOrder,
   DistrictSupplyAggregate,
   DistrictMedicineSummary,
-  FacilityTier,
   MedicineStockStatus,
-  ShortageSeverity,
   MedicalPersonnelAttendance,
   BedCategoryBreakdown,
   PHCFootfallTelemetry,
@@ -1535,7 +1533,7 @@ export const DemoDB = {
   // Auth
   checkCredentials: async (hospital: string, email: string, password: string, role: string) => {
     // Extensible API Hook: If external API endpoint is configured, query remote service first
-    const apiEndpoint = process.env.NEXT_PUBLIC_AUTH_API_URL || (typeof window !== 'undefined' ? (window as any).__SMARTCARE_AUTH_API__ : null);
+    const apiEndpoint = process.env.NEXT_PUBLIC_AUTH_API_URL || (typeof window !== 'undefined' ? (window as unknown as { __SMARTCARE_AUTH_API__?: string }).__SMARTCARE_AUTH_API__ ?? null : null);
     if (apiEndpoint) {
       try {
         const res = await fetch(`${apiEndpoint}/auth/login`, {
@@ -1586,7 +1584,7 @@ export const DemoDB = {
 
   registerPatient: async (data: { email: string; password: string; name: string; city?: string }) => {
     // Extensible API Hook: If external API endpoint is configured, query remote service first
-    const apiEndpoint = process.env.NEXT_PUBLIC_AUTH_API_URL || (typeof window !== 'undefined' ? (window as any).__SMARTCARE_AUTH_API__ : null);
+    const apiEndpoint = process.env.NEXT_PUBLIC_AUTH_API_URL || (typeof window !== 'undefined' ? (window as unknown as { __SMARTCARE_AUTH_API__?: string }).__SMARTCARE_AUTH_API__ ?? null : null);
     if (apiEndpoint) {
       try {
         const res = await fetch(`${apiEndpoint}/auth/register`, {
@@ -1737,8 +1735,8 @@ export const DemoDB = {
         );
       }
       return { success: true };
-    } catch (error: any) {
-      return { success: false, error: error?.message || 'Failed to cancel appointment.' };
+    } catch (error: unknown) {
+      return { success: false, error: (error instanceof Error && error.message) || 'Failed to cancel appointment.' };
     }
   },
 
@@ -1755,8 +1753,8 @@ export const DemoDB = {
         window.dispatchEvent(new CustomEvent('smartcare:refund-claimed', { detail: { id, ref, now: updates.refundClaimedAt } }));
       }
       return { success: true, ref };
-    } catch (error: any) {
-      return { success: false, error: error?.message || 'Failed to claim refund' };
+    } catch (error: unknown) {
+      return { success: false, error: (error instanceof Error && error.message) || 'Failed to claim refund' };
     }
   },
 
@@ -2452,9 +2450,8 @@ export const DemoDB = {
     return newOrders;
   },
 
-  getDistrictSupplyAggregate: (district = 'Hyderabad'): DistrictSupplyAggregate => {
+  getDistrictSupplyAggregate: (district = 'Hyderabad & Rangareddy Central'): DistrictSupplyAggregate => {
     const profiles = DemoDB.getAllSupplyProfiles();
-    const shortages = DemoDB.getShortageReports().filter((s) => !s.resolved);
     const orders = DemoDB.getRedistributionOrders();
 
     // Clinical facilities (exclude central warehouse for accurate hospital occupancy & consumption stats)
@@ -2564,7 +2561,7 @@ export const DemoDB = {
         : 88;
 
     return {
-      district: 'Hyderabad & Rangareddy Central',
+      district,
       state: 'Telangana',
       totalFacilities: profiles.length,
       reportingFacilities: profiles.length,

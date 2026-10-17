@@ -17,16 +17,12 @@ import {
   TrendingUp,
   Truck,
   Network,
-  Stethoscope,
   ShieldCheck,
-  Siren,
   QrCode,
   Sparkles,
   Layers,
-  ArrowRight,
   Printer,
   Download,
-  ExternalLink,
 } from 'lucide-react';
 
 export default function SlidesPage() {
@@ -193,7 +189,7 @@ export default function SlidesPage() {
               SmartCare &amp; AushadhiNet Mesh
             </h1>
             <p className="text-base sm:text-lg text-slate-600 max-w-3xl mx-auto font-normal leading-relaxed">
-              A federated AI public health ecosystem providing real-time visibility into medicine stocks, bed availability, and medical personnel attendance across India's primary health centre network.
+              A federated AI public health ecosystem providing real-time visibility into medicine stocks, bed availability, and medical personnel attendance across India&apos;s primary health centre network.
             </p>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
@@ -245,7 +241,7 @@ export default function SlidesPage() {
               </span>
               <h2 className="text-2xl sm:text-4xl font-black text-slate-900 mt-1">The Problem: Supply Vulnerabilities in Public Healthcare</h2>
               <p className="text-slate-600 text-sm sm:text-base mt-1">
-                India's public health centres suffer from unpredicted stock-outs, delayed paper reporting, and absence of inter-district redistribution.
+                India&apos;s public health centres suffer from unpredicted stock-outs, delayed paper reporting, and absence of inter-district redistribution.
               </p>
             </div>
 
@@ -316,7 +312,7 @@ export default function SlidesPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="p-5 rounded-2xl bg-white border border-slate-200 space-y-3 shadow-xs">
-                <div className="font-mono text-xs font-bold text-teal-700 uppercase tracking-wider">// MULTI-TIER MESH HIERARCHY</div>
+                <div className="font-mono text-xs font-bold text-teal-700 uppercase tracking-wider">{'// MULTI-TIER MESH HIERARCHY'}</div>
                 
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex justify-between items-center">
                   <div>
@@ -650,7 +646,7 @@ export default function SlidesPage() {
                     <ShieldCheck size={16} /> Zero Patient PII Leakage
                   </div>
                   <p className="text-xs text-slate-600 leading-relaxed">
-                    Guarantees absolute compliance with India's Digital Personal Data Protection (DPDP) Act 2023 and Ayushman Bharat Digital Mission (ABDM) standards.
+                    Guarantees absolute compliance with India&apos;s Digital Personal Data Protection (DPDP) Act 2023 and Ayushman Bharat Digital Mission (ABDM) standards.
                   </p>
                 </div>
 
@@ -811,14 +807,14 @@ export default function SlidesPage() {
           type="button"
           onClick={prevSlide}
           disabled={currentSlide === 1}
-          className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition border border-slate-200 cursor-pointer shrink-0"
+          className="w-10 h-10 sm:w-8 sm:h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition border border-slate-200 cursor-pointer shrink-0"
           title="Previous (Left Arrow)"
         >
           <ChevronLeft size={16} />
         </button>
 
         {/* Progress Bar */}
-        <div className="w-12 sm:w-44 h-1.5 rounded-full bg-slate-100 overflow-hidden mx-0.5 sm:mx-1 shrink-0">
+        <div className="w-8 sm:w-44 h-1.5 rounded-full bg-slate-100 overflow-hidden mx-0.5 sm:mx-1 shrink-0">
           <div
             className="h-full bg-teal-600 transition-all duration-300"
             style={{ width: `${((currentSlide - 1) / (totalSlides - 1)) * 100 || 10}%` }}
@@ -829,7 +825,7 @@ export default function SlidesPage() {
           type="button"
           onClick={nextSlide}
           disabled={currentSlide === totalSlides}
-          className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition border border-slate-200 cursor-pointer shrink-0"
+          className="w-10 h-10 sm:w-8 sm:h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition border border-slate-200 cursor-pointer shrink-0"
           title="Next (Right Arrow / Space)"
         >
           <ChevronRight size={16} />
@@ -838,7 +834,7 @@ export default function SlidesPage() {
         <button
           type="button"
           onClick={toggleFullscreen}
-          className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center transition border border-slate-200 cursor-pointer shrink-0 hidden xs:flex sm:flex"
+          className="w-10 h-10 sm:w-8 sm:h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center transition border border-slate-200 cursor-pointer shrink-0 hidden xs:flex sm:flex"
           title="Fullscreen (F)"
         >
           {isFullscreen ? <Minimize size={14} /> : <Maximize size={14} />}
@@ -847,7 +843,7 @@ export default function SlidesPage() {
         <button
           type="button"
           onClick={handlePrint}
-          className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 text-xs font-bold cursor-pointer transition shrink-0"
+          className="flex items-center justify-center gap-1 px-2.5 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 sm:py-1 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 text-xs font-bold cursor-pointer transition shrink-0"
           title="Download as PDF"
         >
           <Printer size={13} />
@@ -872,7 +868,7 @@ export default function SlidesPage() {
             </div>
             <h1 className="text-4xl font-black text-slate-950">SmartCare &amp; AushadhiNet Mesh</h1>
             <p className="text-sm text-slate-600 max-w-2xl mx-auto">
-              A federated AI public health ecosystem for real-time visibility into medicine stocks, bed availability, and medical personnel attendance across India's PHC network.
+              A federated AI public health ecosystem for real-time visibility into medicine stocks, bed availability, and medical personnel attendance across India&apos;s PHC network.
             </p>
             <div className="grid grid-cols-4 gap-3">
               {[

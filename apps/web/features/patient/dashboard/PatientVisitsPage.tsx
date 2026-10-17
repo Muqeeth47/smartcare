@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { usePatient, useSession, useAppStore } from '@/lib/store/app-store';
+import { usePatient, useSession } from '@/lib/store/app-store';
 import { PatientShell } from '@/components/layout/Shell';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { Building2, FileDown, Clock, Printer, X, HeartPulse, CheckCircle2 } from 'lucide-react';
@@ -16,7 +16,6 @@ export function PatientVisitsPage() {
   const { role } = useAuthGuard(['patient']);
   const { patientVisits, patientData } = usePatient();
   const { email } = useSession();
-  const showToast = useAppStore((s) => s.showToast);
 
   const visitIdParam = searchParams.get('visit');
   const [activePrintVisit, setActivePrintVisit] = useState<PatientVisit | null>(() => {

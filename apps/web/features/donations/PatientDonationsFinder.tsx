@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession, usePatient, useAppStore } from '@/lib/store/app-store';
 import { PatientShell } from '@/components/layout/Shell';
 import { DemoDB } from '@/lib/db/demo-db';
+import { geocodeLocation, reverseGeocode } from '@/services/geocoding';
+import { distanceKm, formatDistance, isOpenNow, postMatchesSearch } from '@/lib/donation-logic';
 import {
   Droplets,
   HeartHandshake,
@@ -19,17 +21,10 @@ import {
   ExternalLink,
   Info,
   ClipboardList,
-  Printer,
   X,
-  ShieldCheck,
   Trash2,
   Mail,
-  Share2,
   CheckCircle2,
-  User,
-  Clock,
-  Sparkles,
-  AlertCircle,
   Hospital as HospitalIcon,
 } from 'lucide-react';
 import type { PatientDonationPost } from '@smartcare/types';
@@ -46,16 +41,20 @@ interface Centre {
   phone: string;
   hours?: string;
   note?: string;
-  distance?: string;
 }
 
 const DEMO_CENTRES_MAP: Centre[] = [
-  { name: 'SmartCare Community Hospital Blood Bank', area: 'Banjara Hills', lat: 17.4126, lng: 78.4482, type: 'blood', phone: '+91 40 2345 6789', hours: '09:00–17:00', note: 'All common blood groups', distance: '1.2 km' },
-  { name: 'Red Cross Donation Centre', area: 'Secunderabad', lat: 17.4399, lng: 78.4983, type: 'blood', phone: '+91 40 2780 1234', hours: '10:00–18:00', note: 'Call ahead for stock', distance: '3.8 km' },
-  { name: 'CityCare Blood Services', area: 'Kukatpally', lat: 17.4849, lng: 78.3956, type: 'blood', phone: '+91 40 4567 8901', hours: '08:00–16:00', note: 'Bring photo ID', distance: '5.4 km' },
-  { name: 'Apollo Organ Coordination', area: 'Jubilee Hills', lat: 17.4239, lng: 78.4101, type: 'organ', phone: '+91 40 2360 7777', hours: '24/7 Helpline', note: 'Transplant coordinator on duty', distance: '2.5 km' },
-  { name: 'NOTTO Hyderabad Node', area: 'Begumpet', lat: 17.4437, lng: 78.4637, type: 'organ', phone: '+91 40 2776 5432', hours: '09:30–18:00', note: 'Regional registry center', distance: '4.1 km' },
+  { name: 'SmartCare Community Hospital Blood Bank', area: 'Banjara Hills', lat: 17.4126, lng: 78.4482, type: 'blood', phone: '+91 40 2345 6789', hours: '09:00–17:00', note: 'All common blood groups' },
+  { name: 'Red Cross Donation Centre', area: 'Secunderabad', lat: 17.4399, lng: 78.4983, type: 'blood', phone: '+91 40 2780 1234', hours: '10:00–18:00', note: 'Call ahead for stock' },
+  { name: 'CityCare Blood Services', area: 'Kukatpally', lat: 17.4849, lng: 78.3956, type: 'blood', phone: '+91 40 4567 8901', hours: '08:00–16:00', note: 'Bring photo ID' },
+  { name: 'Apollo Organ Coordination', area: 'Jubilee Hills', lat: 17.4239, lng: 78.4101, type: 'organ', phone: '+91 40 2360 7777', hours: '24/7 Helpline', note: 'Transplant coordinator on duty' },
+  { name: 'NOTTO Hyderabad Node', area: 'Begumpet', lat: 17.4437, lng: 78.4637, type: 'organ', phone: '+91 40 2776 5432', hours: '09:30–18:00', note: 'Regional registry center' },
 ];
+
+const MY_LOCATION_LABEL = 'My current location';
+
+// Used until the person shares their location (central Hyderabad)
+const DEFAULT_ORIGIN = { lat: 17.4399, lng: 78.4637 };
 
 interface ContactInfoModalState {
   name: string;
@@ -132,37 +131,33 @@ export function PatientDonationsFinder() {
   // Small Window: Contact Info Modal State
   const [contactModal, setContactModal] = useState<ContactInfoModalState | null>(null);
 
-  // Donor Certificate Honor Card Modal
-  const [donorCardModal, setDonorCardModal] = useState<{
-    name: string;
-    type: 'blood' | 'organ';
-    group: string;
-    city: string;
-    donorId: string;
-    dateStr: string;
-  } | null>(null);
-
   // Leaflet map container refs
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const userMarkerRef = useRef<any>(null);
 
-  // Filtered centres
-  const filteredCentres = DEMO_CENTRES_MAP.filter((c) => c.type === donationType);
+  // Centres of the chosen kind, nearest first. Distance is measured from the person's location,
+  // or from central Hyderabad until they share it.
+  const origin = userLocationCoords || DEFAULT_ORIGIN;
+  const filteredCentres = DEMO_CENTRES_MAP.filter((c) => c.type === donationType)
+    .map((c) => ({ ...c, km: distanceKm(origin, c) }))
+    .sort((a, b) => a.km - b.km);
+
+  // People who match what was picked: donors for someone who needs blood, or requests a donor can fill
+  const matchingPosts = allCommunityPosts.filter((p) =>
+    postMatchesSearch(p, { type: donationType, mode, group: selectedGroup })
+  );
 
   // Load patient registrations and community posts from DemoDB
+  const isMine = (p: PatientDonationPost) =>
+    p.author === patientName || p.author === email || p.name === patientName || p.name === 'Asha Rao';
+
   const refreshPosts = () => {
     const data = DemoDB.getDonationsData();
     const posts = data.patientPosts || [];
-    setAllCommunityPosts(posts.filter((p) => p.type === donationType));
-    setMyRegistrations(
-      posts.filter(
-        (p) =>
-          p.type === donationType &&
-          (p.author === patientName || p.author === email || p.name === patientName || p.name === 'Asha Rao')
-      )
-    );
+    setAllCommunityPosts(posts.filter((p) => p.type === donationType && !isMine(p)));
+    setMyRegistrations(posts.filter((p) => p.type === donationType && isMine(p)));
   };
 
   useEffect(() => {
@@ -180,7 +175,7 @@ export function PatientDonationsFinder() {
           const lat = pos.coords.latitude;
           const lng = pos.coords.longitude;
           setUserLocationCoords({ lat, lng });
-          setCityInput(`Current GPS Location (${lat.toFixed(3)}, ${lng.toFixed(3)})`);
+          void nameMyLocation(lat, lng);
 
           if (mapInstanceRef.current && window.L) {
             mapInstanceRef.current.flyTo([lat, lng], 13);
@@ -329,9 +324,15 @@ export function PatientDonationsFinder() {
     }
   };
 
+  // Put a readable place name in the search box instead of raw coordinates
+  async function nameMyLocation(lat: number, lng: number) {
+    const place = await reverseGeocode(lat, lng);
+    setCityInput(place?.city || MY_LOCATION_LABEL);
+  }
+
   const handleLocateGPS = () => {
     if (!navigator.geolocation) {
-      showToast('Geolocation is not supported by your browser', 'info');
+      showToast('Your browser cannot share its location. Type your area instead.', 'info');
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -339,17 +340,43 @@ export function PatientDonationsFinder() {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         setUserLocationCoords({ lat, lng });
-        setCityInput(`Current Location (${lat.toFixed(3)}, ${lng.toFixed(3)})`);
+        void nameMyLocation(lat, lng);
         if (mapInstanceRef.current) {
           mapInstanceRef.current.flyTo([lat, lng], 14);
         }
-        showToast('Location updated to device GPS coordinates', 'success');
+        showToast('Showing the centres closest to you', 'success');
       },
       () => {
-        showToast('Unable to access device location. Using default Hyderabad.', 'info');
+        showToast('Could not get your location. Type your area instead.', 'info');
       },
       { timeout: 8000, enableHighAccuracy: true }
     );
+  };
+
+  // Look up the typed area, then show the nearest centres from there
+  const [searching, setSearching] = useState(false);
+  const handleFindCentres = async () => {
+    const query = cityInput.trim();
+    let from: { lat: number; lng: number } = userLocationCoords || DEFAULT_ORIGIN;
+    if (query && query !== MY_LOCATION_LABEL) {
+      setSearching(true);
+      const place = await geocodeLocation(`${query}, India`);
+      setSearching(false);
+      if (!place) {
+        showToast(`Could not find "${query}". Check the spelling or try a nearby area.`, 'error');
+        return;
+      }
+      from = { lat: place.lat, lng: place.lng };
+      setUserLocationCoords(from);
+    }
+    const nearest = DEMO_CENTRES_MAP.filter((c) => c.type === donationType)
+      .map((c) => ({ c, km: distanceKm(from, c) }))
+      .sort((a, b) => a.km - b.km)[0];
+    if (mapInstanceRef.current) mapInstanceRef.current.flyTo([from.lat, from.lng], 13);
+    if (nearest) {
+      setSelectedCentre(nearest.c.name);
+      showToast(`Nearest: ${nearest.c.name}, ${formatDistance(nearest.km)} away`, 'success');
+    }
   };
 
   // ── Register as Blood Donor ("I want to give") ─────────────────────────────
@@ -468,19 +495,6 @@ export function PatientDonationsFinder() {
     });
   };
 
-  const openCentreContact = (centre: Centre) => {
-    setContactModal({
-      name: centre.name,
-      phone: centre.phone,
-      email: 'bloodbank@smartcare.org',
-      group: selectedGroup,
-      type: centre.type,
-      city: centre.area,
-      notes: `${centre.hours || 'Open 24/7'} · ${centre.note || 'Hospital Centre'}`,
-      isMyPost: false,
-    });
-  };
-
   return (
     <PatientShell subtitle="Donations & Blood Bank" backHref="/dashboard/patient" className="pd-workspace-content">
       <div className="nd-finder-shell border border-[var(--line)] rounded-2xl overflow-hidden bg-[var(--surface)] shadow-sm">
@@ -586,7 +600,13 @@ export function PatientDonationsFinder() {
                         value={cityInput}
                         onChange={(e) => setCityInput(e.target.value)}
                         placeholder="e.g. Hyderabad"
-                        className="w-full text-xs font-semibold py-2.5 outline-none bg-transparent"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            void handleFindCentres();
+                          }
+                        }}
+                        className="w-full text-base sm:text-xs font-semibold py-3 sm:py-2.5 outline-none bg-transparent"
                       />
                     </div>
                     <button
@@ -603,15 +623,11 @@ export function PatientDonationsFinder() {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    if (userLocationCoords && mapInstanceRef.current) {
-                      mapInstanceRef.current.flyTo([userLocationCoords.lat, userLocationCoords.lng], 14);
-                    }
-                    showToast(`Showing nearest centres for ${selectedGroup}`, 'info');
-                  }}
-                  className="w-full h-11 rounded-xl bg-[var(--teal)] text-white text-xs font-bold flex items-center justify-center gap-2 hover:bg-[var(--teal-dark)] active:scale-[0.98] transition-all shadow-sm cursor-pointer"
+                  onClick={handleFindCentres}
+                  disabled={searching}
+                  className="w-full h-12 sm:h-11 rounded-xl bg-[var(--teal)] text-white text-sm sm:text-xs font-bold flex items-center justify-center gap-2 hover:bg-[var(--teal-dark)] disabled:opacity-70 active:scale-[0.98] transition-all shadow-sm cursor-pointer"
                 >
-                  <Search size={15} /> Find {mode === 'give' ? 'Donation Centres' : 'Blood Units Available'}
+                  <Search size={15} /> {searching ? 'Searching...' : mode === 'give' ? 'Find nearest donation centres' : 'Find nearest blood banks'}
                 </button>
               </div>
 
@@ -668,16 +684,23 @@ export function PatientDonationsFinder() {
               )}
 
               {/* ── Community Donors Registry ── */}
-              {allCommunityPosts.length > 0 && (
-                <div className="px-4 sm:px-5 py-3 border-b border-[var(--line)] bg-[var(--surface)]">
-                  <div className="flex items-center justify-between mb-2">
+              <div className="px-4 sm:px-5 py-3 border-b border-[var(--line)] bg-[var(--surface)]">
+                  <div className="flex items-center justify-between mb-2 gap-2">
                     <span className="text-xs font-black uppercase tracking-wider text-[var(--teal-dark)] flex items-center gap-1.5">
-                      <Droplets size={14} className="text-red-600" /> Community Donors ({allCommunityPosts.length})
+                      <Droplets size={14} className="text-red-600 shrink-0" />
+                      {mode === 'give' ? `People needing ${selectedGroup}` : `Donors for ${selectedGroup}`} ({matchingPosts.length})
                     </span>
-                    <span className="text-[10px] text-[var(--text-muted)] font-semibold">Tap to view contact</span>
+                    <span className="text-[10px] text-[var(--text-muted)] font-semibold shrink-0">Tap to contact</span>
                   </div>
+                  {matchingPosts.length === 0 && (
+                    <p className="text-xs text-[var(--text-muted)] py-2">
+                      {mode === 'give'
+                        ? `Nobody is asking for blood that ${selectedGroup} can give right now.`
+                        : `No registered donors can give to ${selectedGroup} yet. Try the blood banks below.`}
+                    </p>
+                  )}
                   <div className="grid grid-cols-1 gap-2">
-                    {allCommunityPosts.map((donor) => (
+                    {matchingPosts.map((donor) => (
                       <div
                         key={donor.id}
                         onClick={() => openDonorContact(donor)}
@@ -689,7 +712,11 @@ export function PatientDonationsFinder() {
                           </div>
                           <div className="min-w-0">
                             <strong className="block text-xs font-bold text-[var(--text)] truncate">{donor.name}</strong>
-                            <span className="block text-[11px] text-[var(--text-muted)] truncate">{donor.city}</span>
+                            <span className="block text-[11px] text-[var(--text-muted)] truncate">
+                              {donor.city}
+                              {donor.date ? ` · ${donor.date}` : ''}
+                              {donor.urgency && donor.urgency !== 'Routine' ? ` · ${donor.urgency}` : ''}
+                            </span>
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
@@ -700,15 +727,14 @@ export function PatientDonationsFinder() {
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+              </div>
 
               {/* Hospital Blood Banks List */}
               <div className="nd-results-header flex items-center justify-between px-4 sm:px-5 py-2.5 bg-[var(--surface-sunken)] border-b border-[var(--line)]">
                 <h2 className="text-xs font-extrabold text-[var(--teal-dark)] flex items-center gap-1.5 uppercase tracking-wider">
                   <HospitalIcon size={14} /> Hospital Centres <span className="nd-count ml-1">({filteredCentres.length})</span>
                 </h2>
-                <span className="text-[0.68rem] text-[var(--text-muted)]">Open for {selectedGroup}</span>
+                <span className="text-[0.68rem] text-[var(--text-muted)]">Nearest first</span>
               </div>
 
               <div className="nd-results-scroll flex-1 overflow-y-auto divide-y divide-[var(--line)]">
@@ -732,18 +758,30 @@ export function PatientDonationsFinder() {
                         <span className="block text-[0.72rem] text-[var(--text-muted)] mt-0.5">{c.area} · {c.hours}</span>
                         {c.note && <small className="block text-[0.68rem] text-[var(--text-muted)] mt-0.5">{c.note}</small>}
                       </div>
-                      <div className="text-right shrink-0 text-[0.7rem] font-bold text-[var(--teal)] flex items-center gap-1">
-                        <MapPin size={11} /> {c.distance}
+                      <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                        <span className="text-[0.7rem] font-bold text-[var(--teal)] flex items-center gap-1">
+                          <MapPin size={11} /> {formatDistance(c.km)}
+                        </span>
+                        {isOpenNow(c.hours) !== null && (
+                          <span
+                            className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded ${
+                              isOpenNow(c.hours)
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
+                                : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                            }`}
+                          >
+                            {isOpenNow(c.hours) ? 'Open now' : 'Closed now'}
+                          </span>
+                        )}
                       </div>
                     </button>
                     <div className="mt-2.5 flex items-center justify-between gap-2 pt-2 border-t border-[var(--line)]/50">
-                      <button
-                        type="button"
-                        onClick={() => openCentreContact(c)}
-                        className="inline-flex items-center gap-1 text-[0.72rem] font-bold text-[var(--teal)] hover:underline"
+                      <a
+                        href={`tel:${c.phone.replace(/\s/g, '')}`}
+                        className="inline-flex items-center gap-1.5 min-h-[44px] sm:min-h-0 text-[0.72rem] font-bold text-[var(--teal)] hover:underline no-underline"
                       >
-                        <Phone size={12} /> Call Desk: {c.phone}
-                      </button>
+                        <Phone size={12} /> Call {c.phone}
+                      </a>
                       <button
                         type="button"
                         onClick={() => {
@@ -759,7 +797,7 @@ export function PatientDonationsFinder() {
                           });
                           showToast(`Pledged donation to ${c.name}`, 'success');
                         }}
-                        className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-[var(--teal)] text-white text-[11px] font-extrabold hover:opacity-95"
+                        className="inline-flex items-center gap-1 px-3.5 min-h-[44px] sm:min-h-0 sm:py-1 rounded-lg bg-[var(--teal)] text-white text-xs sm:text-[11px] font-extrabold hover:opacity-95"
                       >
                         {mode === 'give' ? 'Pledge Here' : 'Request Units'} <ChevronRight size={12} />
                       </button>
@@ -787,7 +825,7 @@ export function PatientDonationsFinder() {
                       value={donorName}
                       onChange={(e) => setDonorName(e.target.value)}
                       placeholder="e.g. Asha Rao"
-                      className="w-full text-xs p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)]"
+                      className="w-full text-base sm:text-xs p-3 sm:p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)]"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -796,7 +834,7 @@ export function PatientDonationsFinder() {
                       <select
                         value={donorGroup}
                         onChange={(e) => setDonorGroup(e.target.value)}
-                        className="w-full text-xs p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] font-bold"
+                        className="w-full text-base sm:text-xs p-3 sm:p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] font-bold"
                       >
                         {BLOOD_GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
                       </select>
@@ -809,23 +847,37 @@ export function PatientDonationsFinder() {
                         value={donorPhone}
                         onChange={(e) => setDonorPhone(e.target.value)}
                         placeholder="+91 98490 12345"
-                        className="w-full text-xs p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] font-semibold"
+                        className="w-full text-base sm:text-xs p-3 sm:p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] font-semibold"
                       />
                     </div>
                   </div>
+                  {mode === 'receive' && (
+                    <div>
+                      <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase mb-0.5">How urgent is it?</label>
+                      <select
+                        value={donorUrgency}
+                        onChange={(e) => setDonorUrgency(e.target.value)}
+                        className="w-full text-base sm:text-xs p-3 sm:p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] font-bold"
+                      >
+                        <option value="Routine">Planned - within a week</option>
+                        <option value="Urgent">Urgent - within 24 hours</option>
+                        <option value="Emergency">Emergency - right now</option>
+                      </select>
+                    </div>
+                  )}
                   <div>
-                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase mb-0.5">Availability Notes</label>
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase mb-0.5">{mode === 'give' ? 'When can you donate?' : 'Where and when is blood needed?'}</label>
                     <input
                       type="text"
                       value={donorNotes}
                       onChange={(e) => setDonorNotes(e.target.value)}
                       placeholder="e.g. Available on call within 2 hours"
-                      className="w-full text-xs p-2 rounded-xl border border-[var(--line)] bg-[var(--surface)]"
+                      className="w-full text-base sm:text-xs p-3 sm:p-2 rounded-xl border border-[var(--line)] bg-[var(--surface)]"
                     />
                   </div>
                   <button
                     type="submit"
-                    className="w-full h-11 rounded-xl bg-[var(--teal)] text-white text-xs font-black flex items-center justify-center gap-2 hover:bg-[var(--teal-dark)] active:scale-[0.98] transition-all shadow-md cursor-pointer"
+                    className="w-full h-12 sm:h-11 rounded-xl bg-[var(--teal)] text-white text-sm sm:text-xs font-black flex items-center justify-center gap-2 hover:bg-[var(--teal-dark)] active:scale-[0.98] transition-all shadow-md cursor-pointer"
                   >
                     <Send size={14} /> {mode === 'give' ? 'List Me as Blood Donor & View Contact Info' : 'Broadcast Blood Request'}
                   </button>
@@ -851,7 +903,7 @@ export function PatientDonationsFinder() {
                     required
                     value={organName}
                     onChange={(e) => setOrganName(e.target.value)}
-                    className="w-full text-xs p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)]"
+                    className="w-full text-base sm:text-xs p-3 sm:p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)]"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -862,7 +914,7 @@ export function PatientDonationsFinder() {
                     <select
                       value={organChosen}
                       onChange={(e) => setOrganChosen(e.target.value)}
-                      className="w-full text-xs p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] font-bold"
+                      className="w-full text-base sm:text-xs p-3 sm:p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] font-bold"
                     >
                       {ORGANS.map((o) => <option key={o} value={o}>{o}</option>)}
                     </select>
@@ -874,7 +926,7 @@ export function PatientDonationsFinder() {
                       required
                       value={organPhone}
                       onChange={(e) => setOrganPhone(e.target.value)}
-                      className="w-full text-xs p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)]"
+                      className="w-full text-base sm:text-xs p-3 sm:p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)]"
                     />
                   </div>
                 </div>
@@ -885,9 +937,23 @@ export function PatientDonationsFinder() {
                     required
                     value={organCity}
                     onChange={(e) => setOrganCity(e.target.value)}
-                    className="w-full text-xs p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)]"
+                    className="w-full text-base sm:text-xs p-3 sm:p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)]"
                   />
                 </div>
+                {mode === 'receive' && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase mb-0.5">How urgent is it?</label>
+                    <select
+                      value={organUrgency}
+                      onChange={(e) => setOrganUrgency(e.target.value)}
+                      className="w-full text-base sm:text-xs p-3 sm:p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] font-bold"
+                    >
+                      <option value="Routine">Planned - within a week</option>
+                      <option value="Urgent">Urgent - within 24 hours</option>
+                      <option value="Emergency">Emergency - right now</option>
+                    </select>
+                  </div>
+                )}
                 <label className="flex items-start gap-2 text-[0.72rem] text-[var(--text-muted)] cursor-pointer">
                   <input
                     type="checkbox"
@@ -900,7 +966,7 @@ export function PatientDonationsFinder() {
                 </label>
                 <button
                   type="submit"
-                  className="w-full h-11 rounded-xl bg-[var(--teal)] text-white text-xs font-black flex items-center justify-center gap-2 shadow-md hover:bg-[var(--teal-dark)]"
+                  className="w-full h-12 sm:h-11 rounded-xl bg-[var(--teal)] text-white text-sm sm:text-xs font-black flex items-center justify-center gap-2 shadow-md hover:bg-[var(--teal-dark)]"
                 >
                   <HeartHandshake size={15} /> {mode === 'give' ? 'Save Organ Pledge & View Card' : 'Submit Guidance Request'}
                 </button>
@@ -975,7 +1041,11 @@ export function PatientDonationsFinder() {
                 </div>
                 <div className="min-w-0 pr-6">
                   <span className="text-[10px] font-black uppercase tracking-wider text-blue-200 block">
-                    {contactModal.type === 'blood' ? 'Verified Blood Donor' : 'Organ Registry Contact'}
+                    {contactModal.isMyPost
+                      ? 'Your listing'
+                      : contactModal.type === 'blood'
+                      ? 'Community blood contact'
+                      : 'Organ registry contact'}
                   </span>
                   <h3 className="text-base sm:text-lg font-black text-white leading-tight truncate">
                     {contactModal.name}
@@ -1010,7 +1080,7 @@ export function PatientDonationsFinder() {
                 href={`tel:${contactModal.phone}`}
                 className="flex items-center justify-center gap-2 w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-md transition-all no-underline cursor-pointer"
               >
-                <Phone size={18} /> Call Donor: {contactModal.phone}
+                <Phone size={18} /> Call {contactModal.phone}
               </a>
 
               {/* Secondary Email Button */}
@@ -1026,7 +1096,7 @@ export function PatientDonationsFinder() {
               {/* Notes */}
               {contactModal.notes && (
                 <div className="p-3 rounded-xl bg-[var(--surface-sunken)] border border-[var(--line)] text-xs text-[var(--text-muted)]">
-                  <span className="font-bold text-[var(--text)] block mb-0.5">Donor Notes:</span>
+                  <span className="font-bold text-[var(--text)] block mb-0.5">Notes</span>
                   {contactModal.notes}
                 </div>
               )}

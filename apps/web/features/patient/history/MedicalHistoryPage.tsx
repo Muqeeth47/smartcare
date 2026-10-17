@@ -32,7 +32,7 @@ import type { PatientMedicalHistory } from '@smartcare/types';
 export function MedicalHistoryPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { role } = useAuthGuard(['patient']);
+  useAuthGuard(['patient']);
   const { email } = useSession();
   const { patientData } = usePatient();
   const { showToast } = useAppStore();
@@ -279,19 +279,19 @@ export function MedicalHistoryPage() {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
             <div>
-              <small className="text-[var(--text-muted)] block mb-0.5">Full Name</small>
+              <small className="text-[0.72rem] text-[var(--text-muted)] block mb-0.5">Full Name</small>
               <strong className="text-sm font-bold text-[var(--text)]">{patientName}</strong>
             </div>
             <div>
-              <small className="text-[var(--text-muted)] block mb-0.5">Age / Gender</small>
+              <small className="text-[0.72rem] text-[var(--text-muted)] block mb-0.5">Age / Gender</small>
               <strong className="text-sm font-bold text-[var(--text)]">{patientAge} / {patientGender}</strong>
             </div>
             <div>
-              <small className="text-[var(--text-muted)] block mb-0.5">City</small>
+              <small className="text-[0.72rem] text-[var(--text-muted)] block mb-0.5">City</small>
               <strong className="text-sm font-bold text-[var(--text)]">{patientCity}</strong>
             </div>
             <div>
-              <small className="text-[var(--text-muted)] block mb-0.5">Passport ID</small>
+              <small className="text-[0.72rem] text-[var(--text-muted)] block mb-0.5">Passport ID</small>
               <strong className="text-sm font-mono font-bold text-[var(--teal)]">{passportId}</strong>
             </div>
           </div>
@@ -411,7 +411,7 @@ export function MedicalHistoryPage() {
                           <button
                             type="button"
                             onClick={() => handleDeleteItem('med', idx)}
-                            className="btn-delete-item print-hide text-red-500 hover:text-red-700 p-0.5"
+                            className="btn-delete-item print-hide text-red-500 hover:text-red-700 min-w-[44px] min-h-[44px] flex items-center justify-center -my-2 -mr-2"
                             title="Remove item"
                           >
                             <Trash2 size={13} />
@@ -456,7 +456,7 @@ export function MedicalHistoryPage() {
                           <button
                             type="button"
                             onClick={() => handleDeleteItem('alg', idx)}
-                            className="btn-delete-item print-hide text-red-600 hover:text-red-800 p-0.5"
+                            className="btn-delete-item print-hide text-red-600 hover:text-red-800 min-w-[44px] min-h-[44px] flex items-center justify-center -my-2 -mr-2"
                             title="Remove allergy"
                           >
                             <Trash2 size={13} />
@@ -496,7 +496,7 @@ export function MedicalHistoryPage() {
                         <button
                           type="button"
                           onClick={() => handleDeleteItem('cond', idx)}
-                          className="btn-delete-item print-hide text-red-500 hover:text-red-700 p-0.5"
+                          className="btn-delete-item print-hide text-red-500 hover:text-red-700 min-w-[44px] min-h-[44px] flex items-center justify-center -my-2 -mr-2"
                           title="Remove condition"
                         >
                           <Trash2 size={13} />
@@ -535,7 +535,7 @@ export function MedicalHistoryPage() {
                         <button
                           type="button"
                           onClick={() => handleDeleteItem('emg', idx)}
-                          className="btn-delete-item print-hide text-red-500 hover:text-red-700 p-0.5"
+                          className="btn-delete-item print-hide text-red-500 hover:text-red-700 min-w-[44px] min-h-[44px] flex items-center justify-center -my-2 -mr-2"
                           title="Remove protocol"
                         >
                           <Trash2 size={13} />
@@ -602,7 +602,7 @@ export function MedicalHistoryPage() {
             </div>
 
             {/* Tab switch */}
-            <div className="flex p-2 bg-[var(--surface-sunken)] border-b border-[var(--line)] gap-1.5 text-xs font-bold overflow-x-auto" role="tablist">
+            <div className="grid grid-cols-3 sm:flex p-2 bg-[var(--surface-sunken)] border-b border-[var(--line)] gap-1.5 text-xs font-bold" role="tablist">
               {[
                 { id: 'med', label: 'Medicine' },
                 { id: 'alg', label: 'Allergy' },
@@ -616,7 +616,7 @@ export function MedicalHistoryPage() {
                   role="tab"
                   aria-selected={editTab === t.id}
                   onClick={() => handleEditTabChange(t.id as any)}
-                  className={`flex-1 min-h-[44px] py-2 px-2.5 rounded-lg transition-all font-bold text-center shrink-0 cursor-pointer ${
+                  className={`sm:flex-1 min-h-[44px] py-2 px-2.5 rounded-lg transition-all font-bold text-center cursor-pointer ${
                     editTab === t.id ? 'bg-[var(--teal)] text-white shadow-xs' : 'text-[var(--text)] hover:bg-[var(--surface)]'
                   }`}
                 >

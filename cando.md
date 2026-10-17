@@ -257,6 +257,17 @@ Doctor registers →
 
 ---
 
+### Signed Sessions & Server-Side Limits 🔴
+**Current problem:** The browser-side guards added on `sudophiles` (bot gate, honeypot, sign-in lockout, copy guards) only slow down casual scraping. The role cookie is unsigned and demo passwords sit in client code, so anyone can edit the cookie.
+
+**What to build:**
+- Server-issued signed session (Firebase Auth or Supabase Auth), checked in `middleware.ts` instead of the plain `smartcare_role` cookie
+- Sign-in lockout and rate limiting enforced where the password is checked, using a shared store (Upstash / Vercel KV) so limits hold across serverless instances
+- Remove demo accounts from client code and set `SMARTCARE_DEMO_MODE=false` and `NEXT_PUBLIC_DEMO_AUTOFILL=false` on the live site
+- Details and the full list of what is already in place: `context.md` section 9
+
+---
+
 ## 🎨 UX / Design
 
 ### Onboarding Flow for New Users 🟡

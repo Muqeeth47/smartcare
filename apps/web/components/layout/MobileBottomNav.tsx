@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   LayoutDashboard,
@@ -11,11 +11,12 @@ import {
   BarChart3,
   HeartHandshake,
   Siren,
-  Activity,
-  Truck,
 } from 'lucide-react';
 import { useSession } from '@/lib/store/app-store';
 import { cn } from '@/lib/utils';
+import { COMMAND_SECTIONS, DEFAULT_COMMAND_SECTION, commandHref } from '@/lib/nav-sections';
+
+const BOTTOM_COMMAND_IDS = ['summary', 'telemetry', 'redistribution'];
 
 interface NavTab {
   label: string;
@@ -37,16 +38,31 @@ const ROLE_NAV_TABS: Record<string, NavTab[]> = {
     { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
     { label: 'Donate', href: '/dashboard/hospital/donations', icon: HeartHandshake },
   ],
+  // The three most-used command pages. Everything else is in the menu drawer.
   staff: [
-    { label: 'Command', href: '/dashboard/admin?adminTab=command', icon: LayoutDashboard },
-    { label: 'Telemetry', href: '/dashboard/admin?adminTab=command&commandTab=telemetry', icon: Activity },
-    { label: 'Rebalance', href: '/dashboard/admin?adminTab=command&commandTab=redistribution', icon: Truck },
+    ...COMMAND_SECTIONS.filter((s) => BOTTOM_COMMAND_IDS.includes(s.id)).map((s) => ({
+      label: s.shortLabel,
+      href: commandHref(s.id),
+      icon: s.icon,
+    })),
     { label: 'Queue', href: '/dashboard/queue', icon: ListOrdered },
   ],
 };
 
+/** A tab whose address carries a query (like ?commandTab=telemetry) is active only when the query matches too. */
+function isTabActive(tab: NavTab, pathname: string, searchParams: URLSearchParams | null): boolean {
+  const [base, query] = tab.href.split('?');
+  if (!query) return tab.exact ? pathname === base : pathname.startsWith(base);
+  if (pathname !== base) return false;
+  const wanted = new URLSearchParams(query);
+  const wantedSection = wanted.get('commandTab');
+  const currentSection = searchParams?.get('commandTab') ?? DEFAULT_COMMAND_SECTION;
+  return wantedSection === currentSection;
+}
+
 export function MobileBottomNav() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { role: sessionRole } = useSession();
 
   // Infer role from URL path if not set in session
@@ -70,7 +86,7 @@ export function MobileBottomNav() {
     <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
       {tabs.map((tab) => {
         const Icon = tab.icon;
-        const active = tab.exact ? pathname === tab.href : pathname.startsWith(tab.href);
+        const active = isTabActive(tab, pathname, searchParams);
         return (
           <Link
             key={tab.href}
@@ -87,10 +103,10 @@ export function MobileBottomNav() {
 
       {/* Persistent SOS tab */}
       <Link
-        href="/ambulance"
-        className={cn('mobile-nav-btn mobile-nav-btn-sos', pathname.startsWith('/ambulance') && 'active')}
+        href="/dashboard/ambulance"
+        className={cn('mobile-nav-btn mobile-nav-btn-sos', pathname.startsWith('/dashboard/ambulance') && 'active')}
         aria-label="SOS Ambulance Dispatch"
-        aria-current={pathname.startsWith('/ambulance') ? 'page' : undefined}
+        aria-current={pathname.startsWith('/dashboard/ambulance') ? 'page' : undefined}
       >
         <Siren size={19} className="shrink-0 text-rose-600" />
         <span className="font-extrabold text-rose-600">SOS</span>

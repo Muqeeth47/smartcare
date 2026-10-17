@@ -4,27 +4,14 @@ import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import {
   Flame,
-  AlertTriangle,
-  TrendingDown,
-  ShieldAlert,
   Pill,
   MapPin,
   Truck,
-  Activity,
-  CheckCircle2,
   Layers,
-  Search,
   Building2,
-  ArrowRight,
-  Sparkles,
-  SlidersHorizontal,
   Navigation,
 } from 'lucide-react';
-import type {
-  HospitalSupplyProfile,
-  MedicineItem,
-  MedicineStockStatus,
-} from '@smartcare/types';
+import type { HospitalSupplyProfile, MedicineStockStatus } from '@smartcare/types';
 
 interface MedicineShortageHeatMapProps {
   facilities: HospitalSupplyProfile[];
@@ -91,7 +78,6 @@ export function MedicineShortageHeatMap({
       const targetMed = f.medicines.find((m) => m.id === selectedMedicineId);
       if (!targetMed) return { score: 0, daysRemaining: 999, status: 'normal', criticalCount: 0, worstMedicineName: 'None' };
       const days = targetMed.daysRemaining;
-      const score = Math.max(0, Math.min(100, Math.round(((targetMed.minBuffer - targetMed.currentStock) / targetMed.minBuffer) * 100)));
       return {
         score: days <= 2 ? 100 : days <= 5 ? 75 : days <= 8 ? 40 : 10,
         daysRemaining: days,
@@ -179,7 +165,7 @@ export function MedicineShortageHeatMap({
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5">
+          <div className="flex flex-wrap md:flex-nowrap items-center gap-1.5 md:overflow-x-auto pb-1.5">
             <button
               onClick={() => setSelectedMedicineId('ALL')}
               className={cn(

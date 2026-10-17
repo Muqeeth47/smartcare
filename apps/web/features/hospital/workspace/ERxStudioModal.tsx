@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import type { QueueItem, Prescription, PrescriptionMedicine } from '@smartcare/types';
 import { DemoDB } from '@/lib/db/demo-db';
@@ -12,14 +12,11 @@ import {
   Plus,
   Trash2,
   Lock,
-  Sparkles,
   Printer,
   ExternalLink,
   CheckCircle2,
   X,
-  FileText,
   Activity,
-  HeartPulse,
   Info,
   ChevronRight,
   Store,

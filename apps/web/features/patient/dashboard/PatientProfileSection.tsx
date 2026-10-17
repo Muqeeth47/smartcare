@@ -4,10 +4,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import {
   UserRound,
-  Mail,
-  Phone,
-  Calendar,
-  MapPin,
   HeartPulse,
   Droplets,
   ShieldCheck,
@@ -15,15 +11,9 @@ import {
   Save,
   CheckCircle2,
   CalendarPlus,
-  FileText,
   Clock,
-  AlertCircle,
-  Building,
-  QrCode,
-  ArrowRight,
 } from 'lucide-react';
 import { usePatient, useSession, useAppStore } from '@/lib/store/app-store';
-import { DemoDB } from '@/lib/db/demo-db';
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 const GENDERS = ['Female', 'Male', 'Non-binary', 'Prefer not to say'];

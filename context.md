@@ -1,6 +1,6 @@
 # SmartCare — Project Architecture & Context
 
-> Last updated: 2026-10-14  
+> Last updated: 2026-10-17 (navigation, login security, booking and donations pass)  
 > Active Git Branch: `sudophiles` (`Muqeeth47/smartcare`)  
 > Production Live URL: [https://smartcare-omega-two.vercel.app](https://smartcare-omega-two.vercel.app)  
 > Firebase Project: `studio-5671575350-61bbd` (Google Cloud / Firestore deployed)
@@ -84,7 +84,7 @@ SmartCare is a high-reliability, production-grade digital public health and emer
 | Route | View Component | Access Role | Description |
 |---|---|---|---|
 | `/` | `LandingPage` | Public | Platform overview, live facility telemetry cards, service entry points |
-| `/login` | `LoginPage` / `MorphingAuthCard` | Public | 4-tier authenticated morphing login with role switcher & single-click demo autofills |
+| `/login` | `LoginPage` / `MorphingAuthCard` | Public | Morphing sign-in / sign-up card (4 roles), mobile-first, bot-guarded, `noindex`. Spec: `U/UIskeleton/loginpage.md` |
 | `/dashboard/patient` | `PatientDashboardPage` | Patient | Active appointments, health passport summary, emergency shortcuts |
 | `/dashboard/patient/apply/[step]` | `BookingWizard` | Patient | Multi-step booking (1: Reason, 2: Real Hospital Map & OSM Overpass, 3: Demo Clinician Slot, 4: Pass & Payment) |
 | `/dashboard/patient/visits` | `PatientVisitsPage` | Patient | Digital OPD tokens, printable visit slip modal with QR code |
@@ -93,7 +93,10 @@ SmartCare is a high-reliability, production-grade digital public health and emer
 | `/dashboard/hospital` | `HospitalWorkspacePage` | Doctor / PHC | OPD triage queue, vitals recorder, electronic prescription builder |
 | `/dashboard/queue` | `QueueWorkspacePage` | Doctor / Staff | Fullscreen OPD queue workstation with QR ticket search & triage sorting |
 | `/dashboard/hospital/donations` | `DonationsPage` | Hospital | Hospital blood & organ supply publishing and community matching desk |
-| `/dashboard/admin` | `AdminWorkspacePage` | Admin / CMO | Facility operations, doctor room allocation, walk-in registration |
+| `/dashboard/admin?adminTab=command&commandTab=<id>` | `AdminWorkspacePage` → `StateCommandSupplyModule` | Admin / CMO | State command pages, one per sidebar item: `summary`, `telemetry`, `heatmap`, `forecasting`, `redistribution`, `federated`, `manifest`, `escalation` |
+| `/dashboard/admin?adminTab=operations` | `AdminWorkspacePage` | Admin / CMO | Rooms & walk-ins |
+| `/dashboard/hospital?module=supply&supplyTab=<id>` | `HospitalSupplyModule` | Doctor / PHC | `inventory`, `shortage`, `inward`, `resources` (one per sidebar item) |
+| `/dashboard/ambulance`, `/dashboard/pharmacy`, `/dashboard/verify-rx`, `/dashboard/patient/pharmacy`, `/dashboard/patient/profile` | Workspace versions of the public pages | Signed in | Keep the sidebar, menu and bottom bar. The public `/ambulance`, `/pharmacy`, `/verify-rx` stay for visitors |
 | `/dashboard/admin/donations` | `DonationsPage` | Admin / CMO | Administrative donor registry and hospital inventory network |
 | `/dashboard/analytics` | `AnalyticsDashboardPage` | Admin / CMO | Triage breakdown, wait times, department load, and CSV export |
 | `/pharmacy` | `PharmacyPage` | Public / Patient | Jan Aushadhi PMBJP drug formulary, cart, counter #02 & delivery ordering |
@@ -142,6 +145,42 @@ SmartCare is a high-reliability, production-grade digital public health and emer
    - **Review Modal & Boarding Pass Symptoms**: Parsed semicolon-separated symptom strings into individual rounded clinical badges (`.symptom-review-badge`) with dark-mode support and custom notes blocks.
    - **Modal Opacity Assurance**: Enforced opaque background styles (`var(--surface, #ffffff)` / dark mode `#0e1724`) and high z-index depth to prevent any modal transparency.
 
+7. **One Navigation, No Duplicates** (`lib/nav-sections.ts`):
+   - Every in-page section (State command, Doctor supply desk, Rooms & walk-ins) is defined once with a plain-language name, a short bottom-bar name, a one-line description and an icon. The sidebar, mobile drawer, mobile bottom bar and each page heading all read from that list.
+   - The old sticky 8-tab strip on the State Command page, the Command / Rooms switcher on the admin page and the 4-tab strip on the doctor's supply page were removed. Each page now opens with a heading that says where you are; moving around is done from the sidebar (desktop) or the menu drawer and bottom bar (phone).
+   - Plain names: Overview, Beds & Staff, Shortage Map, Demand Forecast, Move Stock, Other States, Deliveries, Emergency Orders, Rooms & Walk-ins; and for doctors Medicine Stock, Report a Shortage, Incoming Deliveries, Beds & Staff.
+   - A missing `commandTab` / `supplyTab` / `module` in the address counts as the default page, in the sidebar highlight, the bottom bar and the page itself. An unknown value falls back to the default instead of showing a blank page.
+   - Every destination is in the sidebar for each role: Donations, Pharmacy Orders, Ambulance (SOS) and Queue Workspace were added where they were only reachable from elsewhere.
+
+8. **Phone Layout Fixes**:
+   - District medicine table becomes one card per medicine below 768px (no sideways scrolling); the 6 district numbers show only on Overview and use real totals from the facility data (beds, ICU, oxygen) instead of hard-coded text.
+   - The 15-minute update timer and outbreak scenario picker appear only on Overview, Beds & Staff and Demand Forecast.
+   - Selects and filters are 44px tall with 16px text on phones.
+   - There is now exactly one bottom bar (`MobileBottomNav`). A second global `BottomNav` used to render on top of it and was removed. Active state on staff tabs now follows `commandTab`.
+
+9. **Booking Wizard** (`BookingWizard.tsx`):
+   - Finished steps in the stepper are buttons: from step 2 or 3 you can jump back to Profile / Find care and change an answer. After the visit is booked (step 4) the stepper is read-only, because going back would book it twice.
+   - `ChunkReload` reloads the page once if a new version was deployed while the tab was open (old files return 404, which showed as plain unstyled HTML).
+
+10. **Doctor-Side Appointment Times**: the queue workspace shows `Appointment: Today, 4:30 pm` and `Booked: 17 Oct, 2:40 pm` on every patient; the Hospital workspace table has an Appointment column. Helpers `formatAppointmentTime` and `formatBookedAt` are in `lib/utils.ts`.
+
+11. **Donations Page** (`PatientDonationsFinder.tsx`, logic in `lib/donation-logic.ts`):
+    - Distances are measured (straight line) from the person's location, or central Hyderabad until they share it; centres are listed nearest first with an Open now / Closed now badge worked out from their opening hours, and a real `tel:` link.
+    - "Find nearest..." looks up the typed area (Nominatim), moves the map and names the nearest centre. The box shows a place name, never raw coordinates.
+    - Community list is matched to the blood group chosen: "I want to give" shows people asking for blood that group can give; "I need a donation" shows donors whose blood that group can receive (standard red-cell compatibility). Your own posts are kept separate.
+    - Request forms ask how urgent it is; fields are 16px on phones; contact window no longer says "Verified".
+
+12. **Google Translate** (`lib/translate.ts`, `components/ui/TranslateBootstrap.tsx`): the page never loaded Google's script before, so the language picker only set a cookie. It now loads the free website translator when a language other than English is picked (or was picked earlier), hides Google's toolbar, guards React against the DOM edits the translator makes, and switches back to English by clearing the cookie and reloading.
+
+13. **Consistent Routing**: inside the dashboard the SOS button (top bar, bottom bar, patient overview) opens `/dashboard/ambulance`; public pages keep `/ambulance`. Patient "Profile" opens `/dashboard/patient/profile`. Page titles no longer repeat "| SmartCare" (the site template adds it once; the landing page uses an absolute title).
+
+14. **Phone Audit Fixes (320 / 360 / 390 / 430px)**: every route and the main popups were checked at all four widths; none overflowed sideways, and these layout problems were fixed:
+    - Wide tables became one card per row below 768px: doctor patient queue and released slots (`HospitalWorkspacePage.tsx`, shared `renderQueueActions`), State Command telemetry packets and demand forecast, Rooms & Walk-ins queue, and the medication list in the patient's demo-record popup (below 480px).
+    - Rows that pushed past their box now wrap or shrink: booking review popup symptoms header, doctor QR-scan code row, pharmacy order-summary rows.
+    - Chip and tab strips wrap on phones instead of hiding behind a sideways scroll (State Command, Shortage Map, Medicine Stock, Pharmacy, Analytics tabs as a 2-by-2 grid, medical-record editor tabs as a 3-column grid).
+    - Touch targets are 44px on phones: top bar buttons and logo, language picker, `.btn-compact` buttons, pharmacy paging and remove buttons, Medical History remove buttons, queue row icons, slides controls, Donate "Reset view".
+    - Text below 10px raised to at least 11px; popup footer stays pinned in the demo-record popup; `/slides` and the 404 page now have correct titles.
+
 ---
 
 ## 6. Demo Accounts (4-Tier Public Health Logins)
@@ -152,6 +191,8 @@ SmartCare is a high-reliability, production-grade digital public health and emer
 | **Doctor / PHC Officer** | `hospital@smartcare.demo` | `demo1234` | OPD triage desk, vitals capture, e-Rx studio, PHC stock register & SOS |
 | **District CMO** | `cmo@district.gov.in` | `demo1234` | District inventory replenishment, facility shortages, redistribution approval |
 | **State Commander** | `commander@mohfw.gov.in` | `demo1234` | Inter-district supply mesh, state shortage heat map, federated surge forecasting |
+
+The login form fills these in for presentations, but only after the page has loaded in a browser (never in the server HTML) and never shows them as text. Set `NEXT_PUBLIC_DEMO_AUTOFILL=false` to turn the autofill off on a live site.
 
 ---
 
@@ -167,6 +208,9 @@ npm run dev
 # Run TypeScript typecheck without emitting files
 npx tsc --noEmit
 
+# List unused imports and variables (should print nothing)
+npx tsc --noEmit --noUnusedLocals --noUnusedParameters
+
 # Production Next.js build
 npm run build
 
@@ -176,3 +220,71 @@ vercel --prod --yes
 # Deploy Firestore Security Rules
 firebase deploy --only firestore:rules --project studio-5671575350-61bbd
 ```
+
+---
+
+## 8. Strategic Improvement Vectors (Code, Logic & UX)
+
+> Status: still open. Nothing in this section was built in the 2026-10-17 pass (see sections 5.7 to 5.13 and 9 for what was). Closest partial items: the Overpass query cache (A.2) and the mobile sticky action bar (C.4) have not been started.
+
+### A. Code & Architectural Health
+1. **Zustand Slice Modularization**:
+   - `apps/web/lib/store/app-store.ts` has grown large (~1,200 lines). Break monolithic store into typed slice domains (`patientSlice`, `doctorSlice`, `supplySlice`, `triageSlice`) using Zustand's `StateCreator`.
+2. **GIS Overpass Query Caching & Fallback**:
+   - Cache live Overpass API spatial node queries in `sessionStorage` or IndexedDB with an LRU policy (TTL ~15 min) to prevent OSM rate limits (HTTP 429) and reduce mobile data consumption.
+3. **Component Decomposition**:
+   - `BookingWizard.tsx` (~2,300 lines) contains all 4 wizard steps, Leaflet map rendering, and 3 modals. Deconstruct into discrete step components (`FacilityPickerStep`, `SlotSelectionStep`, `SymptomPickerStep`, `ConfirmationPassStep`).
+4. **Offline PWA Service Worker**:
+   - Add service worker caching for critical crisis flows: Medical Passport (`SC-PASSPORT-8924`), emergency QR tickets, and offline Jan Aushadhi formulary search.
+
+### B. Logic & Algorithmic Enhancements
+1. **Dynamic Emergency Triage Scoring (EATS/ESI)**:
+   - Upgrade mock triage into an interactive clinical scoring system (Emergency Severity Index 1–5 or Manchester Triage System) calculating Red/Yellow/Green priority dynamically based on vitals ($SpO_2 < 90\%$, Systolic $BP < 90$, Pulse $> 130$).
+2. **Supply Chain Multi-Hop Redistribution Routing**:
+   - Advance the single-pair rebalancing algorithm to multi-depot vehicle routing (Dijkstra/VRP) minimizing logistics transit fuel while satisfying critical stock thresholds across rural PHCs.
+3. **Queue Wait-Time Predictive Estimation**:
+   - Replace static time slots with moving-average doctor consultation velocity ($\text{WaitTime} = \text{QueueAhead} \times \bar{T}_{\text{consult}} - \Delta t_{\text{elapsed}}$).
+
+### C. UI / UX Ergonomics & Accessibility
+1. **WCAG 2.1 AA Screen Reader & Keyboard Flow**:
+   - Add explicit focus-trap handling and `Esc` key bindings to all modals (`PrescriptionModal`, `BookingReviewModal`, `PaymentModal`).
+2. **Skeleton Shimmer Loading States**:
+   - Replace spinning indicators on hospital listings, GIS maps, and stock tables with pulse skeleton shimmers matching final layouts.
+3. **Haptic & Toast Micro-Feedback**:
+   - Provide tactile visual micro-feedback when copying booking tokens, scanning QRs, or toggling generic drug substitutions.
+4. **Mobile Sticky Action Bar**:
+   - On mobile viewports ($\le 480\text{px}$), pin the "Back" and "Next" flow action buttons to a bottom safe-area blur dock so users don't need to scroll to proceed.
+
+---
+
+## 9. Security & Anti-Scraping
+
+Be clear about the limit: anything a browser can show, a determined person or a full browser script can read. These steps make casual and automated scraping hard and keep the sign-in screen from leaking information. They do not replace server-side authentication.
+
+| Layer | What it does | Where |
+|---|---|---|
+| Bot gate | Returns 403 to requests with no user agent or a known script / scraper / headless-browser user agent on `/login` and `/dashboard/*` | `middleware.ts`, `lib/bot-guard.ts` |
+| Rate limit | 240 requests per minute per address on those routes, then 429 with `Retry-After`. Counts live in each server instance's memory, so use a shared store (Upstash / Vercel KV) for strict limits | `lib/bot-guard.ts` |
+| Page headers | `X-Frame-Options: DENY` and CSP `frame-ancestors 'none'` (no embedding), `nosniff`, referrer and permissions policies, HSTS in production, no `X-Powered-By` | `next.config.mjs` |
+| Private pages | `/login` and `/dashboard/*` send `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet` and `Cache-Control: no-store` | `next.config.mjs` |
+| Crawler rules | `robots.txt` blocks `/dashboard`, `/login`, `/api` and known AI / data-collection crawlers | `app/robots.ts` |
+| Form built in the browser | The sign-in form is created after the page loads, so a plain download of the page gets an empty shell | `MorphingAuthCard.tsx` |
+| Bot traps on forms | Hidden honeypot field and a minimum time before a submit counts (900 ms) | `MorphingAuthCard.tsx` |
+| Guess limiter | After 5 wrong sign-ins the form locks for 30 s, doubling each time up to 15 min; survives a refresh. Browser-side only, so the real limit must also live on the server that checks passwords | `features/auth/useLoginThrottle.ts` |
+| Same answer every time | Wrong password, wrong role and unknown email all show one message; password reset says "if that email has an account..." | `MorphingAuthCard.tsx` |
+| Copy guards | No right-click, drag or copy of page text on `/login` (typing and pasting in fields still work) | `features/auth/useAntiScrape.ts` |
+| Nothing sensitive on screen | Fake ID badges, the preset-password line and the "256-bit TLS" claim were removed; demo autofill is switchable | `LoginPage.tsx` |
+
+### Environment variables
+
+| Variable | Default | Effect |
+|---|---|---|
+| `SMARTCARE_HARDEN` | off in dev, on in production | `1` turns the bot gate and rate limit on locally |
+| `SMARTCARE_ALLOW_BOTS` | unset | `1` turns the bot gate and rate limit off (for example for uptime monitors) |
+| `SMARTCARE_DEMO_MODE` | on | `false` sends signed-out visitors from `/dashboard/*` to `/login?next=...` instead of auto-picking a demo account |
+| `NEXT_PUBLIC_DEMO_AUTOFILL` | on | `false` stops the login form pre-filling demo credentials |
+
+### Known gaps (need a real backend)
+- The role cookie (`smartcare_role`) is set in the browser and is not signed, so anyone can edit it. Real access control needs server-issued, signed sessions (Firebase Auth or similar) checked in middleware.
+- Demo accounts and passwords live in client code (`demo-db.ts`); remove them before any real use.
+- Rate limits and sign-in lockout must also run on the server.

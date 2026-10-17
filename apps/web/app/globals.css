@@ -1189,6 +1189,26 @@ html {
     color: #fff;
     background: #1e7e4e;
 }
+/* Finished steps are buttons so people can go back and change an answer */
+.stepper-compact button.step-item-link {
+    appearance: none;
+    background: transparent;
+    border-top: 0;
+    border-left: 0;
+    border-right: 0;
+    font: inherit;
+    font-size: inherit;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+    min-height: 44px;
+    transition: background-color 0.15s ease;
+}
+.stepper-compact button.step-item-link:hover,
+.stepper-compact button.step-item-link:focus-visible {
+    background: var(--mint);
+    outline: none;
+}
 
 /* Step 1: Profile & Form Layout */
 .form-grid {
@@ -3666,3 +3686,19 @@ fieldset.field {
   }
 }
 
+
+/* ─── Google Translate: keep its own toolbar out of the way ─────────────── */
+body { top: 0 !important; }
+.skiptranslate iframe,
+iframe.skiptranslate,
+.goog-te-banner-frame,
+#goog-gt-tt,
+.goog-te-balloon-frame { display: none !important; }
+.goog-text-highlight { background: transparent !important; box-shadow: none !important; }
+font[style*="vertical-align"] { vertical-align: baseline !important; }
+
+/* ─── Touch targets: 44px on phones ─────────────────────────────────────── */
+@media (max-width: 480px) {
+  .btn-compact { min-height: 44px !important; }
+  .lang-dropdown-wrapper { height: 2.75rem; }
+}

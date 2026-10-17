@@ -16,16 +16,7 @@ import {
 import { useAppStore } from '@/lib/store/app-store';
 import { useShallow } from 'zustand/react/shallow';
 import { cn } from '@/lib/utils';
-
-const LANGUAGES = [
-  { code: 'en', label: 'English (EN)' },
-  { code: 'hi', label: 'हिन्दी (HI)' },
-  { code: 'te', label: 'తెలుగు (TE)' },
-  { code: 'ta', label: 'தமிழ் (TA)' },
-  { code: 'bn', label: 'বাংলা (BN)' },
-  { code: 'mr', label: 'मराठी (MR)' },
-  { code: 'es', label: 'Español (ES)' },
-];
+import { LANGUAGES, applyLanguage, getSavedLanguage } from '@/lib/translate';
 
 interface TopbarProps {
   variant?: 'landing' | 'workspace' | 'patient';
@@ -41,13 +32,13 @@ export function Topbar({
   variant = 'landing',
   onMenuClick,
   isSidebarCollapsed = false,
-  backHref,
-  backLabel,
   title,
   subtitle,
 }: TopbarProps) {
   const pathname = usePathname() || '';
-  const isAmbulancePage = pathname.startsWith('/ambulance');
+  const isAmbulancePage = pathname.startsWith('/ambulance') || pathname.startsWith('/dashboard/ambulance');
+  // Inside the dashboard, SOS opens the workspace version so the sidebar and menus stay put
+  const sosHref = pathname.startsWith('/dashboard') ? '/dashboard/ambulance' : '/ambulance';
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // Close mobile drawer on route navigation
@@ -67,13 +58,7 @@ export function Topbar({
   const [lang, setLang] = useState('en');
 
   useEffect(() => {
-    try {
-      const match = document.cookie.match(/(?:^|;\s*)googtrans=([^;]+)/);
-      if (match?.[1]) {
-        const code = match[1].split('/')[2];
-        if (code) setLang(code);
-      }
-    } catch {}
+    setLang(getSavedLanguage());
   }, []);
 
   const handleThemeToggle = () => {
@@ -82,17 +67,14 @@ export function Topbar({
     showToast(`Switched to ${next === 'dark' ? 'Dark' : 'Light'} mode`, 'info');
   };
 
-  const handleLangChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleLangChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const code = e.target.value;
+    const previous = lang;
     setLang(code);
-    document.cookie = `googtrans=/en/${code}; path=/;`;
-    document.cookie = `googtrans=/en/${code}; domain=.${location.hostname}; path=/;`;
-    const combo = document.querySelector<HTMLSelectElement>('.goog-te-combo');
-    if (combo) {
-      combo.value = code;
-      combo.dispatchEvent(new Event('change'));
-    } else {
-      location.reload();
+    const ok = await applyLanguage(code);
+    if (!ok) {
+      setLang(previous);
+      showToast('Could not reach Google Translate. Please check your connection and try again.', 'error');
     }
   };
 
@@ -103,7 +85,7 @@ export function Topbar({
   const SosBeaconButton = !isAmbulancePage ? (
     <Link
       id="global-sos-ambulance-btn"
-      href="/ambulance"
+      href={sosHref}
       className={cn(
         "items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black text-white bg-red-600 hover:bg-red-700 active:bg-red-800 transition shadow-xs shrink-0 no-underline border border-red-700",
         variant === 'landing' ? "inline-flex" : "hidden sm:inline-flex"
@@ -187,7 +169,7 @@ export function Topbar({
         onClick={handleThemeToggle}
         aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
         title={`Theme: ${themeLabel} (Click to toggle)`}
-        className="topbar-control-btn flex items-center justify-center gap-1.5 min-w-[38px] min-h-[38px] h-9 px-2 sm:px-2.5 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-xs font-bold hover:bg-[var(--mint)] active:scale-95 transition-all shrink-0"
+        className="topbar-control-btn flex items-center justify-center gap-1.5 min-w-[44px] min-h-[44px] sm:min-w-[38px] sm:min-h-[38px] h-11 sm:h-9 px-2 sm:px-2.5 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-xs font-bold hover:bg-[var(--mint)] active:scale-95 transition-all shrink-0"
       >
         <ThemeIcon size={14} />
         <span className="hidden xl:inline">{themeLabel}</span>
@@ -216,7 +198,7 @@ export function Topbar({
               aria-label={isSidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
               aria-expanded={!isSidebarCollapsed}
               title={isSidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
-              className="topbar-control-btn flex items-center justify-center min-w-[36px] min-h-[36px] sm:min-w-[38px] sm:min-h-[38px] w-9 h-9 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-[var(--teal)] hover:bg-[var(--mint)] active:scale-95 transition-all cursor-pointer shrink-0"
+              className="topbar-control-btn flex items-center justify-center min-w-[44px] min-h-[44px] sm:min-w-[38px] sm:min-h-[38px] w-11 h-11 sm:w-9 sm:h-9 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-[var(--teal)] hover:bg-[var(--mint)] active:scale-95 transition-all cursor-pointer shrink-0"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
@@ -224,7 +206,7 @@ export function Topbar({
             </button>
           )}
 
-          <Link href="/" className="brand-lockup flex items-center gap-2 sm:gap-2.5 no-underline shrink-0">
+          <Link href="/" className="brand-lockup flex items-center justify-center sm:justify-start gap-2 sm:gap-2.5 no-underline shrink-0 min-w-[44px] min-h-[44px]">
             <span className="brand-mark w-8 h-8 sm:w-9 sm:h-9 rounded-[0.8rem] flex items-center justify-center text-white shrink-0" style={{ background: 'var(--teal-dark)', boxShadow: '0 8px 18px rgba(18,61,53,.20)' }}>
               <HeartPulse size={18} />
             </span>
@@ -249,7 +231,7 @@ export function Topbar({
       <div className="site-nav-container">
 
         {/* 1. Left: Brand lockup */}
-        <Link href="/" aria-label="SmartCare home" className="flex items-center gap-2.5 sm:gap-3 no-underline shrink-0">
+        <Link href="/" aria-label="SmartCare home" className="flex items-center gap-2.5 sm:gap-3 no-underline shrink-0 min-h-[44px]">
           <span
             className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm"
             style={{ background: 'var(--teal-dark)' }}
@@ -295,9 +277,9 @@ export function Topbar({
           {/* Mobile SOS */}
           {!isAmbulancePage && (
             <Link
-              href="/ambulance"
+              href={sosHref}
               className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-black text-white bg-red-600 hover:bg-red-700 active:bg-red-800 transition shadow-xs no-underline shrink-0 border border-red-700"
-              style={{ minHeight: '32px' }}
+              style={{ minHeight: '44px' }}
               title="Emergency Ambulance"
             >
               <Siren className="w-3 h-3 text-white" />
@@ -310,7 +292,7 @@ export function Topbar({
             type="button"
             onClick={handleThemeToggle}
             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-            className="flex items-center justify-center w-8 h-8 rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[var(--text)] active:scale-95 transition-all"
+            className="flex items-center justify-center w-11 h-11 rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[var(--text)] active:scale-95 transition-all"
           >
             <ThemeIcon size={14} />
           </button>
@@ -325,7 +307,7 @@ export function Topbar({
             aria-controls="landing-mobile-menu-sheet"
             aria-haspopup="true"
             className={cn(
-              "flex items-center justify-center min-w-[42px] min-h-[42px] w-10 h-10 rounded-xl border transition-all duration-200 cursor-pointer shrink-0 active:scale-90",
+              "flex items-center justify-center min-w-[44px] min-h-[44px] w-11 h-11 rounded-xl border transition-all duration-200 cursor-pointer shrink-0 active:scale-90",
               mobileNavOpen
                 ? "bg-[var(--teal)] text-white border-[var(--teal)] shadow-sm ring-2 ring-[var(--teal)]/30"
                 : "bg-[var(--surface)] border-[var(--line)] text-[var(--text)] hover:bg-[var(--mint)] hover:text-[var(--teal)]"
@@ -355,7 +337,7 @@ export function Topbar({
                 <span>How it works</span>
               </a>
               <Link
-                href="/ambulance"
+                href={sosHref}
                 onClick={() => setMobileNavOpen(false)}
                 className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-bold text-red-600 bg-red-50 dark:bg-red-950/30 hover:bg-red-100 transition-colors no-underline"
               >

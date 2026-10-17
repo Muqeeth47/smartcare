@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { PharmacyPage } from '@/features/pharmacy/PharmacyPage';
 
 export const metadata: Metadata = {
-  title: 'Pharmacy & Dispensary | SmartCare Workspace',
+  title: 'Pharmacy Orders',
   description: 'Manage prescribed medications, Jan Aushadhi generic savings, and hospital counter pickup.',
 };
 

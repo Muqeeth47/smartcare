@@ -3,20 +3,18 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { DemoDB } from '@/lib/db/demo-db';
-import { useSession, useAppStore } from '@/lib/store/app-store';
+import { useAppStore } from '@/lib/store/app-store';
 import { cn } from '@/lib/utils';
+import { getCommandSection } from '@/lib/nav-sections';
 import { MedicineShortageHeatMap } from './MedicineShortageHeatMap';
 import {
   ShieldAlert,
   Building2,
   Activity,
-  Layers,
   Sparkles,
   ArrowRight,
   RefreshCw,
-  Search,
   CheckCircle2,
-  Clock,
   Truck,
   TrendingUp,
   MapPin,
@@ -29,12 +27,8 @@ import {
   BarChart3,
   ShieldCheck,
   Check,
-  AlertCircle,
   AlertTriangle,
-  ChevronRight,
   SlidersHorizontal,
-  Phone,
-  Mail,
   FileSignature,
   Radio,
   Megaphone,
@@ -44,19 +38,12 @@ import {
   UserCheck,
   Timer,
   Zap,
-  Play,
 } from 'lucide-react';
 import { useTelemetryLoop } from '@/hooks/useTelemetryLoop';
 import type {
   DistrictSupplyAggregate,
-  DistrictMedicineSummary,
-  HospitalSupplyProfile,
   RedistributionOrder,
-  ShortageReport,
-  MedicineStockStatus,
   StateFederatedNode,
-  TelemetryPacket15m,
-  EpidemicForecastScenario,
 } from '@smartcare/types';
 
 export function StateCommandSupplyModule() {
@@ -64,13 +51,15 @@ export function StateCommandSupplyModule() {
   const searchParams = useSearchParams();
   const { showToast } = useAppStore();
 
-  // Tab state synced with URL: ?commandTab=summary | telemetry | heatmap | forecasting | redistribution | federated | manifest | escalation
-  const activeTab = searchParams.get('commandTab') || 'summary';
+  // The sidebar picks the page through ?commandTab=. An unknown value falls back to the overview.
+  const section = getCommandSection(searchParams.get('commandTab'));
+  const activeTab = section.id;
+  const SectionIcon = section.icon;
+  const showLiveStrip = activeTab === 'summary' || activeTab === 'telemetry' || activeTab === 'forecasting';
 
   // 15-Minute Telemetry Loop Engine
   const {
     countdownFormatted,
-    secondsRemaining,
     isSyncing: isTelemetrySyncing,
     activeScenarioId,
     setActiveScenarioId,
@@ -82,7 +71,6 @@ export function StateCommandSupplyModule() {
 
   const [aggregate, setAggregate] = useState<DistrictSupplyAggregate | null>(null);
   const [orders, setOrders] = useState<RedistributionOrder[]>([]);
-  const [shortages, setShortages] = useState<ShortageReport[]>([]);
   const [selectedDistrict, setSelectedDistrict] = useState<string>('Hyderabad & Rangareddy Central');
   const [federatedNodes, setFederatedNodes] = useState<StateFederatedNode[]>([]);
   const [isTrainingFederated, setIsTrainingFederated] = useState<boolean>(false);
@@ -90,7 +78,6 @@ export function StateCommandSupplyModule() {
 
   // Search, Filters & Pagination
   const [medFilter, setMedFilter] = useState<string>('ALL');
-  const [searchQuery, setSearchQuery] = useState<string>('');
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [summaryPage, setSummaryPage] = useState<number>(1);
   const SUMMARIES_PER_PAGE = 6;
@@ -103,8 +90,6 @@ export function StateCommandSupplyModule() {
     setAggregate(agg);
     const ords = DemoDB.getRedistributionOrders();
     setOrders(ords);
-    const sh = DemoDB.getShortageReports();
-    setShortages(sh);
     const nodes = DemoDB.getFederatedNodes();
     setFederatedNodes(nodes);
     setTimeout(() => setIsRefreshing(false), 250);
@@ -132,7 +117,7 @@ export function StateCommandSupplyModule() {
   const handleManual15mSync = () => {
     const res = trigger15mSync(activeScenarioId);
     showToast(
-      `15-min PHC telemetry packet #${res.packet.cycleNumber} synced across district mesh! +${res.packet.totalFootfallDelta} patients recorded.`,
+      `Update #${res.packet.cycleNumber} received from all hospitals. ${res.packet.totalFootfallDelta} new patients since the last update.`,
       'success'
     );
     loadData();
@@ -254,231 +239,209 @@ export function StateCommandSupplyModule() {
   const filteredSummaries = useMemo(() => {
     if (!aggregate) return [];
     return aggregate.medicineSummaries.filter((m) => {
-      const matchCat = medFilter === 'ALL' || m.category === medFilter;
-      const matchSearch =
-        m.medicineName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        m.category.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchCat && matchSearch;
+      return medFilter === 'ALL' || m.category === medFilter;
     });
-  }, [aggregate, medFilter, searchQuery]);
+  }, [aggregate, medFilter]);
 
   const totalSummaryPages = Math.ceil(filteredSummaries.length / SUMMARIES_PER_PAGE) || 1;
   const paginatedSummaries = useMemo(() => {
     return filteredSummaries.slice((summaryPage - 1) * SUMMARIES_PER_PAGE, summaryPage * SUMMARIES_PER_PAGE);
   }, [filteredSummaries, summaryPage]);
 
+  // Real totals for the overview cards (the warehouse holds no patients, so it is left out)
+  const careTotals = useMemo(() => {
+    const totals = {
+      beds: { used: 0, total: 0 },
+      icu: { used: 0, total: 0 },
+      oxygen: { available: 0, total: 0 },
+    };
+    (aggregate?.facilityProfiles ?? [])
+      .filter((f) => f.tier !== 'warehouse')
+      .forEach((f) => {
+        totals.beds.used += f.bedsOccupied;
+        totals.beds.total += f.bedsTotal;
+        totals.icu.used += f.icuOccupied;
+        totals.icu.total += f.icuTotal;
+        totals.oxygen.available += f.oxygenCylindersAvailable;
+        totals.oxygen.total += f.oxygenCylindersTotal;
+      });
+    return totals;
+  }, [aggregate]);
+
   if (!aggregate) {
     return (
       <div className="p-12 text-center text-slate-500">
         <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2 text-indigo-600" />
-        <p>Connecting to AushadhiNet State Command Hub...</p>
+        <p>Loading the command centre...</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      {/* ─── State Command Center Header ────────────────────────────────────────── */}
-      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 border border-slate-800 rounded-2xl p-4 sm:p-5 text-white shadow-lg relative overflow-hidden">
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div className="space-y-1">
+      {/* ─── Page heading: which part of the command centre you are on (picked from the sidebar) ─── */}
+      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 border border-slate-800 rounded-2xl p-4 sm:p-5 text-white shadow-lg">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div className="min-w-0 space-y-1">
             <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white flex items-center gap-2">
-              <Network className="h-6 w-6 text-indigo-400 shrink-0" />
-              AushadhiNet State Command Center
+              <SectionIcon className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-400 shrink-0" />
+              <span className="min-w-0">{section.label}</span>
             </h1>
-            <p className="text-xs text-slate-300 max-w-2xl">
-              Real-time health resource pooling, inter-hospital shortage aggregation, and AI-governed surplus redistribution
-              for {aggregate.state} ({aggregate.district}).
-            </p>
+            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">{section.description}</p>
           </div>
 
-          {/* Quick Actions & District Switcher */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-            <div className="bg-slate-800/80 backdrop-blur border border-slate-700 rounded-xl p-1.5 flex items-center gap-2 max-w-full w-full sm:w-auto">
-              <span className="text-xs text-slate-400 font-medium pl-2">District:</span>
+          {/* District picker and refresh */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 min-w-0">
+            <label className="bg-slate-800/80 border border-slate-700 rounded-xl px-2.5 py-1.5 flex items-center gap-2 min-w-0 w-full sm:w-auto">
+              <span className="text-xs text-slate-400 font-medium shrink-0">District</span>
               <select
                 value={selectedDistrict}
                 onChange={(e) => setSelectedDistrict(e.target.value)}
-                className="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 min-h-[38px] focus:ring-2 focus:ring-indigo-500 focus:outline-none font-semibold max-w-full w-full sm:w-auto truncate"
+                className="bg-slate-900 border border-slate-700 text-slate-200 text-base sm:text-xs rounded-lg px-2.5 py-2 min-h-[44px] sm:min-h-[38px] focus:ring-2 focus:ring-indigo-500 focus:outline-none font-semibold min-w-0 flex-1 sm:flex-initial truncate"
               >
                 <option value="Hyderabad & Rangareddy Central">Hyderabad &amp; Rangareddy Central</option>
                 <option value="Warangal Urban & Rural">Warangal Urban &amp; Rural</option>
                 <option value="Karimnagar North">Karimnagar North</option>
                 <option value="Nizamabad Valley">Nizamabad Valley</option>
               </select>
-            </div>
+            </label>
 
             <button
+              type="button"
               onClick={loadData}
               disabled={isRefreshing}
-              className="flex items-center justify-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all min-h-[40px]"
+              className="flex items-center justify-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-70 text-white text-sm sm:text-xs font-bold rounded-xl transition-all min-h-[44px]"
             >
-              <RefreshCw className={cn('h-3.5 w-3.5', isRefreshing && 'animate-spin')} />
-              Refresh Aggregate
+              <RefreshCw className={cn('h-4 w-4 sm:h-3.5 sm:w-3.5', isRefreshing && 'animate-spin')} />
+              Refresh
             </button>
           </div>
         </div>
 
-        {/* ─── Real-Time District Averages Aggregator Banner ─────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 mt-4 pt-4 border-t border-slate-800">
-          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 space-y-0.5">
-            <div className="text-[10px] text-slate-400 font-medium flex items-center gap-1.5">
-              <Pill className="h-3 w-3 text-indigo-400" />
-              District Stock Avg
+        {/* District numbers, only on the overview page so other pages start with their own content */}
+        {activeTab === 'summary' && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 mt-4 pt-4 border-t border-slate-800">
+            <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 space-y-0.5">
+              <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
+                <Pill className="h-3 w-3 text-indigo-400" />
+                Average stock left
+              </div>
+              <div className="text-xl font-black text-white">{aggregate.avgStockDaysRemaining} days</div>
+              <div className="text-[11px] text-slate-400">Across all medicines</div>
             </div>
-            <div className="text-xl font-black text-white">{aggregate.avgStockDaysRemaining} Days</div>
-            <div className="text-[9px] text-slate-400">Mean burn buffer</div>
-          </div>
 
-          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 space-y-0.5">
-            <div className="text-[10px] text-slate-400 font-medium flex items-center gap-1.5">
-              <Flame className="h-3 w-3 text-red-400" />
-              Critical Shortages
+            <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 space-y-0.5">
+              <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
+                <Flame className="h-3 w-3 text-red-400" />
+                Running out soon
+              </div>
+              <div className={cn('text-xl font-black', aggregate.criticalAlertsCount > 0 ? 'text-red-400' : 'text-emerald-400')}>
+                {aggregate.criticalAlertsCount} {aggregate.criticalAlertsCount === 1 ? 'medicine' : 'medicines'}
+              </div>
+              <div className="text-[11px] text-slate-400">3 days or less left</div>
             </div>
-            <div className={cn('text-xl font-black', aggregate.criticalAlertsCount > 0 ? 'text-red-400' : 'text-emerald-400')}>
-              {aggregate.criticalAlertsCount} Alert{aggregate.criticalAlertsCount === 1 ? '' : 's'}
-            </div>
-            <div className="text-[9px] text-slate-400">&le; 3 days stock</div>
-          </div>
 
-          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 space-y-0.5">
-            <div className="text-[10px] text-slate-400 font-medium flex items-center gap-1.5">
-              <Bed className="h-3 w-3 text-amber-400" />
-              Hospital Beds Avg
+            <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 space-y-0.5">
+              <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
+                <Bed className="h-3 w-3 text-amber-400" />
+                Beds in use
+              </div>
+              <div className="text-xl font-black text-white">{aggregate.totalBedsOccupancyPercent}%</div>
+              <div className="text-[11px] text-slate-400">
+                {careTotals.beds.used} of {careTotals.beds.total} beds
+              </div>
             </div>
-            <div className="text-xl font-black text-white">{aggregate.totalBedsOccupancyPercent}%</div>
-            <div className="text-[9px] text-slate-400">4 facilities load</div>
-          </div>
 
-          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 space-y-0.5">
-            <div className="text-[10px] text-slate-400 font-medium flex items-center gap-1.5">
-              <Activity className="h-3 w-3 text-purple-400" />
-              ICU Bed Load
+            <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 space-y-0.5">
+              <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
+                <Activity className="h-3 w-3 text-purple-400" />
+                ICU beds in use
+              </div>
+              <div className="text-xl font-black text-purple-300">{aggregate.totalIcuOccupancyPercent}%</div>
+              <div className="text-[11px] text-slate-400">
+                {careTotals.icu.used} of {careTotals.icu.total} ICU beds
+              </div>
             </div>
-            <div className="text-xl font-black text-purple-300">{aggregate.totalIcuOccupancyPercent}%</div>
-            <div className="text-[9px] text-slate-400">74 / 86 Beds</div>
-          </div>
 
-          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 space-y-0.5">
-            <div className="text-[10px] text-slate-400 font-medium flex items-center gap-1.5">
-              <Building2 className="h-3 w-3 text-cyan-400" />
-              Oxygen Bank
+            <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 space-y-0.5">
+              <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
+                <Building2 className="h-3 w-3 text-cyan-400" />
+                Oxygen ready
+              </div>
+              <div className="text-xl font-black text-cyan-300">{aggregate.oxygenAvailabilityPercent}%</div>
+              <div className="text-[11px] text-slate-400">
+                {careTotals.oxygen.available} of {careTotals.oxygen.total} cylinders
+              </div>
             </div>
-            <div className="text-xl font-black text-cyan-300">{aggregate.oxygenAvailabilityPercent}%</div>
-            <div className="text-[9px] text-slate-400">538 Cylinders</div>
-          </div>
 
-          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 space-y-0.5">
-            <div className="text-[10px] text-slate-400 font-medium flex items-center gap-1.5">
-              <Truck className="h-3 w-3 text-emerald-400" />
-              AI Rebalances
+            <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 space-y-0.5">
+              <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
+                <Truck className="h-3 w-3 text-emerald-400" />
+                Transfers waiting
+              </div>
+              <div className="text-xl font-black text-emerald-300">{aggregate.pendingRebalances}</div>
+              <div className="text-[11px] text-slate-400">Ready to approve</div>
             </div>
-            <div className="text-xl font-black text-emerald-300">{aggregate.pendingRebalances} Ready</div>
-            <div className="text-[9px] text-slate-400">Pending dispatch</div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* ─── 15-Minute Telemetry Loop Ticker & Scenario Strip ─────────────────────── */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 text-white shadow-lg backdrop-blur-md flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="relative flex items-center justify-center h-10 w-10 rounded-xl bg-indigo-600/20 border border-indigo-500/40 text-indigo-400 shrink-0">
-            <Timer className="h-5 w-5" />
-            <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-500" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1">
-                <Radio className="h-3 w-3 text-emerald-400" />
-                15-Min PHC Telemetry Cycle
-              </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">
-                Cycle #{lastPacket?.cycleNumber || 108}
-              </span>
+      {/* ─── Live update timer and outbreak scenario (only where they matter) ─── */}
+      {showLiveStrip && (
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3 sm:p-4 text-white shadow-lg flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="relative flex items-center justify-center h-10 w-10 rounded-xl bg-indigo-600/20 border border-indigo-500/40 text-indigo-400 shrink-0">
+              <Timer className="h-5 w-5" />
+              <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-500" />
             </div>
-            <div className="text-sm font-extrabold text-white flex items-center gap-1.5 mt-0.5">
-              Next Telemetry Sync in <span className="font-mono text-emerald-400 text-base">{countdownFormatted}</span>
-              <span className="text-xs text-slate-400 font-normal">({aggregate.totalFacilities} PHCs reporting)</span>
+            <div className="min-w-0">
+              <div className="text-xs font-bold text-indigo-300 flex flex-wrap items-center gap-1.5">
+                <Radio className="h-3 w-3 text-emerald-400 shrink-0" />
+                Hospitals report every 15 minutes
+                <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">
+                  #{lastPacket?.cycleNumber || 108}
+                </span>
+              </div>
+              <div className="text-sm font-extrabold text-white mt-0.5">
+                Next update in <span className="font-mono text-emerald-400 text-base">{countdownFormatted}</span>
+                <span className="text-xs text-slate-400 font-normal ml-1.5">
+                  ({aggregate.totalFacilities} hospitals reporting)
+                </span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Epidemic Scenario Switcher & Manual Pulse Trigger */}
-        <div className="flex flex-wrap items-center gap-2.5 max-w-full">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 bg-slate-950/80 border border-slate-800 rounded-xl px-2.5 py-1.5 max-w-full w-full sm:w-auto">
-            <span className="text-[11px] text-slate-400 font-semibold whitespace-nowrap">Epidemic Surge Factor:</span>
-            <select
-              value={activeScenarioId}
-              onChange={(e) => {
-                setActiveScenarioId(e.target.value);
-                trigger15mSync(e.target.value);
-              }}
-              className="bg-transparent text-xs font-bold text-indigo-300 focus:outline-none cursor-pointer max-w-full w-full sm:max-w-[280px] truncate"
-            >
-              {scenarios.map((scen) => (
-                <option key={scen.id} value={scen.id} className="bg-slate-900 text-white">
-                  {scen.name} ({scen.tag})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleManual15mSync}
-            disabled={isTelemetrySyncing}
-            className="flex items-center justify-center gap-2 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 min-h-[44px]"
-          >
-            <Zap className={cn('h-3.5 w-3.5 text-amber-300', isTelemetrySyncing && 'animate-spin')} />
-            {isTelemetrySyncing ? 'Syncing...' : 'Force 15m Sync Cycle'}
-          </button>
-        </div>
-      </div>
-
-      {/* ─── 8-Tab Navigation Bar with Dynamic URL Synchronization ───────────────── */}
-      <div className="sticky top-2 z-20 bg-slate-950/95 backdrop-blur-md border border-slate-800 rounded-2xl p-1.5 shadow-xl">
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth">
-          {[
-            { id: 'summary', label: 'Command Overview', icon: Building2, badge: `${aggregate.totalFacilities}` },
-            { id: 'telemetry', label: 'PHC Telemetry (Beds & Staff)', icon: Activity, badge: 'Live 15m' },
-            { id: 'heatmap', label: 'Shortage Heat Map', icon: MapPin, badge: `${aggregate.criticalAlertsCount}` },
-            { id: 'forecasting', label: 'Demand Forecaster & Alerts', icon: TrendingUp, badge: 'AI Projections' },
-            { id: 'redistribution', label: 'AI Redistribution', icon: Truck, badge: `${aggregate.pendingRebalances}` },
-            { id: 'federated', label: 'Multi-State Federated Hub', icon: Cpu, badge: '5 States' },
-            { id: 'manifest', label: 'Transit Manifest', icon: Layers, badge: `${orders.length}` },
-            { id: 'escalation', label: 'Emergency SOS & POs', icon: ShieldAlert, badge: `${emergencyPos.length}` },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => handleTabChange(tab.id)}
-                className={cn(
-                  'flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap min-h-[44px] shrink-0',
-                  isActive
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20 ring-1 ring-indigo-400/50'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-                )}
+          <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2.5 min-w-0">
+            <label className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 bg-slate-950/80 border border-slate-800 rounded-xl px-2.5 py-1.5 min-w-0 w-full sm:w-auto">
+              <span className="text-[11px] text-slate-400 font-semibold whitespace-nowrap">Outbreak scenario</span>
+              <select
+                value={activeScenarioId}
+                onChange={(e) => {
+                  setActiveScenarioId(e.target.value);
+                  trigger15mSync(e.target.value);
+                }}
+                className="bg-transparent text-base sm:text-xs font-bold text-indigo-300 focus:outline-none cursor-pointer min-h-[44px] sm:min-h-0 w-full sm:max-w-[280px] truncate"
               >
-                <Icon className={cn('h-4 w-4', isActive ? 'text-white' : 'text-slate-400')} />
-                <span>{tab.label}</span>
-                {tab.badge && (
-                  <span
-                    className={cn(
-                      'text-[10px] font-mono px-1.5 py-0.5 rounded-md font-semibold',
-                      isActive ? 'bg-indigo-700/80 text-white' : 'bg-slate-800 text-slate-400'
-                    )}
-                  >
-                    {tab.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+                {scenarios.map((scen) => (
+                  <option key={scen.id} value={scen.id} className="bg-slate-900 text-white">
+                    {scen.name} ({scen.tag})
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <button
+              type="button"
+              onClick={handleManual15mSync}
+              disabled={isTelemetrySyncing}
+              className="flex items-center justify-center gap-2 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-70 text-white text-sm sm:text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 min-h-[44px]"
+            >
+              <Zap className={cn('h-4 w-4 sm:h-3.5 sm:w-3.5 text-amber-300', isTelemetrySyncing && 'animate-spin')} />
+              {isTelemetrySyncing ? 'Updating...' : 'Update now'}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ─── TAB 1: DISTRICT AGGREGATION & AVERAGING TABLE ──────────────────────── */}
       {activeTab === 'summary' && (
@@ -541,15 +504,15 @@ export function StateCommandSupplyModule() {
               <div>
                 <h3 className="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-indigo-500" />
-                  District Medicine Shortage Aggregation &amp; Averaging Matrix
+                  Medicines across the district
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Data reported from all Primary Health Centres, Community Hospitals, and Central Depot averaged in real time.
+                  Combined stock reported by every health centre and hospital, updated as they report.
                 </p>
               </div>
 
               {/* Category Filter */}
-              <div className="flex items-center gap-2 overflow-x-auto">
+              <div className="flex flex-wrap md:flex-nowrap items-center gap-2 md:overflow-x-auto">
                 {['ALL', 'Critical Supplies', 'Antibiotics', 'Chronic Care', 'Emergency & IV', 'Vaccines'].map((cat) => (
                   <button
                     key={cat}
@@ -558,7 +521,7 @@ export function StateCommandSupplyModule() {
                       setSummaryPage(1);
                     }}
                     className={cn(
-                      'px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap min-h-[38px]',
+                      'px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap min-h-[44px] sm:min-h-[38px] shrink-0',
                       medFilter === cat
                         ? 'bg-indigo-600 text-white'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
@@ -570,8 +533,8 @@ export function StateCommandSupplyModule() {
               </div>
             </div>
 
-            {/* Matrix Table */}
-            <div className="overflow-x-auto">
+            {/* Table on tablets and desktops */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 text-xs uppercase font-semibold">
@@ -669,6 +632,84 @@ export function StateCommandSupplyModule() {
                 </tbody>
               </table>
             </div>
+
+            {/* One card per medicine on phones, so nothing needs sideways scrolling */}
+            <ul className="md:hidden space-y-3">
+              {paginatedSummaries.map((med) => {
+                const isCritical = med.status === 'critical';
+                const isLow = med.status === 'low';
+                return (
+                  <li
+                    key={med.medicineId}
+                    className={cn(
+                      'rounded-xl border p-3.5 space-y-3',
+                      isCritical
+                        ? 'border-red-200 bg-red-50/60 dark:border-red-900 dark:bg-red-950/20'
+                        : 'border-slate-200 dark:border-slate-800'
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-900 dark:text-white leading-snug">{med.medicineName}</div>
+                        <div className="text-[11px] text-slate-500">
+                          {med.category} &bull; {med.hospitalsReporting} hospitals reporting
+                        </div>
+                      </div>
+                      <span
+                        className={cn(
+                          'px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0',
+                          isCritical
+                            ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
+                            : isLow
+                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'
+                            : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300'
+                        )}
+                      >
+                        {isCritical ? 'Running out' : isLow ? 'Low' : 'Fine'}
+                      </span>
+                    </div>
+
+                    <dl className="grid grid-cols-3 gap-2 text-center">
+                      <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 py-2">
+                        <dt className="text-[11px] text-slate-500">In stock</dt>
+                        <dd className="font-mono font-bold text-sm text-slate-900 dark:text-white">
+                          {med.totalStock.toLocaleString()}
+                        </dd>
+                      </div>
+                      <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 py-2">
+                        <dt className="text-[11px] text-slate-500">Used a day</dt>
+                        <dd className="font-mono font-bold text-sm text-slate-900 dark:text-white">
+                          {med.avgDailyConsumption}
+                        </dd>
+                      </div>
+                      <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 py-2">
+                        <dt className="text-[11px] text-slate-500">Lasts</dt>
+                        <dd className="font-mono font-bold text-sm text-indigo-600 dark:text-indigo-400">
+                          {med.districtAvgDaysRemaining > 90 ? '90+' : med.districtAvgDaysRemaining} days
+                        </dd>
+                      </div>
+                    </dl>
+
+                    {med.criticalHospitals.length > 0 && (
+                      <p className="text-xs text-red-700 dark:text-red-300 font-semibold">
+                        Short at: {med.criticalHospitals.map((h) => h.split(' ')[0]).join(', ')}
+                      </p>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => handleTabChange('redistribution')}
+                      className="w-full min-h-[44px] rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-semibold active:scale-[0.98] transition-transform"
+                    >
+                      Move stock
+                    </button>
+                  </li>
+                );
+              })}
+              {paginatedSummaries.length === 0 && (
+                <li className="text-center text-sm text-slate-500 py-6">No medicines match this filter.</li>
+              )}
+            </ul>
 
             {totalSummaryPages > 1 && (
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 mt-1 border-t border-slate-200 dark:border-slate-800 text-xs">
@@ -1001,7 +1042,44 @@ export function StateCommandSupplyModule() {
               </span>
             </div>
 
-            <div className="overflow-x-auto">
+            <ul className="md:hidden space-y-3">
+              {telemetryPackets.map((pkt) => (
+                <li key={pkt.packetId} className="rounded-xl border border-slate-200 dark:border-slate-800 p-3.5 space-y-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="font-mono font-bold text-sm text-indigo-600 dark:text-indigo-400 break-all">{pkt.packetId}</div>
+                      <div className="text-xs text-slate-600 dark:text-slate-300">{pkt.timestamp}</div>
+                    </div>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 shrink-0">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                      Received
+                    </span>
+                  </div>
+                  <dl className="grid grid-cols-2 gap-2 text-center">
+                    <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 py-2">
+                      <dt className="text-[11px] text-slate-500">Hospitals reporting</dt>
+                      <dd className="font-mono font-bold text-sm text-slate-900 dark:text-white">
+                        {pkt.facilitiesReporting} / {aggregate.totalFacilities}
+                      </dd>
+                    </div>
+                    <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 py-2">
+                      <dt className="text-[11px] text-slate-500">New patients</dt>
+                      <dd className="font-mono font-bold text-sm text-emerald-600 dark:text-emerald-400">+{pkt.totalFootfallDelta}</dd>
+                    </div>
+                    <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 py-2">
+                      <dt className="text-[11px] text-slate-500">Medicine used</dt>
+                      <dd className="font-mono font-bold text-sm text-slate-900 dark:text-white">-{pkt.totalUnitsBurned} units</dd>
+                    </div>
+                    <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 py-2">
+                      <dt className="text-[11px] text-slate-500">Bed changes</dt>
+                      <dd className="font-mono font-bold text-sm text-slate-900 dark:text-white">{pkt.bedStatusUpdates}</dd>
+                    </div>
+                  </dl>
+                </li>
+              ))}
+            </ul>
+
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 text-xs uppercase font-semibold">
@@ -1239,7 +1317,73 @@ export function StateCommandSupplyModule() {
               </span>
             </div>
 
-            <div className="overflow-x-auto">
+            <ul className="md:hidden space-y-3">
+              {aggregate.medicineSummaries.map((med) => {
+                const activeScen = scenarios.find((sc) => sc.id === activeScenarioId) || scenarios[0];
+                const isTargeted = activeScen.targetedMedicines.includes(med.medicineId);
+                const mult = isTargeted ? activeScen.medicineMultiplier * 1.3 : activeScen.medicineMultiplier;
+                const surgeDaily = Math.round(med.avgDailyConsumption * mult);
+                const horizonDays = activeProjectionRange === '7d' ? 7 : activeProjectionRange === '14d' ? 14 : 30;
+                const projectedDraw = surgeDaily * horizonDays;
+                const balance = med.totalStock - projectedDraw;
+                const isDeficit = balance <= 0;
+                const isLow = balance < med.avgDailyConsumption * 5;
+                return (
+                  <li key={med.medicineId} className="rounded-xl border border-slate-200 dark:border-slate-800 p-3.5 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-900 dark:text-white leading-snug">{med.medicineName}</div>
+                        <div className="text-[11px] text-slate-500">{med.category}</div>
+                      </div>
+                      <span
+                        className={cn(
+                          'px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0',
+                          isDeficit
+                            ? 'bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300'
+                            : isLow
+                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
+                            : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                        )}
+                      >
+                        {isDeficit ? 'Will run out' : isLow ? 'Low' : 'Safe'}
+                      </span>
+                    </div>
+                    <dl className="grid grid-cols-2 gap-2 text-center">
+                      <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 py-2">
+                        <dt className="text-[11px] text-slate-500">In stock</dt>
+                        <dd className="font-mono font-bold text-sm text-slate-900 dark:text-white">{med.totalStock.toLocaleString()}</dd>
+                      </div>
+                      <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 py-2">
+                        <dt className="text-[11px] text-slate-500">Used a day (normal)</dt>
+                        <dd className="font-mono font-bold text-sm text-slate-900 dark:text-white">{med.avgDailyConsumption}</dd>
+                      </div>
+                      <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 py-2">
+                        <dt className="text-[11px] text-slate-500">Used a day (surge)</dt>
+                        <dd className="font-mono font-bold text-sm text-indigo-600 dark:text-indigo-400">{surgeDaily}</dd>
+                      </div>
+                      <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 py-2">
+                        <dt className="text-[11px] text-slate-500">Needed in {activeProjectionRange}</dt>
+                        <dd className="font-mono font-bold text-sm text-purple-600 dark:text-purple-400">{projectedDraw.toLocaleString()}</dd>
+                      </div>
+                    </dl>
+                    {isDeficit && (
+                      <p className="text-xs font-semibold text-red-700 dark:text-red-300">
+                        Short by {Math.abs(balance).toLocaleString()} units by the end of this period.
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleTabChange('redistribution')}
+                      className="w-full min-h-[44px] rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-semibold active:scale-[0.98] transition-transform"
+                    >
+                      Move stock
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 text-xs uppercase font-semibold">

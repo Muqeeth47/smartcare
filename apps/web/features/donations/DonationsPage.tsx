@@ -7,12 +7,10 @@ import { WorkspaceShell, PatientShell } from '@/components/layout/Shell';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useSession, useAppStore } from '@/lib/store/app-store';
 import { cn } from '@/lib/utils';
-import type { DonationsData, DonationType, HospitalDonationPost } from '@smartcare/types';
+import type { DonationsData, DonationType } from '@smartcare/types';
 import {
-  Heart,
   Droplets,
   Activity,
-  HeartHandshake,
   Upload,
   Download,
   Info,
@@ -20,12 +18,6 @@ import {
   Send,
   Building2,
   Users,
-  ShieldCheck,
-  CheckCircle2,
-  AlertCircle,
-  Clock,
-  MapPin,
-  Check,
 } from 'lucide-react';
 
 interface DonationsPageProps {
@@ -112,7 +104,7 @@ export function DonationsPage({ role: roleProp }: DonationsPageProps) {
     const postGroup = donationType === 'blood' ? selectedGroup : selectedOrgan;
     const unitNum = units ? Number(units) : 1;
 
-    const newPost = DemoDB.addHospitalDonation({
+    DemoDB.addHospitalDonation({
       type: donationType,
       mode: mode,
       group: postGroup,

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { useSession, useAppStore } from '@/lib/store/app-store';
 import type { UserRole } from '@smartcare/types';
 

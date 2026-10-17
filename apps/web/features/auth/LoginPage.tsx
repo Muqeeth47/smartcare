@@ -1,18 +1,14 @@
 'use client';
 
-import { Suspense, useCallback } from 'react';
+import { useCallback } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ShieldCheck, Lock, Sparkles } from 'lucide-react';
-import { Topbar } from '@/components/layout/Topbar';
+import { ArrowLeft, HeartPulse } from 'lucide-react';
 import { useAppStore } from '@/lib/store/app-store';
 import { useShallow } from 'zustand/react/shallow';
 import type { UserRole } from '@smartcare/types';
-import {
-  MorphingAuthCard,
-  PORTAL_PROFILES,
-  type PortalKey,
-  type AuthMode,
-} from './MorphingAuthCard';
+import { MorphingAuthCard, PORTAL_PROFILES, type PortalKey, type AuthMode } from './MorphingAuthCard';
+import { useAntiScrape } from './useAntiScrape';
 
 export function LoginPage() {
   const router = useRouter();
@@ -24,6 +20,8 @@ export function LoginPage() {
       showToast: s.showToast,
     }))
   );
+
+  useAntiScrape();
 
   const portalParam = searchParams.get('portal') as PortalKey | null;
   const roleParam = searchParams.get('role');
@@ -40,13 +38,17 @@ export function LoginPage() {
 
   const initialMode: AuthMode = modeParam === 'signup' ? 'signup' : 'signin';
 
+  // Where to go after signing in, when a dashboard sent the visitor here. Only our own dashboard paths are allowed.
+  const nextParam = searchParams.get('next');
+  const safeNext = nextParam && /^\/dashboard(\/|$)/.test(nextParam) && !nextParam.includes('//') ? nextParam : null;
+
   const handlePortalChange = useCallback(
     (newPortal: PortalKey) => {
-      const prof = PORTAL_PROFILES[newPortal];
-      setAuthTarget(prof.role);
+      const profile = PORTAL_PROFILES[newPortal];
+      setAuthTarget(profile.role);
       const params = new URLSearchParams(searchParams.toString());
       params.set('portal', newPortal);
-      params.set('role', prof.role);
+      params.set('role', profile.role);
       router.replace(`/login?${params.toString()}`, { scroll: false });
     },
     [setAuthTarget, searchParams, router]
@@ -70,60 +72,44 @@ export function LoginPage() {
         city: 'Hyderabad',
       });
       showToast('Signed in successfully', 'success');
-      router.push(user.dest);
+      router.push(safeNext ?? user.dest);
     },
-    [login, showToast, router]
+    [login, showToast, router, safeNext]
   );
 
   return (
-    <div className="min-h-dvh bg-slate-50 dark:bg-[#09121d] flex flex-col justify-between text-slate-800 dark:text-slate-100 transition-colors">
-      <Topbar variant="landing" />
+    <div className="min-h-[100dvh] w-full bg-slate-50 dark:bg-[#09121d] text-slate-800 dark:text-slate-100 flex flex-col justify-between py-3 px-3 sm:py-6 sm:px-4 select-none overflow-x-hidden">
+      <header className="max-w-5xl w-full mx-auto flex items-center justify-between mb-3 sm:mb-4 gap-2">
+        <Link href="/" className="flex items-center gap-2.5 sm:gap-3 min-w-0 no-underline text-inherit">
+          <span className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-[#0f5ca8] to-[#0a3b69] flex items-center justify-center text-white shadow-md shrink-0">
+            <HeartPulse className="w-4 h-4 sm:w-5 sm:h-5" />
+          </span>
+          <span className="min-w-0">
+            <span className="font-extrabold text-base sm:text-lg tracking-tight block leading-none truncate">SmartCare</span>
+            <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate block">Sign in to your workspace</span>
+          </span>
+        </Link>
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors shrink-0 min-h-[44px] px-2 rounded-lg no-underline"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span>Back home</span>
+        </Link>
+      </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center w-full px-4 py-8 sm:py-12">
-        {/* Page Subtitle Header */}
-        <div className="text-center max-w-2xl mx-auto mb-6">
-          <div className="text-xs font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400 mb-1.5 flex items-center justify-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
-            <span>National Health Mesh · Authentication Gateway</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
-            Unified Public Health Sign-In
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
-            Secure, role-aware access for Citizens, Primary Health Centres, District Health Directorates, and State Command.
-          </p>
-        </div>
-
-        {/* Double-Slider Morphing Card */}
+      <main className="flex-1 flex items-center justify-center w-full py-2">
         <MorphingAuthCard
           initialPortal={initialPortal}
           initialMode={initialMode}
           onPortalChange={handlePortalChange}
           onModeChange={handleModeChange}
           onSuccess={handleAuthSuccess}
-          onBackHome={() => router.push('/')}
         />
-
-        {/* Evaluation & Security Footer Strip */}
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-[11px] text-slate-500 dark:text-slate-400 max-w-2xl text-center">
-          <span className="flex items-center gap-1.5">
-            <ShieldCheck className="h-3.5 w-3.5 text-teal-600" />
-            <span>ABDM & DPDP Act 2023 Compliant</span>
-          </span>
-          <span className="text-slate-300 dark:text-slate-700">·</span>
-          <span className="flex items-center gap-1.5">
-            <Lock className="h-3.5 w-3.5 text-slate-400" />
-            <span>256-bit TLS Encrypted Mesh</span>
-          </span>
-          <span className="text-slate-300 dark:text-slate-700">·</span>
-          <span>
-            Preset evaluation passwords: <code className="font-mono bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded font-bold text-slate-800 dark:text-slate-200">demo1234</code>
-          </span>
-        </div>
       </main>
 
-      <footer className="py-4 text-center text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-[#223850] bg-white/50 dark:bg-[#0a1523]/50">
-        <p>SmartCare National Public Health Resilience Infrastructure · MoHFW Telemetry Mesh</p>
+      <footer className="max-w-5xl w-full mx-auto text-center text-[11px] sm:text-xs text-slate-400 mt-2 sm:mt-4">
+        &copy; {new Date().getFullYear()} SmartCare &middot; Demo environment
       </footer>
     </div>
   );

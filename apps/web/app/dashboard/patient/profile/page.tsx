@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { PatientDashboardPage } from '@/features/patient/dashboard/PatientDashboardPage';
 
 export const metadata: Metadata = {
-  title: 'Patient Profile & Preferences | SmartCare',
+  title: 'My Profile',
   description: 'View and manage personal health identity, contact details, and clinical preferences.',
 };
 

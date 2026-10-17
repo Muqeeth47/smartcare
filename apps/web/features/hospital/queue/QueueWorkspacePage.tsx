@@ -1,30 +1,28 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useQueue, useSession, useAppStore, sortQueue, queueStatus } from '@/lib/store/app-store';
 import { WorkspaceShell } from '@/components/layout/Shell';
-import { cn, timeAgo, getTriageColor } from '@/lib/utils';
+import { cn, timeAgo, getTriageColor, formatAppointmentTime, formatBookedAt } from '@/lib/utils';
 import { DemoDB } from '@/lib/db/demo-db';
 import { RealQrScanner } from '@/components/qr/RealQrScanner';
 import {
   Users,
   Clock,
+  CalendarClock,
   AlertTriangle,
   CheckCircle2,
   Search,
   RefreshCw,
   QrCode,
-  ArrowRight,
   PhoneCall,
   Stethoscope,
   X,
-  Sparkles,
-  Activity,
   Check,
 } from 'lucide-react';
-import type { QueueItem, QueueStatus } from '@smartcare/types';
+import type { QueueStatus } from '@smartcare/types';
 
 export function QueueWorkspacePage() {
   const { role } = useAuthGuard(['doctor', 'staff']);
@@ -493,6 +491,18 @@ export function QueueWorkspacePage() {
                           <span className="font-mono text-[11px] text-[var(--muted)] bg-[var(--surface-sunken)] px-2 py-0.5 rounded-md border border-[var(--line)]">
                             {item.id}
                           </span>
+                        </div>
+                        <div className="flex items-center gap-x-4 gap-y-1 mt-2 text-xs flex-wrap text-[var(--muted)]">
+                          <span className="flex items-center gap-1 font-semibold text-[var(--ink)]">
+                            <CalendarClock size={12} className="text-[var(--teal)]" />
+                            Appointment: {formatAppointmentTime(item.appointmentDate, item.appointmentSlot)}
+                          </span>
+                          {formatBookedAt(item.created_at) && (
+                            <span className="flex items-center gap-1">
+                              <Clock size={12} />
+                              Booked: {formatBookedAt(item.created_at)}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>

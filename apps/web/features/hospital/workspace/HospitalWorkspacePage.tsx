@@ -1,15 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useSession, useQueue, useAppStore, CARE_TEAM } from '@/lib/store/app-store';
 import { WorkspaceShell } from '@/components/layout/Shell';
 import { DemoDB } from '@/lib/db/demo-db';
 import { HospitalSupplyModule } from '../supply/HospitalSupplyModule';
-import { cn, getTriageColor } from '@/lib/utils';
+import { cn, getTriageColor, formatAppointmentTime, formatBookedAt } from '@/lib/utils';
 import {
-  HeartPulse,
   Stethoscope,
   QrCode,
   NotebookPen,
@@ -17,11 +16,7 @@ import {
   ArrowRight,
   Check,
   X,
-  Clock,
-  AlertTriangle,
   Users,
-  Building2,
-  Save,
   ShieldPlus,
   Pill,
   TriangleAlert,
@@ -31,16 +26,11 @@ import {
   Hospital as HospitalIcon,
   Camera,
   Ban,
-  ShieldCheck,
-  ExternalLink,
   FileText,
   Activity,
   CheckCheck,
-  Thermometer,
-  Flame,
-  Truck,
 } from 'lucide-react';
-import type { QueueItem, Prescription, QueueStatus, PatientMedicalHistory } from '@smartcare/types';
+import type { QueueItem, QueueStatus, PatientMedicalHistory } from '@smartcare/types';
 import { useAmbulance } from '@/lib/store/app-store';
 import { ERxStudioModal } from './ERxStudioModal';
 import { LiveQueueTriageVisualizer } from './LiveQueueTriageVisualizer';
@@ -51,15 +41,8 @@ export function HospitalWorkspacePage() {
   const { queue, metrics, sorted, nextPatient, cancelledQueue } = useQueue();
   const { updateQueueItem, cancelAppointment, showToast } = useAppStore();
   const { activeAmbulance } = useAmbulance();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const currentModule = searchParams.get('module') || 'clinical';
-
-  const handleModuleChange = (mod: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('module', mod);
-    router.replace(`?${params.toString()}`, { scroll: false });
-  };
 
   // QR Scanner modal state
   const [showQRModal, setShowQRModal] = useState(false);
@@ -87,16 +70,6 @@ export function HospitalWorkspacePage() {
 
   // Prescription modal state
   const [editingPatient, setEditingPatient] = useState<QueueItem | null>(null);
-  const [rxAssessment, setRxAssessment] = useState('');
-  const [rxMedName, setRxMedName] = useState('');
-  const [rxStrength, setRxStrength] = useState('');
-  const [rxDosage, setRxDosage] = useState('');
-  const [rxDuration, setRxDuration] = useState('');
-  const [rxInstructions, setRxInstructions] = useState('');
-  const [rxLabSummary, setRxLabSummary] = useState('');
-  const [rxBp, setRxBp] = useState('120/80 mmHg');
-  const [rxPulse, setRxPulse] = useState('72 bpm');
-  const [rxSpo2, setRxSpo2] = useState('99%');
 
   const handleOpenVitalsModal = (patient: QueueItem) => {
     setVitalsPatient(patient);
@@ -138,10 +111,6 @@ export function HospitalWorkspacePage() {
         temp: `${vitalsTemp} °F`,
       },
     });
-
-    setRxBp(`${vitalsBp} mmHg`);
-    setRxPulse(`${vitalsPulse} bpm`);
-    setRxSpo2(`${vitalsSpo2}%`);
 
     setShowVitalsModal(false);
     showToast(`Vitals saved for ${vitalsPatient.name} (BP: ${vitalsBp}, SpO2: ${vitalsSpo2}%).`, 'success');
@@ -199,64 +168,7 @@ export function HospitalWorkspacePage() {
   };
 
   const handleOpenPrescriptionModal = (patient: QueueItem) => {
-    const existing = DemoDB.getPrescription(patient.id);
-    const med = existing?.medicines?.[0];
-    setRxAssessment(existing?.assessment || '');
-    setRxMedName(med?.name || '');
-    setRxStrength(med?.strength || '');
-    setRxDosage(med?.dosage || '');
-    setRxDuration(med?.duration || '');
-    setRxInstructions(med?.instructions || '');
-    setRxLabSummary(existing?.labSummary || '');
-    if (existing?.vitals) {
-      setRxBp(existing.vitals.bp || '120/80 mmHg');
-      setRxPulse(existing.vitals.pulse || '72 bpm');
-      setRxSpo2(existing.vitals.spo2 || '99%');
-    } else {
-      setRxBp('120/80 mmHg');
-      setRxPulse('72 bpm');
-      setRxSpo2('99%');
-    }
     setEditingPatient(patient);
-  };
-
-  const handleSavePrescription = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingPatient) return;
-    const medicines = rxMedName.trim()
-      ? [
-          {
-            name: rxMedName.trim(),
-            strength: rxStrength.trim(),
-            dosage: rxDosage.trim(),
-            duration: rxDuration.trim(),
-            instructions: rxInstructions.trim(),
-          },
-        ]
-      : [];
-
-    const rxId = editingPatient.rxId || `RX-2026-${editingPatient.id.slice(-6).toUpperCase()}`;
-
-    DemoDB.savePrescription(editingPatient.id, {
-      rxId,
-      assessment: rxAssessment.trim(),
-      medicines,
-      labSummary: rxLabSummary.trim(),
-      providerName: 'Dr Meera Shah',
-      doctorName: 'Dr Meera Shah',
-      doctorRegNo: 'NMC-2018-94821',
-      hospital: hospital || 'SmartCare Community Hospital',
-      tamperHash: 'SEC-99A82B-VERIFIED',
-      vitals: {
-        bp: rxBp,
-        pulse: rxPulse,
-        spo2: rxSpo2,
-      },
-      issuedAt: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-    });
-
-    showToast(`Prescription ${rxId} issued with tamper-proof QR code.`, 'success');
-    setEditingPatient(null);
   };
 
   const handleOpenQRModal = () => {
@@ -290,6 +202,73 @@ export function HospitalWorkspacePage() {
     }
   };
 
+
+  // Row actions for one queued patient. `large` = phone cards (44px touch targets), otherwise the compact table.
+  const renderQueueActions = (patient: QueueItem, large: boolean) => {
+    const pStatus = String(patient.status || 'waiting').toLowerCase();
+    const textBtn = large ? 'min-h-[44px] px-4 text-xs' : 'h-7 px-2.5 text-[0.7rem]';
+    const iconBtn = large ? 'min-h-[44px] min-w-[44px]' : 'h-7 w-7';
+    return (
+      <div className={cn('flex items-center gap-1.5 flex-wrap', large ? 'justify-start' : 'justify-end')}>
+        {pStatus === 'waiting' && (
+          <button
+            type="button"
+            onClick={() => {
+              updateQueueItem(patient.id, { status: 'called' });
+              showToast(`Called ${patient.name}`, 'success');
+            }}
+            className={cn(textBtn, 'rounded-lg border border-[var(--line)] bg-white font-bold text-[#0f5ca8] hover:bg-[#e5f1fc]')}
+          >
+            Call
+          </button>
+        )}
+        {pStatus === 'called' && (
+          <button
+            type="button"
+            onClick={() => {
+              updateQueueItem(patient.id, { status: 'in_progress' });
+              showToast(`Started consultation for ${patient.name}`, 'success');
+            }}
+            className={cn(textBtn, 'rounded-lg border border-transparent bg-[#0f5ca8] font-bold text-white hover:brightness-105')}
+          >
+            Start
+          </button>
+        )}
+        {pStatus === 'in_progress' && (
+          <button
+            type="button"
+            onClick={() => {
+              updateQueueItem(patient.id, { status: 'completed' });
+              showToast(`Completed visit for ${patient.name}`, 'success');
+            }}
+            className={cn(textBtn, 'rounded-lg border border-transparent bg-green-600 font-bold text-white hover:brightness-105')}
+          >
+            Complete
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => handleOpenPrescriptionModal(patient)}
+          title="Prescription"
+          aria-label="Prescription"
+          className={cn(iconBtn, 'rounded-lg border border-[var(--line)] bg-white flex items-center justify-center text-[var(--text-muted)] hover:text-[#0f5ca8]')}
+        >
+          <NotebookPen size={large ? 16 : 13} />
+        </button>
+        {['waiting', 'called'].includes(pStatus) && (
+          <button
+            type="button"
+            onClick={() => setCancellingPatient(patient)}
+            title="Cancel visit and release slot"
+            aria-label="Cancel visit and release slot"
+            className={cn(iconBtn, 'rounded-lg border border-rose-200 bg-rose-50 flex items-center justify-center text-rose-700 hover:bg-rose-100')}
+          >
+            <Ban size={large ? 16 : 13} />
+          </button>
+        )}
+      </div>
+    );
+  };
 
   return (
     <WorkspaceShell title="Hospital workspace" subtitle="Hospital portal" backHref="/" backLabel="Back to home">
@@ -563,7 +542,7 @@ export function HospitalWorkspacePage() {
                   </div>
                   <div className="text-right shrink-0">
                     <strong className="text-sm font-bold text-[#0a3b69] block">{assigned}</strong>
-                    <small className="text-[0.6rem] text-[var(--text-dim)] uppercase">active</small>
+                    <small className="text-[0.7rem] text-[var(--text-dim)] uppercase">active</small>
                   </div>
                 </div>
               );
@@ -576,14 +555,6 @@ export function HospitalWorkspacePage() {
           queue={sorted}
           currentPatient={current}
           onAdvanceCurrent={handleAdvanceCurrent}
-          onCallPatient={(p) => {
-            updateQueueItem(p.id, { status: 'called' });
-            showToast(`Called ${p.name}`, 'success');
-          }}
-          onStartConsultation={(p) => {
-            updateQueueItem(p.id, { status: 'in_progress' });
-            showToast(`Started consultation for ${p.name}`, 'success');
-          }}
           onOpenERxStudio={(p) => setEditingPatient(p)}
           onOpenVitals={(p) => handleOpenVitalsModal(p)}
           onOpenPassport={(p) => handleOpenMedicalPassport(p)}
@@ -607,12 +578,80 @@ export function HospitalWorkspacePage() {
               <p className="text-sm">No patients in queue right now.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              {/* One card per patient on phones, so nothing needs sideways scrolling */}
+              <ul className="md:hidden space-y-3">
+                {sorted.map((patient, index) => {
+                  const isCurrent = current?.id === patient.id;
+                  const pStatus = String(patient.status || 'waiting').toLowerCase();
+                  return (
+                    <li
+                      key={patient.id}
+                      className={cn(
+                        'rounded-xl border p-3.5 space-y-2.5',
+                        isCurrent ? 'border-[#9cc7ee] bg-[#eaf4fd]/60' : 'border-[var(--line)] bg-white'
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <strong className="text-[#0a3b69] block font-bold leading-snug">
+                            {index + 1}. {patient.name}
+                          </strong>
+                          <small className="text-[0.72rem] text-[var(--text-dim)]">
+                            {patient.age ? `${patient.age} yrs` : ''} · {patient.gender || 'Not specified'}
+                          </small>
+                        </div>
+                        <span className={cn('px-2 py-0.5 rounded-full text-[0.7rem] font-bold shrink-0', getTriageColor(patient.triage))}>
+                          {patient.triage || 'Standard'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-[var(--text-muted)]">{patient.symptoms || 'General consultation'}</p>
+                      <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                        <div className="min-w-0">
+                          <dt className="text-[0.7rem] text-[var(--text-dim)]">Appointment</dt>
+                          <dd className="font-bold text-[#0a3b69]">
+                            {formatAppointmentTime(patient.appointmentDate, patient.appointmentSlot)}
+                          </dd>
+                        </div>
+                        <div className="min-w-0">
+                          <dt className="text-[0.7rem] text-[var(--text-dim)]">Booked</dt>
+                          <dd className="font-medium text-[var(--text-muted)]">{formatBookedAt(patient.created_at) || '-'}</dd>
+                        </div>
+                        <div className="min-w-0">
+                          <dt className="text-[0.7rem] text-[var(--text-dim)]">Status</dt>
+                          <dd>
+                            <span
+                              className={cn(
+                                'px-2 py-0.5 rounded-full text-[0.7rem] font-bold uppercase tracking-wider',
+                                pStatus === 'in_progress'
+                                  ? 'bg-green-100 text-green-800'
+                                  : pStatus === 'called'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-slate-100 text-slate-700'
+                              )}
+                            >
+                              {statusLabel(patient.status)}
+                            </span>
+                          </dd>
+                        </div>
+                        <div className="min-w-0">
+                          <dt className="text-[0.7rem] text-[var(--text-dim)]">Clinician</dt>
+                          <dd className="font-medium text-[var(--text-muted)]">{patient.doctorName || 'General care'}</dd>
+                        </div>
+                      </dl>
+                      {renderQueueActions(patient, true)}
+                    </li>
+                  );
+                })}
+              </ul>
+
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-xs text-left border-collapse">
                 <thead>
                   <tr className="bg-[#f0f6fc] text-[#0a3b69] border-b border-[var(--line)]">
                     <th className="p-3 font-bold">Patient</th>
                     <th className="p-3 font-bold">Reason</th>
+                    <th className="p-3 font-bold">Appointment</th>
                     <th className="p-3 font-bold">Priority</th>
                     <th className="p-3 font-bold">Status</th>
                     <th className="p-3 font-bold">Clinician</th>
@@ -637,6 +676,14 @@ export function HospitalWorkspacePage() {
                         <td className="p-3 text-[var(--text-muted)] max-w-xs truncate">
                           {patient.symptoms || 'General consultation'}
                         </td>
+                        <td className="p-3 whitespace-nowrap">
+                          <strong className="block text-[0.78rem] font-bold text-[#0a3b69]">
+                            {formatAppointmentTime(patient.appointmentDate, patient.appointmentSlot)}
+                          </strong>
+                          {formatBookedAt(patient.created_at) && (
+                            <small className="text-[var(--text-dim)]">Booked {formatBookedAt(patient.created_at)}</small>
+                          )}
+                        </td>
                         <td className="p-3">
                           <span className={cn('px-2 py-0.5 rounded-full text-[0.65rem] font-bold', getTriageColor(patient.triage))}>
                             {patient.triage || 'Standard'}
@@ -658,62 +705,7 @@ export function HospitalWorkspacePage() {
                         </td>
                         <td className="p-3 text-[var(--text-muted)]">{patient.doctorName || 'General care'}</td>
                         <td className="p-3 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            {pStatus === 'waiting' && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  updateQueueItem(patient.id, { status: 'called' });
-                                  showToast(`Called ${patient.name}`, 'success');
-                                }}
-                                className="h-7 px-2.5 rounded-lg border border-[var(--line)] bg-white text-[0.7rem] font-bold text-[#0f5ca8] hover:bg-[#e5f1fc]"
-                              >
-                                Call
-                              </button>
-                            )}
-                            {pStatus === 'called' && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  updateQueueItem(patient.id, { status: 'in_progress' });
-                                  showToast(`Started consultation for ${patient.name}`, 'success');
-                                }}
-                                className="h-7 px-2.5 rounded-lg border border-transparent bg-[#0f5ca8] text-[0.7rem] font-bold text-white hover:brightness-105"
-                              >
-                                Start
-                              </button>
-                            )}
-                            {pStatus === 'in_progress' && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  updateQueueItem(patient.id, { status: 'completed' });
-                                  showToast(`Completed visit for ${patient.name}`, 'success');
-                                }}
-                                className="h-7 px-2.5 rounded-lg border border-transparent bg-green-600 text-[0.7rem] font-bold text-white hover:brightness-105"
-                              >
-                                Complete
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => handleOpenPrescriptionModal(patient)}
-                              title="Prescription"
-                              className="h-7 w-7 rounded-lg border border-[var(--line)] bg-white flex items-center justify-center text-[var(--text-muted)] hover:text-[#0f5ca8]"
-                            >
-                              <NotebookPen size={13} />
-                            </button>
-                            {['waiting', 'called'].includes(pStatus) && (
-                              <button
-                                type="button"
-                                onClick={() => setCancellingPatient(patient)}
-                                title="Cancel visit and release slot"
-                                className="h-7 w-7 rounded-lg border border-rose-200 bg-rose-50 flex items-center justify-center text-rose-700 hover:bg-rose-100"
-                              >
-                                <Ban size={13} />
-                              </button>
-                            )}
-                          </div>
+                          {renderQueueActions(patient, false)}
                         </td>
                       </tr>
                     );
@@ -721,6 +713,7 @@ export function HospitalWorkspacePage() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </section>
 
@@ -739,7 +732,30 @@ export function HospitalWorkspacePage() {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <ul className="md:hidden space-y-3">
+              {cancelledQueue.map((item) => (
+                <li key={item.id} className="rounded-xl border border-slate-200 p-3.5 space-y-1.5 text-xs">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <strong className="text-slate-900 block font-bold">{item.name}</strong>
+                      <small className="text-[0.72rem] text-slate-500">{item.department || 'General'}</small>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-md text-[0.7rem] font-bold bg-slate-100 text-slate-600 shrink-0">
+                      Slot Released
+                    </span>
+                  </div>
+                  <p className="text-slate-700 font-medium">{item.cancellationReason || 'Schedule conflict'}</p>
+                  <p className="text-[0.72rem] text-slate-500">
+                    {item.cancelledBy === 'doctor' ? 'Cancelled by clinician' : 'Cancelled by patient'} ·{' '}
+                    {item.cancelledAt
+                      ? new Date(item.cancelledAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+                      : 'Recently'}
+                  </p>
+                </li>
+              ))}
+            </ul>
+
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-xs text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50 text-slate-700 border-b border-slate-200">
@@ -1053,16 +1069,16 @@ export function HospitalWorkspacePage() {
                     e.preventDefault();
                     handleProcessQR(manualQRInput);
                   }}
-                  className="flex gap-2"
+                  className="flex flex-wrap gap-2"
                 >
                   <input
                     type="text"
                     placeholder="e.g. SC-DEMO001 or SC-PASSPORT-8924"
                     value={manualQRInput}
                     onChange={(e) => setManualQRInput(e.target.value)}
-                    className="flex-1 p-2.5 rounded-lg border border-[var(--line)] text-xs font-bold bg-[var(--surface)] text-[var(--text)]"
+                    className="flex-1 min-w-[170px] p-2.5 rounded-lg border border-[var(--line)] text-base sm:text-xs font-bold bg-[var(--surface)] text-[var(--text)] min-h-[44px]"
                   />
-                  <button type="submit" className="btn-primary px-4 py-2 text-xs font-bold">
+                  <button type="submit" className="btn-primary px-4 py-2 text-xs font-bold min-h-[44px] flex-1 sm:flex-none">
                     Open code
                   </button>
                 </form>

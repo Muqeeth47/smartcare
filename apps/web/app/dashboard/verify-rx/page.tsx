@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { VerifyRxPage } from '@/features/verify-rx/VerifyRxPage';
 
 export const metadata: Metadata = {
-  title: 'Verify Prescription | SmartCare Doctor Workspace',
+  title: 'Verify Prescription',
   description: 'Cryptographic anti-abuse verification of hospital e-prescriptions with one-time dispensation lock.',
 };
 

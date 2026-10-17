@@ -16,7 +16,7 @@ import { Topbar } from '@/components/layout/Topbar';
 import { Footer } from '@/components/layout/Shell';
 
 export const metadata: Metadata = {
-  title: '404 · Page Not Found | SmartCare',
+  title: '404 · Page Not Found',
   description: 'The requested healthcare page could not be located. Access care pathways and emergency services.',
 };
 

@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
-import { useSession, usePatient, useAppStore, sortQueue, queueStatus, getAppointmentSlots } from '@/lib/store/app-store';
+import { useSession, usePatient, useAppStore, sortQueue, getAppointmentSlots } from '@/lib/store/app-store';
 import { PatientShell } from '@/components/layout/Shell';
 import { DemoDB } from '@/lib/db/demo-db';
-import { cn, estimatedWait } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { PatientProfileSection } from './PatientProfileSection';
 import {
   CalendarClock,
@@ -27,9 +27,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   Receipt,
-  Ban,
-  Clock,
-  Check,
   Siren,
   Pill,
   Droplets,
@@ -45,7 +42,6 @@ export function PatientDashboardPage({ initialTab }: { initialTab?: string } = {
   const { patientData, patientVisits } = usePatient();
   const queue = useAppStore((s) => s.queue);
   const { cancelAppointment, claimRefund, showToast, recordPatientVisit, updateQueueItem } = useAppStore();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const currentTab = initialTab || searchParams?.get('tab') || 'overview';
 
@@ -382,15 +378,15 @@ export function PatientDashboardPage({ initialTab }: { initialTab?: string } = {
                 {/* Telemetry */}
                 <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mt-3 text-center sm:text-left" aria-live="polite">
                   <div className="p-1.5 sm:p-2 border border-[#c5ddf1] bg-[#f4f9fd] rounded-lg min-w-0">
-                    <small className="text-[0.56rem] sm:text-[0.6rem] uppercase tracking-wider font-extrabold text-[var(--text-muted)] block truncate">Live pos</small>
+                    <small className="text-[0.68rem] uppercase tracking-wider font-extrabold text-[var(--text-muted)] block truncate">Live pos</small>
                     <strong className="text-xs sm:text-sm font-bold text-[#0a3b69] truncate block">{queuePosition}</strong>
                   </div>
                   <div className="p-1.5 sm:p-2 border border-[#c5ddf1] bg-[#f4f9fd] rounded-lg min-w-0">
-                    <small className="text-[0.56rem] sm:text-[0.6rem] uppercase tracking-wider font-extrabold text-[var(--text-muted)] block truncate">Ahead</small>
+                    <small className="text-[0.68rem] uppercase tracking-wider font-extrabold text-[var(--text-muted)] block truncate">Ahead</small>
                     <strong className="text-xs sm:text-sm font-bold text-[#0a3b69] truncate block">{patientsAhead === null ? '—' : patientsAhead}</strong>
                   </div>
                   <div className="p-1.5 sm:p-2 border border-[#c5ddf1] bg-[#f4f9fd] rounded-lg min-w-0">
-                    <small className="text-[0.56rem] sm:text-[0.6rem] uppercase tracking-wider font-extrabold text-[var(--text-muted)] block truncate">Est. wait</small>
+                    <small className="text-[0.68rem] uppercase tracking-wider font-extrabold text-[var(--text-muted)] block truncate">Est. wait</small>
                     <strong className="text-xs sm:text-sm font-bold text-[#0a3b69] truncate block">{queueEstimate}</strong>
                   </div>
                 </div>
@@ -461,7 +457,7 @@ export function PatientDashboardPage({ initialTab }: { initialTab?: string } = {
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Link
-              href="/ambulance"
+              href="/dashboard/ambulance"
               className="p-4 rounded-xl border border-rose-200 bg-rose-50/60 hover:bg-rose-100/70 transition-all group flex flex-col justify-between no-underline shadow-xs hover:shadow-sm"
             >
               <div className="flex items-center justify-between mb-2">
@@ -734,7 +730,18 @@ export function PatientDashboardPage({ initialTab }: { initialTab?: string } = {
                       <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#0f5ca8] mb-1.5 border-b border-[#e0ecf7] pb-1">
                         Prescribed Medication
                       </h4>
-                      <div className="overflow-x-auto w-full border border-[var(--line)] rounded-lg">
+                      <ul className="sm:hidden space-y-2">
+                        {prescription.medicines.map((m, idx) => (
+                          <li key={idx} className="rounded-lg border border-[var(--line)] p-3 text-xs space-y-1">
+                            <div className="font-bold text-sm text-[#0a3b69]">{m.name}</div>
+                            <div className="text-[var(--text-muted)]">
+                              {[m.strength, m.dosage, m.duration].filter(Boolean).join(' · ') || '—'}
+                            </div>
+                            {m.instructions && <div className="text-[var(--text)]">{m.instructions}</div>}
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="hidden sm:block overflow-x-auto w-full border border-[var(--line)] rounded-lg">
                         <table className="w-full min-w-[420px] text-xs border-collapse">
                           <thead>
                             <tr className="bg-[#f0f6fc] text-left text-[#0a3b69]">
@@ -782,7 +789,7 @@ export function PatientDashboardPage({ initialTab }: { initialTab?: string } = {
             </div>
 
             {/* Modal actions */}
-            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 p-4 border-t border-[var(--line)] bg-[var(--surface-sunken)] shrink-0">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 p-4 border-t border-[var(--line)] bg-[var(--surface-sunken)] shrink-0 sticky bottom-0 z-10">
               <button
                 type="button"
                 onClick={() => setSelectedVisitId(null)}

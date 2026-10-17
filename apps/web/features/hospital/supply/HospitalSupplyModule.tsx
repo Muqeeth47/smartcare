@@ -5,45 +5,29 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { DemoDB } from '@/lib/db/demo-db';
 import { useSession, useAppStore } from '@/lib/store/app-store';
 import { cn } from '@/lib/utils';
+import { getSupplySection } from '@/lib/nav-sections';
 import {
   Pill,
   AlertTriangle,
   Flame,
   Truck,
-  ArrowRight,
   RefreshCw,
-  Plus,
   Search,
   CheckCircle2,
-  Clock,
   ShieldAlert,
   Building2,
   Activity,
-  Layers,
-  Sparkles,
-  ExternalLink,
-  ChevronRight,
-  ShieldCheck,
-  Send,
   Bed,
-  Box,
   KeyRound,
-  Users,
   UserCheck,
   TrendingUp,
 } from 'lucide-react';
-import type {
-  HospitalSupplyProfile,
-  MedicineItem,
-  RedistributionOrder,
-  ShortageReport,
-  MedicineStockStatus,
-} from '@smartcare/types';
+import type { HospitalSupplyProfile, MedicineItem, RedistributionOrder } from '@smartcare/types';
 
 export function HospitalSupplyModule() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { hospital: sessionHospital, city } = useSession();
+  const { hospital: sessionHospital } = useSession();
   const { showToast } = useAppStore();
 
   // Selected hospital facility (allows user to test both SmartCare Tertiary and PHC Shamshabad)
@@ -51,8 +35,10 @@ export function HospitalSupplyModule() {
   const [profiles, setProfiles] = useState<HospitalSupplyProfile[]>([]);
   const [profile, setProfile] = useState<HospitalSupplyProfile | null>(null);
 
-  // Tab state synced with URL: ?supplyTab=inventory | shortage | inward
-  const activeTab = searchParams.get('supplyTab') || 'inventory';
+  // The sidebar picks the page through ?supplyTab=. An unknown value falls back to the stock register.
+  const section = getSupplySection(searchParams.get('supplyTab'));
+  const activeTab = section.id;
+  const SectionIcon = section.icon;
 
   // Filters & Pagination
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
@@ -190,13 +176,6 @@ export function HospitalSupplyModule() {
 
   // Calculations
   const criticalCount = profile?.medicines.filter((m) => m.status === 'critical').length || 0;
-  const lowCount = profile?.medicines.filter((m) => m.status === 'low').length || 0;
-  const safeAverage = profile
-    ? Math.round(
-        profile.medicines.reduce((acc, m) => acc + (m.daysRemaining > 90 ? 30 : m.daysRemaining), 0) /
-          profile.medicines.length
-      )
-    : 0;
 
   if (!profile) {
     return (
@@ -308,10 +287,11 @@ export function HospitalSupplyModule() {
                 The State Command Center and District CMO have received automated shortage flags for this facility.
                 Recommended AI redistribution transfers have been prepared. Check the{' '}
                 <button
+                  type="button"
                   onClick={() => handleTabChange('inward')}
                   className="font-bold underline text-red-700 dark:text-red-300 hover:opacity-80"
                 >
-                  Inward Dispatches tab ({inwardOrders.length})
+                  Incoming Deliveries page ({inwardOrders.length})
                 </button>{' '}
                 to accept replenishment shipments.
               </p>
@@ -320,59 +300,17 @@ export function HospitalSupplyModule() {
         </div>
       )}
 
-      {/* ─── Navigation Tabs ────────────────────────────────────────────────────── */}
-      <div className="flex border-b border-slate-200 dark:border-slate-800 gap-2 overflow-x-auto pb-1">
-        <button
-          onClick={() => handleTabChange('inventory')}
-          className={cn(
-            'flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap min-h-[44px]',
-            activeTab === 'inventory'
-              ? 'bg-indigo-600 text-white shadow-md'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          )}
-        >
-          <Pill className="h-4 w-4" />
-          Medicine Stock Register ({profile.medicines.length})
-        </button>
-
-        <button
-          onClick={() => handleTabChange('shortage')}
-          className={cn(
-            'flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap min-h-[44px]',
-            activeTab === 'shortage'
-              ? 'bg-red-600 text-white shadow-md'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          )}
-        >
-          <ShieldAlert className="h-4 w-4" />
-          SOS Shortage Reports {criticalCount > 0 && <span className="bg-white/20 px-1.5 py-0.5 rounded text-xs">{criticalCount}</span>}
-        </button>
-
-        <button
-          onClick={() => handleTabChange('inward')}
-          className={cn(
-            'flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap min-h-[44px]',
-            activeTab === 'inward'
-              ? 'bg-emerald-600 text-white shadow-md'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          )}
-        >
-          <Truck className="h-4 w-4" />
-          Inward Dispatches ({inwardOrders.length})
-        </button>
-
-        <button
-          onClick={() => handleTabChange('resources')}
-          className={cn(
-            'flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap min-h-[44px]',
-            activeTab === 'resources'
-              ? 'bg-indigo-600 text-white shadow-md'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          )}
-        >
-          <Activity className="h-4 w-4" />
-          Beds &amp; Personnel Telemetry
-        </button>
+      {/* ─── Page heading: the sidebar picks the page, this just says which one you are on ─── */}
+      <div className="flex items-start gap-3 px-1">
+        <span className="h-10 w-10 rounded-xl bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+          <SectionIcon className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white leading-tight">
+            {section.label}
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">{section.description}</p>
+        </div>
       </div>
 
       {/* ─── TAB 1: INVENTORY REGISTER ─────────────────────────────────────────── */}
@@ -395,7 +333,7 @@ export function HospitalSupplyModule() {
             </div>
 
             {/* Category Filter Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-1.5 sm:overflow-x-auto pb-1 sm:pb-0">
               {['ALL', 'Critical Supplies', 'Antibiotics', 'Chronic Care', 'Emergency & IV', 'Vaccines'].map((cat) => (
                 <button
                   key={cat}
@@ -404,7 +342,7 @@ export function HospitalSupplyModule() {
                     setMedPage(1);
                   }}
                   className={cn(
-                    'px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap min-h-[38px]',
+                    'px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap min-h-[44px] sm:min-h-[38px]',
                     categoryFilter === cat
                       ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'

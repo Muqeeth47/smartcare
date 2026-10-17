@@ -40,7 +40,7 @@ export function AnalyticsDashboardPage() {
   const searchParams = useSearchParams();
   const { role } = useAuthGuard(['doctor', 'staff']);
   const { queue, metrics } = useQueue();
-  const { hospital, city } = useSession();
+  const { hospital } = useSession();
   const { showToast } = useAppStore();
 
   const initialRange = (searchParams.get('range') as 'today' | 'week' | 'month') || 'today';
@@ -262,7 +262,7 @@ export function AnalyticsDashboardPage() {
         {/* ── Toolbar ─────────────────────────────────────────────────────── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Tab switcher */}
-          <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-x-auto" role="tablist">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 sm:overflow-x-auto" role="tablist">
             {TABS.map(({ id, label, Icon }) => (
               <button
                 key={id}
@@ -271,7 +271,7 @@ export function AnalyticsDashboardPage() {
                 aria-selected={activeTab === id}
                 onClick={() => handleTabChange(id)}
                 className={cn(
-                  'flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap min-h-[40px]',
+                  'flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap min-h-[44px] sm:min-h-[40px]',
                   activeTab === id
                     ? 'bg-white dark:bg-slate-900 text-[#0a3b69] dark:text-indigo-300 shadow-sm'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'

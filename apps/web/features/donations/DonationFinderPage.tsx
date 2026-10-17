@@ -1,13 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAppStore } from '@/lib/store/app-store';
 import { Topbar } from '@/components/layout/Topbar';
 import { Footer } from '@/components/layout/Shell';
 import {
-  HeartPulse,
   Droplets,
   HeartHandshake,
   MapPin,
@@ -22,8 +20,6 @@ import {
   ExternalLink,
   Info,
   Loader2,
-  ArrowRight,
-  Layers,
 } from 'lucide-react';
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -90,7 +86,6 @@ export function DonationFinderPage() {
   const [locating, setLocating] = useState(false);
   const [locationLabel, setLocationLabel] = useState('');
   const [searching, setSearching] = useState(false);
-  const [hasSearched, setHasSearched] = useState(true);
   const [centres, setCentres] = useState(DEMO_BLOOD_CENTRES);
 
   // Organ form state
@@ -99,9 +94,6 @@ export function DonationFinderPage() {
   const [organPref, setOrganPref] = useState('Learn about donation');
   const [organConsent, setOrganConsent] = useState(false);
   const [organMessage, setOrganMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
-
-  // Mobile toggle between list and map
-  const [showMapMobile, setShowMapMobile] = useState(false);
 
   // Leaflet open-source map integration
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -224,7 +216,6 @@ export function DonationFinderPage() {
           (c.city.includes(q) || c.area.toLowerCase().includes(q) || q.includes('500') || q.includes('hyderabad'))
       );
       setCentres(filtered);
-      setHasSearched(true);
       setSearching(false);
     }, 400);
   };
@@ -569,7 +560,7 @@ export function DonationFinderPage() {
                   mapInstanceRef.current.setView([17.4399, 78.4637], 12);
                 }
               }}
-              className="text-[var(--teal)] font-semibold hover:underline"
+              className="text-[var(--teal)] font-semibold hover:underline min-h-[44px] px-2"
             >
               Reset view
             </button>

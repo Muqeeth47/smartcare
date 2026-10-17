@@ -1,20 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import type { QueueItem, QueueStatus } from '@smartcare/types';
+import type { QueueItem } from '@smartcare/types';
 import { cn, getTriageColor } from '@/lib/utils';
 import {
   Users,
   Activity,
   AlertTriangle,
   Siren,
-  Bell,
   Stethoscope,
-  Clock,
-  CheckCircle2,
   Volume2,
-  Filter,
-  HeartPulse,
   QrCode,
   Thermometer,
 } from 'lucide-react';
@@ -23,8 +18,6 @@ interface LiveQueueTriageVisualizerProps {
   queue: QueueItem[];
   currentPatient: QueueItem | null;
   onAdvanceCurrent: () => void;
-  onCallPatient: (patient: QueueItem) => void;
-  onStartConsultation: (patient: QueueItem) => void;
   onOpenERxStudio: (patient: QueueItem) => void;
   onOpenVitals: (patient: QueueItem) => void;
   onOpenPassport: (patient: QueueItem) => void;
@@ -34,8 +27,6 @@ export function LiveQueueTriageVisualizer({
   queue,
   currentPatient,
   onAdvanceCurrent,
-  onCallPatient,
-  onStartConsultation,
   onOpenERxStudio,
   onOpenVitals,
   onOpenPassport,
@@ -82,19 +73,6 @@ export function LiveQueueTriageVisualizer({
     playCallChime();
     onAdvanceCurrent();
   };
-
-  const filteredQueue = queue.filter((item) => {
-    if (triageFilter === 'critical') {
-      return item.triage === 'Red' || item.triage?.toLowerCase().includes('critical') || item.triage?.toLowerCase().includes('trauma');
-    }
-    if (triageFilter === 'priority') {
-      return item.triage === 'Yellow' || item.triage?.toLowerCase().includes('urgent') || item.triage?.toLowerCase().includes('priority');
-    }
-    if (triageFilter === 'routine') {
-      return !item.triage || item.triage === 'Green' || item.triage?.toLowerCase().includes('standard') || item.triage?.toLowerCase().includes('routine');
-    }
-    return true;
-  });
 
   return (
     <div className="space-y-4">

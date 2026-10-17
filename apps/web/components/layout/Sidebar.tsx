@@ -21,18 +21,19 @@ import {
   Pill,
   Siren,
   ShieldCheck,
-  ShieldAlert,
-  Truck,
-  MapPin,
-  Activity,
-  Building2,
   Stethoscope,
-  TrendingUp,
-  Cpu,
-  Layers,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSession, useAppStore } from '@/lib/store/app-store';
+import {
+  COMMAND_SECTIONS,
+  OPERATIONS_SECTION,
+  SUPPLY_SECTIONS,
+  DEFAULT_COMMAND_SECTION,
+  DEFAULT_SUPPLY_SECTION,
+  commandHref,
+  supplyHref,
+} from '@/lib/nav-sections';
 
 interface SidebarItem {
   label: string;
@@ -60,7 +61,7 @@ const SIDEBAR_ITEMS: Record<string, RoleConfig> = {
           { label: 'Book appointment', href: '/dashboard/patient/apply/1', icon: CalendarPlus },
           { label: 'Medical History', href: '/dashboard/patient/history', icon: FileText },
           { label: 'Previous visits', href: '/dashboard/patient/visits', icon: ClipboardCheck },
-          { label: 'Profile', href: '/dashboard/patient?tab=profile', icon: UserRound },
+          { label: 'Profile', href: '/dashboard/patient/profile', icon: UserRound },
         ],
       },
     ],
@@ -74,45 +75,48 @@ const SIDEBAR_ITEMS: Record<string, RoleConfig> = {
   doctor: {
     sections: [
       {
-        title: 'Module 1: Patient & Doctor',
+        title: 'Patients & Prescriptions',
         items: [
           { label: 'Clinical Queue & eRx', href: '/dashboard/hospital?module=clinical', icon: Stethoscope },
           { label: 'Queue Workspace', href: '/dashboard/queue', icon: ListOrdered },
           { label: 'Verify Prescription', href: '/dashboard/verify-rx', icon: ShieldCheck },
+          { label: 'Pharmacy Orders', href: '/dashboard/pharmacy', icon: Pill },
           { label: 'Clinical Analytics', href: '/dashboard/analytics', icon: BarChart3 },
         ],
       },
       {
-        title: 'Module 2: Hospital & State Mesh',
-        items: [
-          { label: 'Medicine Stock Register', href: '/dashboard/hospital?module=supply&supplyTab=inventory', icon: Pill },
-          { label: 'SOS Shortage Desk', href: '/dashboard/hospital?module=supply&supplyTab=shortage', icon: ShieldAlert },
-          { label: 'Inward Dispatches (OTP)', href: '/dashboard/hospital?module=supply&supplyTab=inward', icon: Truck },
-        ],
+        title: 'Medicine Supply',
+        items: SUPPLY_SECTIONS.map((s) => ({ label: s.label, href: supplyHref(s.id), icon: s.icon })),
       },
     ],
     secondary: [
+      { label: 'Donations', href: '/dashboard/hospital/donations', icon: HeartHandshake },
+      { label: 'Ambulance (SOS)', href: '/dashboard/ambulance', icon: Siren },
       { label: 'Help', href: '/about', icon: CircleHelp },
     ],
   },
   staff: {
     sections: [
       {
-        title: 'State Health Command',
+        title: 'State Health',
+        items: COMMAND_SECTIONS.map((s) => ({ label: s.label, href: commandHref(s.id), icon: s.icon })),
+      },
+      {
+        title: 'This Hospital',
         items: [
-          { label: 'Command Overview', href: '/dashboard/admin?adminTab=command&commandTab=summary', icon: Building2 },
-          { label: 'PHC Telemetry (Beds & Staff)', href: '/dashboard/admin?adminTab=command&commandTab=telemetry', icon: Activity },
-          { label: 'Shortage Heat Map', href: '/dashboard/admin?adminTab=command&commandTab=heatmap', icon: MapPin },
-          { label: 'Demand Forecaster & Alerts', href: '/dashboard/admin?adminTab=command&commandTab=forecasting', icon: TrendingUp },
-          { label: 'AI Redistribution', href: '/dashboard/admin?adminTab=command&commandTab=redistribution', icon: Truck },
-          { label: 'Multi-State Federated Hub', href: '/dashboard/admin?adminTab=command&commandTab=federated', icon: Cpu },
-          { label: 'Transit Manifest', href: '/dashboard/admin?adminTab=command&commandTab=manifest', icon: Layers },
-          { label: 'Emergency SOS & POs', href: '/dashboard/admin?adminTab=command&commandTab=escalation', icon: ShieldAlert },
+          {
+            label: OPERATIONS_SECTION.label,
+            href: '/dashboard/admin?adminTab=operations',
+            icon: OPERATIONS_SECTION.icon,
+          },
+          { label: 'Queue Workspace', href: '/dashboard/queue', icon: ListOrdered },
         ],
       },
     ],
     secondary: [
       { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+      { label: 'Donations', href: '/dashboard/admin/donations', icon: HeartHandshake },
+      { label: 'Ambulance (SOS)', href: '/dashboard/ambulance', icon: Siren },
       { label: 'Help', href: '/about', icon: CircleHelp },
     ],
   },
@@ -126,6 +130,14 @@ function getRoleFromPath(pathname: string, sessionRole?: string): string {
   return 'patient';
 }
 
+// When the address bar leaves one of these out, the page shows this value, so the sidebar should too.
+const PARAM_DEFAULTS: Record<string, string> = {
+  adminTab: 'command',
+  commandTab: DEFAULT_COMMAND_SECTION,
+  module: 'clinical',
+  supplyTab: DEFAULT_SUPPLY_SECTION,
+};
+
 function checkActive(itemHref: string, pathname: string, searchParams?: URLSearchParams | null): boolean {
   if (itemHref.includes('?')) {
     const [base, query] = itemHref.split('?');
@@ -134,7 +146,8 @@ function checkActive(itemHref: string, pathname: string, searchParams?: URLSearc
     const itemParams = new URLSearchParams(query);
     let match = true;
     itemParams.forEach((val, key) => {
-      if (searchParams.get(key) !== val) {
+      const current = searchParams.get(key) ?? PARAM_DEFAULTS[key];
+      if (current !== val) {
         match = false;
       }
     });

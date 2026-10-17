@@ -7,7 +7,6 @@ import { Topbar } from '@/components/layout/Topbar';
 import { Footer, PatientShell, WorkspaceShell } from '@/components/layout/Shell';
 import { usePharmacy, usePatient } from '@/lib/store/app-store';
 import {
-  Pill,
   Store,
   Truck,
   CheckCircle2,
@@ -22,7 +21,6 @@ import {
   Check,
   BadgeCheck,
   Search,
-  Filter,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -406,7 +404,7 @@ export function PharmacyPage({ variant = 'landing' }: { variant?: 'landing' | 'p
                 </div>
 
                 {/* Category Chips */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                <div className="flex flex-wrap md:flex-nowrap items-center gap-1.5 md:overflow-x-auto pb-1 no-scrollbar">
                   {[
                     { id: 'all', label: 'All Medicines' },
                     { id: 'pain', label: 'Pain & Fever' },
@@ -423,7 +421,7 @@ export function PharmacyPage({ variant = 'landing' }: { variant?: 'landing' | 'p
                         setSelectedCategory(cat.id);
                         setPharmacyPage(1);
                       }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer min-h-[32px] ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer min-h-[44px] md:min-h-[32px] ${
                         selectedCategory === cat.id
                           ? 'bg-[var(--teal)] text-white shadow-xs'
                           : 'bg-[var(--surface)] text-[var(--text-muted)] hover:text-[var(--text)] border border-[var(--line)]'
@@ -534,7 +532,7 @@ export function PharmacyPage({ variant = 'landing' }: { variant?: 'landing' | 'p
                             type="button"
                             disabled={pharmacyPage <= 1}
                             onClick={() => setPharmacyPage((p) => Math.max(1, p - 1))}
-                            className="p-1.5 rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed transition"
+                            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed transition"
                             title="Previous page"
                           >
                             <ChevronLeft className="w-4 h-4" />
@@ -546,7 +544,7 @@ export function PharmacyPage({ variant = 'landing' }: { variant?: 'landing' | 'p
                             type="button"
                             disabled={pharmacyPage >= totalCatalogPages}
                             onClick={() => setPharmacyPage((p) => Math.min(totalCatalogPages, p + 1))}
-                            className="p-1.5 rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed transition"
+                            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed transition"
                             title="Next page"
                           >
                             <ChevronRight className="w-4 h-4" />
@@ -577,16 +575,16 @@ export function PharmacyPage({ variant = 'landing' }: { variant?: 'landing' | 'p
                         key={c.id}
                         className="flex items-center justify-between text-xs py-1.5 border-b border-[var(--line)]"
                       >
-                        <div className="flex-1 pr-2">
+                        <div className="flex-1 min-w-0 pr-2">
                           <span className="font-semibold text-[var(--text)] block truncate">{c.name}</span>
                           <span className="text-[var(--text-muted)]">Qty: {c.qty}</span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 shrink-0">
                           <strong className="text-[var(--text)]">₹{c.price * c.qty}</strong>
                           <button
                             type="button"
                             onClick={() => removeFromCart(c.id)}
-                            className="text-[var(--text-muted)] hover:text-rose-500 p-1 cursor-pointer"
+                            className="text-[var(--text-muted)] hover:text-rose-500 min-w-[44px] min-h-[44px] -my-2 flex items-center justify-center cursor-pointer"
                             title="Remove"
                           >
                             <Trash2 className="w-3.5 h-3.5" />

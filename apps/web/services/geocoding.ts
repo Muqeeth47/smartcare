@@ -1,12 +1,10 @@
 /**
- * Geocoding service — wraps OpenStreetMap Nominatim + Overpass API
- * Ported from js/services/api.js
+ * Geocoding service — wraps OpenStreetMap Nominatim (search and reverse lookup)
  */
 
-import type { GeoCoordinates, HospitalCentre } from '@smartcare/types';
+import type { GeoCoordinates } from '@smartcare/types';
 
 const NOMINATIM_BASE = 'https://nominatim.openstreetmap.org';
-const OVERPASS_API = 'https://overpass-api.de/api/interpreter';
 
 export async function geocodeLocation(query: string): Promise<GeoCoordinates | null> {
   try {
@@ -48,56 +46,3 @@ export async function reverseGeocode(lat: number, lng: number): Promise<GeoCoord
   }
 }
 
-export async function findNearbyHospitals(
-  lat: number,
-  lng: number,
-  radiusKm: number = 10
-): Promise<HospitalCentre[]> {
-  const radiusM = radiusKm * 1000;
-  const query = `
-    [out:json][timeout:10];
-    (
-      node["amenity"="hospital"](around:${radiusM},${lat},${lng});
-      way["amenity"="hospital"](around:${radiusM},${lat},${lng});
-      node["amenity"="clinic"](around:${radiusM},${lat},${lng});
-      way["amenity"="clinic"](around:${radiusM},${lat},${lng});
-      node["healthcare"="hospital"](around:${radiusM},${lat},${lng});
-    );
-    out center 15;
-  `;
-  try {
-    const res = await fetch(OVERPASS_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `data=${encodeURIComponent(query)}`,
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return (data.elements || [])
-      .filter((el: any) => el.tags?.name)
-      .map((el: any) => ({
-        id: String(el.id),
-        name: el.tags.name,
-        lat: el.lat ?? el.center?.lat,
-        lng: el.lon ?? el.center?.lon,
-        type: el.tags.amenity || el.tags.healthcare || 'hospital',
-        openingHours: el.tags.opening_hours,
-        source: 'osm',
-      }));
-  } catch {
-    return [];
-  }
-}
-
-export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}

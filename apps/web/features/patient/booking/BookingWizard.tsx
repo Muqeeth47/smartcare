@@ -20,7 +20,6 @@ import {
   Map as MapIcon,
   List as ListIcon,
   MapPin,
-  ExternalLink,
   CalendarPlus,
   LayoutDashboard,
   Stethoscope,
@@ -40,13 +39,11 @@ import {
   X,
   Plus,
   Clock,
-  FlaskConical,
   Navigation,
   Printer,
   Share2,
   Maximize2,
   Pill,
-  AlertCircle,
   BookmarkCheck,
 } from 'lucide-react';
 import type { PatientVisit } from '@smartcare/types';
@@ -288,7 +285,7 @@ interface BookingWizardProps {
 export function BookingWizard({ step: initialStep }: BookingWizardProps) {
   const router = useRouter();
   const { patientData, userCoords } = usePatient();
-  const { email, isLogged } = useSession();
+  const { email } = useSession();
   const { setStep, updatePatientData, setUserCoords, recordPatientVisit, showToast } = useAppStore(
     useShallow((s) => ({
       setStep: s.setStep,
@@ -332,10 +329,7 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
   const [copiedToken, setCopiedToken] = useState(false);
 
   // Medical passport integration & utility state
-  const [passportId, setPassportId] = useState('SC-PASSPORT-8924');
-  const [medicalPassport, setMedicalPassport] = useState<any>(() => {
-    return DemoDB.getMedicalPassport('SC-PASSPORT-8924', 'patient');
-  });
+  const passportId = 'SC-PASSPORT-8924';
   const [isPassportLinked, setIsPassportLinked] = useState(true);
   const [genericOptIn, setGenericOptIn] = useState(true);
   const [showEnlargedQr, setShowEnlargedQr] = useState(false);
@@ -978,15 +972,34 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
               const stepNum = index + 1;
               const isDone = currentStep > stepNum;
               const isActive = currentStep === stepNum;
-              return (
-                <div
-                  key={label}
-                  className={`step-item ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`}
-                >
+              // Earlier steps can be reopened to change answers. Once the visit is booked (step 4),
+              // going back would book it twice, so the stepper stays read-only there.
+              const canJumpBack = isDone && currentStep < 4;
+              const content = (
+                <>
                   <span className="step-number">
                     {isDone ? <Check size={12} strokeWidth={3} /> : stepNum}
                   </span>
                   <span className="step-label">{label}</span>
+                </>
+              );
+              const itemClass = `step-item ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`;
+              return canJumpBack ? (
+                <button
+                  key={label}
+                  type="button"
+                  className={`${itemClass} step-item-link`}
+                  onClick={() => {
+                    setValidationError('');
+                    goToStep(stepNum);
+                  }}
+                  aria-label={`Go back to step ${stepNum}: ${label}`}
+                >
+                  {content}
+                </button>
+              ) : (
+                <div key={label} className={itemClass} aria-current={isActive ? 'step' : undefined}>
+                  {content}
                 </div>
               );
             })}
@@ -1261,7 +1274,6 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
                   <div id="hospital-list" className="hospital-list">
                     {filteredHospitals.map((hospital, index) => {
                       const isSelected = patientData.hospital === hospital.name;
-                      const isPublicListing = hospital.source === 'OpenStreetMap';
                       return (
                         <article
                           key={hospital.id}
@@ -1832,7 +1844,7 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
                         onClick={copyToken}
                       >
                         <div>
-                          <small>Token Reference String</small>
+                          <small className="text-[0.7rem]">Token Reference String</small>
                           <strong>{bookingId || 'SC-DEMO8924'}</strong>
                         </div>
                         <Copy size={16} />
@@ -2019,8 +2031,8 @@ export function BookingWizard({ step: initialStep }: BookingWizardProps) {
                 <strong className="text-slate-900 dark:text-slate-100 font-bold text-right">{currentSlot?.label || 'Today - next available'}</strong>
               </div>
               <div className="summary-row summary-row-stacked flex flex-col items-start gap-2 p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700/60 text-xs sm:text-sm w-full">
-                <div className="flex items-center justify-between w-full">
-                  <span className="text-slate-500 dark:text-slate-400 font-semibold text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 w-full">
+                  <span className="text-slate-500 dark:text-slate-400 font-semibold text-[11px] uppercase tracking-wider flex items-center gap-1.5 min-w-0">
                     <HeartPulse size={13} className="text-[#0f5ca8] dark:text-sky-400" />
                     Reason for visit / symptoms
                   </span>

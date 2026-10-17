@@ -9,9 +9,7 @@ import {
   RefreshCw,
   AlertCircle,
   CheckCircle2,
-  Sparkles,
   SwitchCamera,
-  Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -47,7 +45,7 @@ export function RealQrScanner({
   // Play subtle confirmation beep using Web Audio API
   const playBeep = useCallback(() => {
     try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
       const osc = ctx.createOscillator();
@@ -145,12 +143,13 @@ export function RealQrScanner({
         setHasCamera(true);
         animFrameRef.current = requestAnimationFrame(scanFrame);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.warn('Camera access error:', err);
       setHasCamera(false);
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      const errName = err instanceof Error ? err.name : '';
+      if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError') {
         setCameraError('Camera permission was denied. You can enable camera in your browser or upload a QR image below.');
-      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+      } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
         setCameraError('No camera found on this device. You can upload a QR image or click a demo token below.');
       } else {
         setCameraError('Could not start video camera. Please use file upload or demo shortcuts.');

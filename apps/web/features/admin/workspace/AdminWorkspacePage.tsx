@@ -18,7 +18,6 @@ import {
   TriangleAlert,
   X,
   ListPlus,
-  Building,
 } from 'lucide-react';
 import type { TriagePriority } from '@smartcare/types';
 
@@ -42,13 +41,8 @@ export function AdminWorkspacePage() {
   const { showToast, setQueue } = useAppStore();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const currentTab = searchParams.get('adminTab') || 'command';
-
-  const handleTabChange = (tab: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('adminTab', tab);
-    router.replace(`?${params.toString()}`, { scroll: false });
-  };
+  // Chosen from the sidebar: the command centre (default) or the rooms and walk-ins page
+  const currentTab = searchParams.get('adminTab') === 'operations' ? 'operations' : 'command';
 
   // Rooms state
   const roomStorageKey = `smartcare.rooms:${String(hospital || 'SmartCare Community Hospital').toLowerCase()}`;
@@ -147,44 +141,7 @@ export function AdminWorkspacePage() {
   return (
     <WorkspaceShell title="Hospital operations" subtitle="Operations workspace" backHref="/" backLabel="Back to home">
       <div className="max-w-6xl mx-auto py-6 space-y-6">
-        {/* Module Switcher: Module 2 (State & District Command Center) vs Operations */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-2 sm:p-2.5 shadow-sm">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={() => handleTabChange('command')}
-              className={cn(
-                'flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all min-h-[44px]',
-                currentTab === 'command'
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-              )}
-            >
-              <Building className="w-4 h-4 text-amber-300" />
-              Module 2: AushadhiNet State Command
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleTabChange('operations')}
-              className={cn(
-                'flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all min-h-[44px]',
-                currentTab === 'operations'
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-              )}
-            >
-              <Users className="w-4 h-4" />
-              Hospital Ops &amp; Rooms
-            </button>
-          </div>
-
-          <div className="text-xs text-slate-500 px-3 hidden md:flex items-center gap-1.5 font-medium">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            District CMO &amp; State Command Active
-          </div>
-        </div>
-
+        {/* The sidebar chooses between the command centre and the rooms page, so there is no switcher here */}
         {currentTab === 'command' ? (
           <StateCommandSupplyModule />
         ) : (
@@ -513,7 +470,37 @@ export function AdminWorkspacePage() {
               <p className="text-sm font-semibold">Queue is empty.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            <ul className="md:hidden space-y-3">
+              {sorted.map((item, i) => (
+                <li key={item.id} className="rounded-xl border border-[var(--line)] p-3.5 space-y-2 text-xs">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <strong className="block text-[#0a3b69] font-bold leading-snug">
+                        {i + 1}. {item.name}
+                      </strong>
+                      <span className="block font-mono text-[0.7rem] text-[var(--text-dim)]">{item.id}</span>
+                    </div>
+                    <span className={cn('status-pill text-[0.7rem] px-2 py-0.5 rounded font-bold shrink-0', getTriageColor(item.triage))}>
+                      {item.triage}
+                    </span>
+                  </div>
+                  <p className="text-[var(--text-muted)]">{item.symptoms}</p>
+                  <p className="text-[var(--text-muted)]">
+                    {item.doctorName || item.doctorPref || 'Unassigned'} · <span className="capitalize font-medium text-[var(--text)]">{item.status}</span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => removePatient(item.id)}
+                    className="min-h-[44px] px-4 rounded-lg border border-red-200 bg-red-50 text-red-700 font-bold text-xs"
+                  >
+                    Remove from queue
+                  </button>
+                </li>
+              ))}
+            </ul>
+
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-xs border-collapse">
                 <thead>
                   <tr className="bg-[#f0f6fc] text-left text-[#0a3b69]">
@@ -556,6 +543,7 @@ export function AdminWorkspacePage() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </section>
           </>

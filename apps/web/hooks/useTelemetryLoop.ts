@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { DemoDB } from '@/lib/db/demo-db';
-import type { TelemetryPacket15m, EpidemicForecastScenario, DistrictSupplyAggregate } from '@smartcare/types';
+import type { TelemetryPacket15m, DistrictSupplyAggregate } from '@smartcare/types';
 
 const SYNC_INTERVAL_SECONDS = 900; // 15 minutes = 900 seconds
 

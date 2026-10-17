@@ -5,19 +5,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function esc(value: unknown = ''): string {
-  return String(value).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c] ?? c));
-}
-
-export function formatDate(dateStr: string): string {
-  if (!dateStr) return '';
-  try {
-    return new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(dateStr));
-  } catch {
-    return dateStr;
-  }
-}
-
 export function generatePassportId(email: string): string {
   if (!email) return '';
   if (email.toLowerCase() === 'patient@smartcare.demo') return 'SC-PASSPORT-8924';
@@ -47,8 +34,39 @@ export function timeAgo(dateStr: string): string {
   return `${Math.floor(hrs / 24)} day ago`;
 }
 
-export function estimatedWait(position: number): string {
-  if (position <= 0) return 'Next up';
-  const mins = position * 12; // ~12 min average per patient
-  return `${mins}–${mins + 10} min`;
+function formatClock(hhmm: string): string {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(hhmm);
+  if (!match) return hhmm;
+  const hour = Number(match[1]);
+  const suffix = hour >= 12 ? 'pm' : 'am';
+  return `${hour % 12 || 12}:${match[2]} ${suffix}`;
 }
+
+/** When the patient booked, for the doctor's list. Example: "17 Oct, 10:42 am" */
+export function formatBookedAt(iso?: string): string {
+  const d = iso ? new Date(iso) : null;
+  if (!d || Number.isNaN(d.getTime())) return '';
+  const day = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  return `${day}, ${formatClock(`${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`)}`;
+}
+
+/** The time the patient is expected. Example: "Today, 4:30 pm" or "Tomorrow, 9:30 am" */
+export function formatAppointmentTime(date?: string, slot?: string): string {
+  const time = slot && /^\d{1,2}:\d{2}$/.test(slot) ? formatClock(slot) : slot || 'Next available';
+  if (!date) return time;
+  const target = new Date(`${date}T00:00:00`);
+  if (Number.isNaN(target.getTime())) return time;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = Math.round((target.getTime() - today.getTime()) / 86_400_000);
+  const dayLabel =
+    days === 0
+      ? 'Today'
+      : days === 1
+      ? 'Tomorrow'
+      : days === -1
+      ? 'Yesterday'
+      : target.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  return `${dayLabel}, ${time}`;
+}
+

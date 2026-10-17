@@ -25,3 +25,5 @@ apps/web/.next/
 
 .vercel
 .env*
+.claude/
+
